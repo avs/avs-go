@@ -1,0 +1,27 @@
+{
+  "name": "avs-web-components",
+  "version": "0.0.1",
+  "homepage": "http://www.avs.com",
+  "license": "Apache 2.0",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "polymer": "Polymer/polymer#^2.1.1",
+    "iron-ajax": "PolymerElements/iron-ajax#^2.0.1",
+    "iron-resizable-behavior": "PolymerElements/iron-resizable-behavior#^2.0.1",
+    "iron-fit-behavior": "PolymerElements/iron-fit-behavior#^2.1.1"
+  },
+  "devDependencies": {
+    "iron-demo-helpers": "PolymerElements/iron-demo-helpers#^2.0.0",
+    "web-component-tester": "Polymer/web-component-tester#^6.0.0",
+    "webcomponentsjs": "webcomponents/webcomponentsjs#^1.0.0"
+  },
+  "resolutions": {
+    "polymer": "^2.0.0"
+  }
+}
