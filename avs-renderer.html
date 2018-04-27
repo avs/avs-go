@@ -1,5 +1,5 @@
 <!-- 
-avs-web-components.html
+avs-renderer.html
 Copyright 2018 Advanced Visual Systems Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +17,15 @@ limitations under the License.
 This product includes software developed at
 Advanced Visual Systems Inc. (http://www.avs.com)
 -->
+<link rel="import" href="../polymer/polymer-element.html">
 
-<script src="../webcomponentsjs/webcomponents-lite.js"></script>
-<link rel="import" href="../polymer/polymer.html">
-<link rel="import" href="avs-viewer.html">
+<dom-module id="avs-renderer">
+
+  <template>    
+  </template>
+
+  <script src="three.js"></script>
+  <script src="avsthree.js"></script>
+  <script src="avs-renderer.js"></script>
+
+</dom-module>
