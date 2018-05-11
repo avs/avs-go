@@ -1,8 +1,18 @@
-AVS Web Components
-==================
+# AVS Web Components
+[![Published on webcomponents.org](https://img.shields.io/badge/webcomponents.org-published-blue.svg)](https://www.webcomponents.org/element/wwwavscom/webcomponents)
 
-### Description ###
+A Polymer based component for AVS
 
-### Usage ###
+## Install
+1. Install bower dependency
 
-### Change log ###
+   `bower install avs-web-components --save`
+
+2. Import avs-web-components to your project
+
+   `<link rel="import" href="bower_components/avs-web-components/avs-web-components.html">`
+
+## Usage
+
+## License
+Apache-2.0
