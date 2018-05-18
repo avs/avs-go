@@ -1,18 +1,18 @@
-# AVS Web Components
-[![Published on webcomponents.org](https://img.shields.io/badge/webcomponents.org-published-blue.svg)](https://www.webcomponents.org/element/wwwavscom/webcomponents)
+[![Published on webcomponents.org](https://img.shields.io/badge/webcomponents.org-published-blue.svg)](https://www.webcomponents.org/element/avs/webcomponents)
 
-A Polymer based component for AVS
+# AVS Web Components
+
+Polymer 3.0 based elements for AVS.
 
 ## Install
-1. Install bower dependency
-
-   `bower install avs-web-components --save`
-
-2. Import avs-web-components to your project
-
-   `<link rel="import" href="bower_components/avs-web-components/avs-web-components.html">`
+```
+npm install avs-web-components
+```
 
 ## Usage
+```html
+<script type="module" src="avs-web-components/avs-viewer.js"></script>
+```
 
 ## License
 Apache-2.0
