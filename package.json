@@ -1,0 +1,36 @@
+{
+  "name": "avs-web-components",
+  "version": "0.0.2",
+  "description": "AVS Web Components",
+  "keywords": [
+    "polymer",
+    "polymer 3.0",
+    "image",
+    "svg",
+    "three.js",
+    "3d",
+    "webgl",
+    "custom-element",
+    "web-components"
+  ],
+  "author": "AVS",
+  "main": "avs-viewer.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/avs/webcomponents.git"
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@polymer/iron-ajax": "^3.0.0-pre.18",
+    "@polymer/iron-fit-behavior": "^3.0.0-pre.18",
+    "@polymer/iron-resizable-behavior": "^3.0.0-pre.18",
+    "@polymer/polymer": "^3.0.0",
+    "three": "0.92.0"
+  },
+  "devDependencies": {
+    "@polymer/iron-component-page": "^3.0.0-pre.18",
+    "@polymer/iron-demo-helpers": "^3.0.0-pre.19",
+    "@webcomponents/webcomponentsjs": "^2.0.0",
+    "wct-browser-legacy": "^1.0.0"
+  }
+}

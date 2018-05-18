@@ -1,0 +1,9 @@
+{
+  "entrypoint": "avs-viewer.js",
+  "npm": true,
+  "lint": {
+    "rules": [
+      "polymer-3"
+    ]
+  }
+}
