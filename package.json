@@ -25,7 +25,7 @@
     "@polymer/iron-fit-behavior": "^3.0.0-pre.18",
     "@polymer/iron-resizable-behavior": "^3.0.0-pre.18",
     "@polymer/polymer": "^3.0.0",
-    "three": "0.92.0"
+    "three": "0.93.0"
   },
   "devDependencies": {
     "@polymer/iron-component-page": "^3.0.0-pre.18",
