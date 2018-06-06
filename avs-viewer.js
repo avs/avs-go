@@ -104,6 +104,10 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       transformProperties: {
         type: Object
       },
+      /** User properties. */
+      userProperties: {
+        type: Object
+      },
       /** Default line properties. */
       defaultLineProperties: {
         type: Object
@@ -181,6 +185,12 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       this.viewerProperties = {};
     }
     request = Object.assign(request, {"viewerProperties":this.viewerProperties});
+
+    // User Properties
+    if (this.userProperties == undefined) {
+      this.userProperties = {};
+    }
+    request = Object.assign(request, {"userProperties":this.userProperties});
 
     // Background color
     if ( this.viewerProperties.backgroundColor == undefined) {
