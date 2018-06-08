@@ -1,6 +1,6 @@
 {
   "name": "avs-web-components",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "AVS Web Components",
   "keywords": [
     "polymer",
@@ -31,6 +31,6 @@
     "@polymer/iron-component-page": "^3.0.0-pre.18",
     "@polymer/iron-demo-helpers": "^3.0.0-pre.19",
     "@webcomponents/webcomponentsjs": "^2.0.0",
-    "wct-browser-legacy": "^1.0.0"
+    "wct-browser-legacy": "^1.0.1"
   }
 }
