@@ -1,5 +1,5 @@
 [![npm](https://img.shields.io/npm/v/avs-web-components.svg)](https://www.npmjs.com/package/avs-web-components)
-[![Published on webcomponents.org](https://img.shields.io/badge/webcomponents.org-published-blue.svg)](https://www.webcomponents.org/element/avs/webcomponents)
+[![Published on webcomponents.org](https://img.shields.io/badge/webcomponents.org-published-blue.svg)](https://www.webcomponents.org/element/avs-web-components)
 
 # AVS Web Components
 
