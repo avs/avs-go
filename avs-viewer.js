@@ -462,14 +462,30 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
 
     // Hack to make sure all CSS and layout has been processed 
     afterNextRender(this, function() {
+      this.initViewer();
       this.updateViewer();
+      this.initInteractors();
 
       if (this.__initialized != true) {  
         this.addEventListener('iron-resize', this.onResize);
         this.__initialized = true;
       }
     }); 
+  }
 
+  // Add interactors after canvas has been initialized and sized
+  initInteractors() {
+    // Setup transform interactor
+    if (this.viewerProperties.renderer === 'THREEJS') {
+      if (this.transformProperties != undefined && this.transformProperties.sceneNode != undefined) {
+        var ti = new AVSThree.TransformInteractor( this.__viewer.container );
+        ti.setSceneNodeByName( this.transformProperties.sceneNode );  // the name of the workbox component set on the server
+        this.__viewer.addInteractor( ti );  
+      }
+    }
+  }
+
+  initViewer() {
     if (this.viewerProperties.renderer === 'THREEJS') {
       if (this.__viewer != undefined) {  
         this.$.viewerDiv.removeChild( this.__viewer.getCanvas() );
@@ -497,13 +513,6 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       }
       this.__viewer.setWebGLRenderer( renderer.getWebGLRenderer() );
   
-      // Setup transform interactor
-      if (this.transformProperties != undefined && this.transformProperties.sceneNode != undefined) {
-        var ti = new AVSThree.TransformInteractor( this.__viewer.container );
-        ti.setSceneNodeByName( this.transformProperties.sceneNode );  // the name of the workbox component set on the server
-        this.__viewer.addInteractor( ti );  
-      }
-
       // Setup hover interactor
       if (this.hoverProperties != undefined) {
             
