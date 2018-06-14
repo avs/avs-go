@@ -236,11 +236,10 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
    * 
    */
   onResize() {
-    var boundingRect = this.$.viewerDiv.getBoundingClientRect();
-    if (boundingRect.width < this.lowResizeWidth ||
-        boundingRect.width > this.highResizeWidth ||
-        boundingRect.height < this.lowResizeHeight ||
-        boundingRect.height > this.highResizeHeight) {
+    if (this.clientWidth < this.lowResizeWidth ||
+        this.clientWidth > this.highResizeWidth ||
+        this.clientHeight < this.lowResizeHeight ||
+        this.clientHeight > this.highResizeHeight) {
 
       this.updateViewer();
     }
@@ -253,14 +252,13 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
    * 
    */
   updateSize() {          
-    var boundingRect = this.$.viewerDiv.getBoundingClientRect();
-    this.width = boundingRect.width;
+    this.width = this.clientWidth;
     if (this.width == 0) {
       this.width = 200;  // default
     }
         
     if (this.height == 0 || this.height == undefined) {
-      var height = boundingRect.height;
+      var height = this.clientHeight;
           
       if (height > 0) {
         this.height = height;
@@ -313,8 +311,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
    */
   updateViewerClient() {
     if (this.viewerProperties.renderer === 'THREEJS') {
-      var boundingRect = this.$.viewerDiv.getBoundingClientRect();
-      this.__viewer.setSize(boundingRect.width, boundingRect.height);
+       this.__viewer.setSize(this.clientWidth, this.clientHeight);
       this.__viewer.render();
     }
   }
@@ -462,11 +459,11 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
 
     // Hack to make sure all CSS and layout has been processed 
     afterNextRender(this, function() {
-      this.initViewer();
-      this.updateViewer();
-      this.initInteractors();
-
       if (this.__initialized != true) {  
+        this.initViewer();
+        this.updateViewer();
+        this.initInteractors();
+
         this.addEventListener('iron-resize', this.onResize);
         this.__initialized = true;
       }
