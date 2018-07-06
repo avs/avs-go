@@ -29,8 +29,8 @@ import {AvsRenderer} from './avs-renderer.js';
 import * as AVSThree from './avsthree.js';
 
 /**
- * `avs-viewer`
- * AVS Viewer
+ * `avs-viewer` is a Polymer 3.0 element which uses `iron-ajax` to acquire
+ * a scene from the specified URL as either an image, SVG or three.js.
  *
  * @customElement
  * @polymer
@@ -71,55 +71,137 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
   static get properties() {
     return {
 
-      /** Viewer width in pixels. */
+      /**
+       * Viewer width in pixels.
+       */
       width: {
         type: Number,
       },
-      /** Viewer height in pixels. */
+      /**
+       * Viewer height in pixels.
+       */
       height: {
         type: Number,
       },
 
-      /** Scene properties. */
+      /**
+       * * `url`: Fully qualified URL to an instance of AVS Web Components server.
+       *
+       * * `sceneLibraryKey`: Name of the scene on the server to acquire.
+       *
+       * @type {{url: string, sceneLibraryKey: string}}
+       */
       sceneProperties: {
         type: Object
       },
-      /** Viewer properties. */
+      /**
+       * * `renderer`: `IMAGE`, `SVG` or `THREEJS`
+       *
+       * * `backgroundColor`: Default background color, can be overridden using CSS.
+       *
+       * @type {{renderer: string, backgroundColor: string}}
+       */
       viewerProperties: {
         type: Object
       },
-      /** Hover properties. */
+      /**
+       * Hover properties.
+       */
       hoverProperties: {
         type: Object        
       },
-      /** Pick properties. */
+      /**
+       * * `level`: `CELL`, `CELL_SET` or `SCENE_NODE`
+       *
+       * * `depth`: `ALL` or `CLOSEST`
+       *
+       * * `type`: `POINT` or `RECTANGLE`
+       *
+       * * `highlight`: Control whether to highlight selected geometry.
+       *
+       * * `highlightHexColor`: Color to highlight with if `highlight` is true.
+       *
+       * * `evaluateServer`: Override the default picking location (if `viewerProperties.renderer` is `THREEJS` default is false, otherwise true).
+       *
+       * @type {{level: string, depth: string, type: string, highlight: boolean, highlightHexColor: string, evaluateServer: boolean}}
+       */
       pickProperties: {
         type: Object
       },
-      /** Stream properties. */
+      /**
+       * Only used when `viewerProperties.renderer` is `THREEJS`
+       *
+       * * `type`: `CHUNK` or `OBOE_STREAM`
+       *
+       * * `chunkSizeFirstUpdate`: Number of objects in the first chunk when type is `CHUNK`
+       *
+       * * `chunkSize`: Number of objects in remaining chunks when type is `CHUNK`
+       *
+       * @type {{type: string, chunkSizeFirstUpdate: number, chunkSize: number}}
+       */
       streamProperties: {
         type: Object
       },
-      /** Transform properties. */
+      /**
+       * Only used when `viewerProperties.renderer` is `THREEJS`
+       *
+       * * `sceneNode`: Name of the scene node to attach a TransformInteractor to.
+       *
+       * @type {{sceneNode: string}}
+       */
       transformProperties: {
         type: Object
       },
-      /** User properties. */
+      /**
+       * User properties passed directly to the server.
+       */
       userProperties: {
         type: Object
       },
-      /** Default line properties. */
+      /**
+       * * `visible`: control whether lines are visible
+       *
+       * * `width`: line width in pixels
+       *
+       * * `opacity`: between 0.0 (fully transparent) and 1.0 (fully opaque)
+       *
+       * * `style`: `solid`, `dash`, `dot` or `dashdot`
+       *
+       * @type {{visible: boolean, color: string, width: number, opacity: number, style: string}}
+       */
       defaultLineProperties: {
         type: Object
       },
-      /** Default text properties. */
+      /**
+       * * `color`: text color
+       *
+       * * `angle`: text angle (in degrees between 0.0 and 360.0)
+       *
+       * * `size`: text size in points
+       *
+       * * `fontFamily`: font name
+       *
+       * * `fontStyle`: `normal` or `italic`
+       *
+       * * `fontWeight`: `normal` or `bold`
+       *
+       * * `justification`: `start`, `middle` or `end`
+       *
+       * * `horizontalAlignment`: `left`, `center` or `right`
+       *
+       * * `verticalAlignment`: `top`, `middle`, `bottom` or `baseline`
+       *
+       * @type {{color: string, angle: number, size: number, fontFamily: string, fontStyle: string, fontWeight: string, justification: string, horizontalAlignment: string, verticalAlignment: string}}
+       */
       defaultTextProperties: {
         type: Object
       },
 
-      /** Resize threshold (percent) to determine when the update is performed on the client or the server. */
+      /**
+       * Resize threshold (percent) to determine when the update is performed on the client or the server.
+       */
       resizeThreshold: {
-        type: Object,
+        type: Number,
         value: 10
       },
 

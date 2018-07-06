@@ -19,11 +19,12 @@ Advanced Visual Systems Inc. (http://www.avs.com)
 */
 
 import {PolymerElement} from '../@polymer/polymer/polymer-element.js';
-import * as THREE from 'three';
+import {WebGLRenderer} from 'three';
 
 /**
- * `avs-renderer`
- * AVS Renderer
+ * `avs-renderer` is a Polymer 3.0 element created internally by
+ * `avs-viewer` to share a single instance of THREE.WebGLRenderer
+ * between multiple viewers.
  *
  * @customElement
  * @polymer
@@ -40,6 +41,8 @@ export class AvsRenderer extends PolymerElement {
 
   /**
    * Get the THREE.WebGLRenderer instance.
+   *
+   * @return {THREE.WebGLRenderer} The THREE.WebGLRenderer instance.
    */
   getWebGLRenderer() {
     return this.__renderer;
@@ -47,7 +50,7 @@ export class AvsRenderer extends PolymerElement {
 
   constructor() {
     super();
-    this.__renderer = new THREE.WebGLRenderer( {alpha: true} );
+    this.__renderer = new WebGLRenderer( {alpha: true} );
   }
 
   connectedCallback() {
