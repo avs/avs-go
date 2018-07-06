@@ -533,7 +533,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
     else if (this.viewerProperties.renderer === 'IMAGE') {
       var imageElem = document.createElement("img");
       imageElem.setAttribute("id", "sceneImage");
-      imageElem.setAttribute("usemap", "#sceneImageMap");
+      // imageElem.setAttribute("usemap", "#sceneImageMap");
       this.$.viewerDiv.appendChild(imageElem);
 
       // var mapElem = document.createElement("map");
