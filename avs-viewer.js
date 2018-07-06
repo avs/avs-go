@@ -271,11 +271,6 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       this.$$("#rectCanvas").width = this.width;
       this.$$("#rectCanvas").height = this.height;
     }
-
-    this.lowResizeWidth = (100 - this.resizeThreshold) / 100 * this.width;
-    this.highResizeWidth = (100 + this.resizeThreshold) / 100 * this.width;
-    this.lowResizeHeight = (100 - this.resizeThreshold) / 100 * this.height;
-    this.highResizeHeight = (100 + this.resizeThreshold) / 100 * this.height;
   } 
 
   /**
@@ -285,7 +280,6 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
     this.updateStyles();
     this.updateSize();
     if (this.viewerProperties.renderer === 'THREEJS') {
-      this.__viewer.setSize(this.width, this.height);
       var scope = this;
       var chartRequest = this.buildChartRequest();
       if (this.viewerProperties.backgroundColor != undefined) {
@@ -304,15 +298,24 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       this.$.getScene.url = this.sceneProperties.url;
       this.$.getScene.generateRequest();
     }
+
+    this.lowResizeWidth = (100 - this.resizeThreshold) / 100 * this.width;
+    this.highResizeWidth = (100 + this.resizeThreshold) / 100 * this.width;
+    this.lowResizeHeight = (100 - this.resizeThreshold) / 100 * this.height;
+    this.highResizeHeight = (100 + this.resizeThreshold) / 100 * this.height;
   }
 
   /**
    * 
    */
   updateViewerClient() {
+    this.updateSize();
     if (this.viewerProperties.renderer === 'THREEJS') {
-       this.__viewer.setSize(this.clientWidth, this.clientHeight);
       this.__viewer.render();
+    }
+    if (this.pickProperties != undefined && this.pickProperties.type === 'RECTANGLE') {
+      this.$$("#rectCanvas").width = this.width;
+      this.$$("#rectCanvas").height = this.height;
     }
   }
        
@@ -403,10 +406,10 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       }
       else if (this.viewerProperties.renderer === 'THREEJS') {
         if (this.pickProperties.type === 'RECTANGLE' && this.pickProperties.active) {
-          this.__viewer.pickRectangle = [event.offsetX - this.__rect.w, event.offsetY - this.__rect.h, event.offsetX, event.offsetY];
+          this.__viewer.pickRectangle.set( event.offsetX - this.__rect.w, event.offsetY - this.__rect.h, event.offsetX, event.offsetY );
         }
         else {
-          this.__viewer.pickRay = [event.offsetX, event.offsetY];
+          this.__viewer.pickRay.set( event.offsetX, event.offsetY );
         }
         this.__viewer.pick();
       }
@@ -549,7 +552,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         this.__viewer.pickDepth = this.getPickDepth(this.pickProperties.depth);
         this.__viewer.pickLevel = this.getPickLevel(this.pickProperties.level);
 		this.__viewer.highlight = this.pickProperties.highlight;
-		this.__viewer.highlightHexColor = this.pickProperties.highlightHexColor;
+		this.__viewer.highlightColor.setHex( this.pickProperties.highlightHexColor );
 
 //        this.pickProperties.depth = this.getPickDepth(this.pickProperties.depth);
 //        this.pickProperties.level = this.getPickLevel(this.pickProperties.level);
