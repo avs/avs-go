@@ -22,6 +22,7 @@ import {PolymerElement, html} from '../@polymer/polymer/polymer-element.js';
 import {mixinBehaviors} from '../@polymer/polymer/lib/legacy/class.js';
 import {IronResizableBehavior} from '../@polymer/iron-resizable-behavior/iron-resizable-behavior.js';
 import {GestureEventListeners} from '../@polymer/polymer/lib/mixins/gesture-event-listeners.js';
+import * as Gestures from '../@polymer/polymer/lib/utils/gestures.js';
 import {afterNextRender} from '../@polymer/polymer/lib/utils/render-status.js';
 import '../@polymer/iron-ajax/iron-ajax.js';
 import {AvsRenderer} from './avs-renderer.js';
@@ -63,8 +64,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         >
       </iron-ajax>
 
-      <div on-click="handleClick" on-mousedown="handleOnMouseDown" on-mousemove="handleOnMouseMove" on-mouseup="handleOnMouseUp" id="viewerDiv">
-      </div>
+      <div id="viewerDiv"></div>
     `;
   }
 
@@ -132,15 +132,6 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         type: Object
       },
       /** */
-      __drag: {
-        type: Boolean,
-        value: false
-      },
-      /** */
-      __rect: {
-        type: Object
-      },
-      /** */
       __rectCtx: {
         type: Object
       },
@@ -158,14 +149,6 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
     // default line style and color
     this.__rectCtx.setLineDash([3]);
     this.__rectCtx.strokeStyle="#ff0000";
-  }
-
-  /**
-   * 
-   */
-  drawRect() {
-    this.rectangleStyle();
-    this.__rectCtx.strokeRect(this.__rect.startX, this.__rect.startY, this.__rect.w, this.__rect.h);
   }
 
   /**
@@ -351,84 +334,70 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
   }
 
   /**
-   * @param event
+   * @param e
    */
-  handleOnMouseDown(event) {
-    if (this.pickProperties != undefined && this.pickProperties.type === 'RECTANGLE' && this.pickProperties.active) {
-      this.__rect.startX = event.pageX - this.$.viewerDiv.offsetLeft;
-      this.__rect.startY = event.pageY - this.$.viewerDiv.offsetTop;
-      this.__rect.startEvent = event;
-      this.__drag = true;
+  handleTap(e) {
+    var x = e.detail.x - this.$.viewerDiv.offsetLeft;
+    var y = e.detail.y - this.$.viewerDiv.offsetTop;
+
+    this.pickProperties.mouseX=[x];
+    this.pickProperties.mouseY=[y];
+
+    if (this.viewerProperties.renderer !== 'THREEJS' || (this.pickProperties.evaluateServer !== undefined && this.pickProperties.evaluateServer === true)) {
+      this.$.getScene.body = this.buildChartRequest();
+      this.$.getScene.body = Object.assign(this.$.getScene.body, {"pickProperties":this.pickProperties});
+      this.$.getScene.url = this.sceneProperties.url;
+      this.$.getScene.generateRequest();
+
+      var selectedObject = {"pickInfo":"went to server to get new scene"};
+      this.dispatchEvent(new CustomEvent('onPick', selectedObject));        
+    }
+    else if (this.viewerProperties.renderer === 'THREEJS') {
+      this.__viewer.setPickRay( x, y );
+      this.__viewer.pick();
     }
   }
 
   /**
-   * @param event
+   * @param e
    */
-  handleOnMouseMove(event) {
-    if (this.__drag && this.pickProperties != undefined && this.pickProperties.type === 'RECTANGLE' && this.pickProperties.active) {
-      this.__rect.w = (event.pageX - this.$.viewerDiv.offsetLeft) - this.__rect.startX;
-      this.__rect.h = (event.pageY - this.$.viewerDiv.offsetTop) - this.__rect.startY ;
-      this.__rectCtx.clearRect(0,0,this.$$("#rectCanvas").width,this.$$("#rectCanvas").height);
-      this.drawRect();
-    }
-  }
+  handleTrack(e) {
+    var x = e.detail.x - this.$.viewerDiv.offsetLeft;
+    var y = e.detail.y - this.$.viewerDiv.offsetTop;
 
-  /**
-   * @param event
-   */
-  handleOnMouseUp(event) {
-    if (this.pickProperties != undefined) {
-      if (this.pickProperties.type === 'RECTANGLE' && this.pickProperties.active) {
-        this.__rect.finishX = event.pageX - this.$.viewerDiv.offsetLeft;
-        this.__rect.finishY = event.pageY - this.$.viewerDiv.offsetTop;
-        this.__drag = false;
+    switch(e.detail.state) {
+      case 'start':
+        break;
+
+      case 'track':
+        this.__rectCtx.clearRect(0,0,this.$$("#rectCanvas").width,this.$$("#rectCanvas").height);
+        this.rectangleStyle();
+        this.__rectCtx.strokeRect(x - e.detail.dx, y - e.detail.dy, e.detail.dx, e.detail.dy);
+        break;
+
+      case 'end':
         this.__rectCtx.clearRect(0,0,this.$$("#rectCanvas").width,this.$$("#rectCanvas").height);
 
-        this.pickProperties.mouseX=[event.offsetX - this.__rect.w, event.offsetX];
-        this.pickProperties.mouseY=[event.offsetY - this.__rect.h, event.offsetY];
+        this.pickProperties.mouseX=[x - e.detail.dx, x];
+        this.pickProperties.mouseY=[y - e.detail.dy, y];
         console.log("mouse x1 = " + this.pickProperties.mouseX[0] + ", " + this.pickProperties.mouseX[1]);
         console.log("mouse y1 = " + this.pickProperties.mouseY[0] + ", " + this.pickProperties.mouseY[1]);
-      }
-      else {
-        this.pickProperties.mouseX=[event.offsetX];
-        this.pickProperties.mouseY=[event.offsetY];
-      }
 
-      if (this.viewerProperties.renderer !== 'THREEJS' || (this.pickProperties.evaluateServer !== undefined && this.pickProperties.evaluateServer === true)) {
-        this.$.getScene.body = this.buildChartRequest();
-        this.$.getScene.body = Object.assign(this.$.getScene.body, {"pickProperties":this.pickProperties});
-        this.$.getScene.url = this.sceneProperties.url;
-        this.$.getScene.generateRequest();
+        if (this.viewerProperties.renderer !== 'THREEJS' || (this.pickProperties.evaluateServer !== undefined && this.pickProperties.evaluateServer === true)) {
+          this.$.getScene.body = this.buildChartRequest();
+          this.$.getScene.body = Object.assign(this.$.getScene.body, {"pickProperties":this.pickProperties});
+          this.$.getScene.url = this.sceneProperties.url;
+          this.$.getScene.generateRequest();
 
-        var selectedObject = {"pickInfo":"went to server to get new scene"};
-        this.dispatchEvent(new CustomEvent('onPick', selectedObject));        
-      }
-      else if (this.viewerProperties.renderer === 'THREEJS') {
-        if (this.pickProperties.type === 'RECTANGLE' && this.pickProperties.active) {
-          this.__viewer.setPickRectangle( event.offsetX - this.__rect.w, event.offsetY - this.__rect.h, event.offsetX, event.offsetY );
+          var selectedObject = {"pickInfo":"went to server to get new scene"};
+          this.dispatchEvent(new CustomEvent('onPick', selectedObject));        
         }
-        else {
-          this.__viewer.setPickRay( event.offsetX, event.offsetY );
+        else if (this.viewerProperties.renderer === 'THREEJS') {
+          this.__viewer.setPickRectangle( x - e.detail.dx, y - e.detail.dy, x, y );
+          this.__viewer.pick();
         }
-        this.__viewer.pick();
-      }
+        break;
     }
-  }
-
-  /**
-   * @param event
-   */
-  handleClick(event) {
-    // if (this.pickProperties == undefined) return;
-    // this.$.getScene.body= this.buildChartRequest();
-    // this.pickProperties.mouseX=[event.offsetX];
-    // this.pickProperties.mouseY=[event.offsetY];
-    // this.$.getScene.body = Object.assign(this.$.getScene.body, {"pickProperties":this.pickProperties});
-    // this.$.getScene.url = this.sceneProperties.url;
-    // this.$.getScene.generateRequest();
-    // var selectedObject = {"pickInfo":"went to server to get new scene"};
-    // this.dispatchEvent(new CustomEvent('onPick', selectedObject));        
   }
 
   /**
@@ -573,14 +542,20 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       // this.$.viewerDiv.appendChild(mapElem);
     }
 
-    if (this.pickProperties != undefined && this.pickProperties.type === 'RECTANGLE') {
-      var canvasElem = document.createElement("canvas");
-      canvasElem.setAttribute("id", "rectCanvas");
-      this.$.viewerDiv.appendChild(canvasElem);
+    if (this.pickProperties != undefined) {
+      if (this.pickProperties.type === 'RECTANGLE') {
+        var canvasElem = document.createElement("canvas");
+        canvasElem.setAttribute("id", "rectCanvas");
+        this.$.viewerDiv.appendChild(canvasElem);
 
-      this.pickProperties.active = true;
-      this.__rectCtx = canvasElem.getContext('2d');
-      this.__rect = {};
+        this.pickProperties.active = true;
+        this.__rectCtx = canvasElem.getContext('2d');
+
+        Gestures.addListener(this, 'track', this.handleTrack.bind(this));
+      }
+      else {
+        Gestures.addListener(this, 'tap', this.handleTap.bind(this));
+      }
     }
   }
 }
