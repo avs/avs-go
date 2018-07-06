@@ -283,7 +283,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       var scope = this;
       var chartRequest = this.buildChartRequest();
       if (this.viewerProperties.backgroundColor != undefined) {
-        this.__viewer.setBackgroundColor(this.viewerProperties.backgroundColor);
+        this.__viewer.background = this.viewerProperties.backgroundColor;
       }
       this.__viewer.loadGeometryAsUrl({
         url: this.sceneProperties.url, 
@@ -406,10 +406,10 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       }
       else if (this.viewerProperties.renderer === 'THREEJS') {
         if (this.pickProperties.type === 'RECTANGLE' && this.pickProperties.active) {
-          this.__viewer.pickRectangle.set( event.offsetX - this.__rect.w, event.offsetY - this.__rect.h, event.offsetX, event.offsetY );
+          this.__viewer.setPickRectangle( event.offsetX - this.__rect.w, event.offsetY - this.__rect.h, event.offsetX, event.offsetY );
         }
         else {
-          this.__viewer.pickRay.set( event.offsetX, event.offsetY );
+          this.__viewer.setPickRay( event.offsetX, event.offsetY );
         }
         this.__viewer.pick();
       }
@@ -440,18 +440,6 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
     }
     else {
       return AVSThree.PickDepthEnum.Closest;
-    } 
-  }
-
-  /**
-   * @param strValue
-   */
-  getPickType( strValue ) {
-    if (strValue == "RECTANGLE") {
-      return AVSThree.PickTypeEnum.Rectangle;
-    }
-    else {
-      return AVSThree.PickTypeEnum.Ray;
     } 
   }
 
@@ -494,7 +482,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
     // Setup transform interactor
     if (this.viewerProperties.renderer === 'THREEJS') {
       if (this.transformProperties != undefined && this.transformProperties.sceneNode != undefined) {
-        var ti = new AVSThree.TransformInteractor( this.__viewer.container );
+        var ti = new AVSThree.TransformInteractor( this.__viewer.domElement );
         ti.setSceneNodeByName( this.transformProperties.sceneNode );  // the name of the workbox component set on the server
         this.__viewer.addInteractor( ti );  
       }
@@ -504,11 +492,11 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
   initViewer() {
     if (this.viewerProperties.renderer === 'THREEJS') {
       if (this.__viewer != undefined) {  
-        this.$.viewerDiv.removeChild( this.__viewer.getCanvas() );
+        this.$.viewerDiv.removeChild( this.__viewer.domElement );
       }
             
       this.__viewer = new AVSThree.Viewer();
-      this.$.viewerDiv.appendChild( this.__viewer.getCanvas() );
+      this.$.viewerDiv.appendChild( this.__viewer.domElement );
 
       // Check if the user has requested a specific renderer
       var rendererId = 'avsDefaultWebGLRenderer';
@@ -548,8 +536,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       // Setup pick interactor
       if (this.pickProperties != undefined) {
 
-        this.__viewer.pickType = this.getPickType(this.pickProperties.type);
-        this.__viewer.pickDepth = this.getPickDepth(this.pickProperties.depth);
+        this.__viewer.setPickDepth( this.getPickDepth(this.pickProperties.depth) );
         this.__viewer.pickLevel = this.getPickLevel(this.pickProperties.level);
 		this.__viewer.highlight = this.pickProperties.highlight;
 		this.__viewer.highlightColor.setHex( this.pickProperties.highlightHexColor );
