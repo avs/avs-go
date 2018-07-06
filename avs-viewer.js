@@ -395,7 +395,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         this.pickProperties.mouseY=[event.offsetY];
       }
 
-      if (this.pickProperties.evaluateServer) {
+      if (this.viewerProperties.renderer !== 'THREEJS' || (this.pickProperties.evaluateServer !== undefined && this.pickProperties.evaluateServer === true)) {
         this.$.getScene.body = this.buildChartRequest();
         this.$.getScene.body = Object.assign(this.$.getScene.body, {"pickProperties":this.pickProperties});
         this.$.getScene.url = this.sceneProperties.url;
