@@ -419,8 +419,9 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
    * @param e
    */
   handleTap(e) {
-    var x = e.detail.x - this.$.viewerDiv.offsetLeft;
-    var y = e.detail.y - this.$.viewerDiv.offsetTop;
+	var rect = this.$.viewerDiv.getBoundingClientRect();
+    var x = Math.round(e.detail.x - rect.left);
+    var y = Math.round(e.detail.y - rect.top);
 
     this.pickProperties.mouseX=[x];
     this.pickProperties.mouseY=[y];
@@ -444,8 +445,9 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
    * @param e
    */
   handleTrack(e) {
-    var x = e.detail.x - this.$.viewerDiv.offsetLeft;
-    var y = e.detail.y - this.$.viewerDiv.offsetTop;
+	var rect = this.$.viewerDiv.getBoundingClientRect();
+    var x = Math.round(e.detail.x - rect.left);
+    var y = Math.round(e.detail.y - rect.top);
 
     switch(e.detail.state) {
       case 'start':
