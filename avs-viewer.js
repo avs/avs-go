@@ -64,7 +64,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         >
       </iron-ajax>
 
-      <div id="viewerDiv"></div>
+      <div id="viewerDiv" on-mousemove="handleMouseMove"></div>
     `;
   }
 
@@ -105,7 +105,17 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         type: Object
       },
       /**
-       * Hover properties.
+       * Only used when `viewerProperties.renderer` is `THREEJS`
+       *
+       * * `level`: `CELL`, `CELL_SET` or `SCENE_NODE`
+       *
+       * * `depth`: `ALL` or `CLOSEST`
+       *
+       * * `highlight`: Control whether to highlight selected geometry.
+       *
+       * * `highlightHexColor`: Color to highlight with if `highlight` is true.
+       *
+       * @type {{level: string, depth: string, highlight: boolean, highlightHexColor: string}}
        */
       hoverProperties: {
         type: Object        
@@ -432,8 +442,8 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       this.$.getScene.url = this.sceneProperties.url;
       this.$.getScene.generateRequest();
 
-      var selectedObject = {"pickInfo":"went to server to get new scene"};
-      this.dispatchEvent(new CustomEvent('onPick', selectedObject));        
+      var selectedObject = {detail: {"selected": "went to server to get new scene"}};
+      this.dispatchEvent(new CustomEvent('pick', selectedObject));        
     }
     else if (this.viewerProperties.renderer === 'THREEJS') {
       this.__viewer.setPickRay( x, y );
@@ -464,8 +474,6 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
 
         this.pickProperties.mouseX=[x - e.detail.dx, x];
         this.pickProperties.mouseY=[y - e.detail.dy, y];
-        console.log("mouse x1 = " + this.pickProperties.mouseX[0] + ", " + this.pickProperties.mouseX[1]);
-        console.log("mouse y1 = " + this.pickProperties.mouseY[0] + ", " + this.pickProperties.mouseY[1]);
 
         if (this.viewerProperties.renderer !== 'THREEJS' || (this.pickProperties.evaluateServer !== undefined && this.pickProperties.evaluateServer === true)) {
           this.$.getScene.body = this.buildChartRequest();
@@ -473,14 +481,24 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
           this.$.getScene.url = this.sceneProperties.url;
           this.$.getScene.generateRequest();
 
-          var selectedObject = {"pickInfo":"went to server to get new scene"};
-          this.dispatchEvent(new CustomEvent('onPick', selectedObject));        
+          var selectedObject = {detail: {"selected": "went to server to get new scene"}};
+          this.dispatchEvent(new CustomEvent('pick', selectedObject));        
         }
         else if (this.viewerProperties.renderer === 'THREEJS') {
           this.__viewer.setPickRectangle( x - e.detail.dx, y - e.detail.dy, x, y );
           this.__viewer.pick();
         }
         break;
+    }
+  }
+
+  /**
+   * @param e
+   */
+  handleMouseMove(e) {
+    if (this.hoverProperties !== undefined) {
+      this.__viewer.setPickRay( e.pageX - this.$.viewerDiv.offsetLeft, e.pageY - this.$.viewerDiv.offsetTop );
+      this.__viewer.pick();
     }
   }
 
@@ -569,23 +587,31 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         console.log("reference existing webGL renderer = " + rendererId);
       }
       this.__viewer.setWebGLRenderer( renderer.getWebGLRenderer() );
-/*  
+ 
       // Setup hover interactor
       if (this.hoverProperties != undefined) {
-            
-        this.hoverProperties.depth = this.getPickDepth(this.hoverProperties.depth);
-        this.hoverProperties.level = this.getPickLevel(this.hoverProperties.level);
+
+        this.__viewer.setPickDepth( this.getPickDepth(this.hoverProperties.depth) );
+        this.__viewer.pickLevel = this.getPickLevel(this.hoverProperties.level);
+		this.__viewer.highlight = this.hoverProperties.highlight;
+		this.__viewer.highlightColor.setHex( this.hoverProperties.highlightHexColor );
+
+//        this.hoverProperties.depth = this.getPickDepth(this.hoverProperties.depth);
+//        this.hoverProperties.level = this.getPickLevel(this.hoverProperties.level);
 
         var scope = this;
-        this.hoverProperties.onHover = function( selectedObject ) {
-          if (selectedObject != undefined) {
-            scope.dispatchEvent(new CustomEvent('onHover', selectedObject));        
-          }
-        }
+        this.__viewer.addSelectionListener( function( selectedObject ) {
+          console.log(selectedObject);
+          scope.dispatchEvent(new CustomEvent('hover', {detail: {selected: selectedObject}}));
+        });
+//          if (selectedObject != undefined) {
+//            scope.dispatchEvent(new CustomEvent('onHover', selectedObject));        
+//          }
+//        }
 
-        this.__viewer.addHoverListener(this.hoverProperties);
+//        this.__viewer.addHoverListener(this.hoverProperties);
       }
-*/
+
       // Setup pick interactor
       if (this.pickProperties != undefined) {
 
@@ -597,7 +623,10 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
 //        this.pickProperties.depth = this.getPickDepth(this.pickProperties.depth);
 //        this.pickProperties.level = this.getPickLevel(this.pickProperties.level);
 
-//        var scope = this;
+        var scope = this;
+        this.__viewer.addSelectionListener( function( selectedObject ) {
+          scope.dispatchEvent(new CustomEvent('pick', {detail: {selected: selectedObject}}));
+        });
 //        this.pickProperties.onPick = function( selectedObject ) {
 //          if (selectedObject != undefined) {
 //            scope.dispatchEvent(new CustomEvent('onPick', selectedObject));        
