@@ -458,22 +458,26 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
 	var rect = this.$.viewerDiv.getBoundingClientRect();
     var x = Math.round(e.detail.x - rect.left);
     var y = Math.round(e.detail.y - rect.top);
+    var clampX = Math.max(0, Math.min(x, this.width));
+    var clampY = Math.max(0, Math.min(y, this.height));
+    var startX = x - e.detail.dx;
+    var startY = y - e.detail.dy;
 
     switch(e.detail.state) {
       case 'start':
         break;
 
       case 'track':
-        this.__rectCtx.clearRect(0,0,this.$$("#rectCanvas").width,this.$$("#rectCanvas").height);
+        this.__rectCtx.clearRect(0,0,this.width,this.height);
         this.rectangleStyle();
-        this.__rectCtx.strokeRect(x - e.detail.dx, y - e.detail.dy, e.detail.dx, e.detail.dy);
+        this.__rectCtx.strokeRect(startX, startY, clampX - startX, clampY - startY);
         break;
 
       case 'end':
-        this.__rectCtx.clearRect(0,0,this.$$("#rectCanvas").width,this.$$("#rectCanvas").height);
+        this.__rectCtx.clearRect(0,0,this.width,this.height);
 
-        this.pickProperties.mouseX=[x - e.detail.dx, x];
-        this.pickProperties.mouseY=[y - e.detail.dy, y];
+        this.pickProperties.mouseX=[startX, clampX];
+        this.pickProperties.mouseY=[startY, clampY];
 
         if (this.viewerProperties.renderer !== 'THREEJS' || (this.pickProperties.evaluateServer !== undefined && this.pickProperties.evaluateServer === true)) {
           this.$.getScene.body = this.buildChartRequest();
@@ -485,7 +489,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
           this.dispatchEvent(new CustomEvent('pick', selectedObject));        
         }
         else if (this.viewerProperties.renderer === 'THREEJS') {
-          this.__viewer.setPickRectangle( x - e.detail.dx, y - e.detail.dy, x, y );
+          this.__viewer.setPickRectangle( startX, startY, clampX, clampY );
           this.__viewer.pick();
         }
         break;
@@ -601,7 +605,6 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
 
         var scope = this;
         this.__viewer.addSelectionListener( function( selectedObject ) {
-          console.log(selectedObject);
           scope.dispatchEvent(new CustomEvent('hover', {detail: {selected: selectedObject}}));
         });
 //          if (selectedObject != undefined) {
