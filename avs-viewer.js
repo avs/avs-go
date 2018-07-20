@@ -328,20 +328,15 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
    */
   updateSize() {          
     this.width = this.clientWidth;
-    if (this.width == 0) {
+    if (this.width <= 0) {
       this.width = 200;  // default
     }
         
-    if (this.height == 0 || this.height == undefined) {
-      var height = this.clientHeight;
-          
-      if (height > 0) {
-        this.height = height;
-      }
-      else {
-        this.height = 200;  // default
-      }
+    this.height = this.clientHeight;
+    if (this.height <= 0) {
+      this.height = 200;  // default
     }
+
     if (this.pickProperties != undefined && this.pickProperties.type === 'RECTANGLE') {
       this.$$("#rectCanvas").width = this.width;
       this.$$("#rectCanvas").height = this.height;
@@ -501,8 +496,20 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
    */
   handleMouseMove(e) {
     if (this.hoverProperties !== undefined) {
-      this.__viewer.setPickRay( e.pageX - this.$.viewerDiv.offsetLeft, e.pageY - this.$.viewerDiv.offsetTop );
-      this.__viewer.pick();
+      var rect = this.$.viewerDiv.getBoundingClientRect();
+      var x = Math.round(e.pageX - rect.left);
+      var y = Math.round(e.pageY - rect.top);
+      var clampX = Math.max(0, Math.min(x, this.width));
+      var clampY = Math.max(0, Math.min(y, this.height));
+
+      if (this.viewerProperties.renderer !== 'THREEJS' || (this.pickProperties.evaluateServer !== undefined && this.pickProperties.evaluateServer === true)) {
+        var selectedObject = {detail: {x: clampX, y: clampY, selected: []}};
+        this.dispatchEvent(new CustomEvent('hover', selectedObject));        
+      }
+      else if (this.viewerProperties.renderer === 'THREEJS') {
+        this.__viewer.setPickRay( clampX, clampY );
+        this.__viewer.pick();
+      }
     }
   }
 
@@ -604,8 +611,8 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
 //        this.hoverProperties.level = this.getPickLevel(this.hoverProperties.level);
 
         var scope = this;
-        this.__viewer.addSelectionListener( function( selectedObject ) {
-          scope.dispatchEvent(new CustomEvent('hover', {detail: {selected: selectedObject}}));
+        this.__viewer.addSelectionListener( function( selectedObject, x, y ) {
+          scope.dispatchEvent(new CustomEvent('hover', {detail: {x: x, y: y, selected: selectedObject}}));
         });
 //          if (selectedObject != undefined) {
 //            scope.dispatchEvent(new CustomEvent('onHover', selectedObject));        
