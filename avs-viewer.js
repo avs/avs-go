@@ -286,7 +286,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
 
     if (this.defaultTextProperties.fontFamily == undefined) {
       var fontFamily = window.getComputedStyle(this, null).getPropertyValue("font-family");
-      fontFamily = fontFamily.replace('"', '');
+      fontFamily = fontFamily.replace(/['"]+/g, '');
       request.defaultTextProperties = Object.assign(request.defaultTextProperties, {"fontFamily":fontFamily});
     }
 
@@ -502,7 +502,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       var clampX = Math.max(0, Math.min(x, this.width));
       var clampY = Math.max(0, Math.min(y, this.height));
 
-      if (this.viewerProperties.renderer !== 'THREEJS' || (this.pickProperties.evaluateServer !== undefined && this.pickProperties.evaluateServer === true)) {
+      if (this.viewerProperties.renderer !== 'THREEJS' || (this.hoverProperties.evaluateServer !== undefined && this.hoverProperties.evaluateServer === true)) {
         var selectedObject = {detail: {x: clampX, y: clampY, selected: []}};
         this.dispatchEvent(new CustomEvent('hover', selectedObject));        
       }
