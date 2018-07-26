@@ -267,12 +267,6 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
     }
     request = Object.assign(request, {"userProperties":this.userProperties});
 
-    // Background color
-    if ( this.viewerProperties.backgroundColor == undefined) {
-      var backgroundColor = window.getComputedStyle(this, null).getPropertyValue("background-color");
-      request.viewerProperties = Object.assign(request.viewerProperties, {"backgroundColor":backgroundColor} );
-    }
-
     // Text properties
     if (this.defaultTextProperties == undefined) {
       this.defaultTextProperties = {};
@@ -352,9 +346,6 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
     if (this.viewerProperties.renderer === 'THREEJS') {
       var scope = this;
       var chartRequest = this.buildChartRequest();
-      if (this.viewerProperties.backgroundColor != undefined) {
-        this.__viewer.background = this.viewerProperties.backgroundColor;
-      }
       this.__viewer.loadGeometryAsUrl({
         url: this.sceneProperties.url, 
         success: function() {
