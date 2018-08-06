@@ -1,6 +1,6 @@
 {
   "name": "avs-web-components",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "description": "AVS Web Components",
   "keywords": [
     "polymer",
@@ -24,7 +24,7 @@
     "@polymer/iron-ajax": "^3.0.0-pre.21",
     "@polymer/iron-fit-behavior": "^3.0.0-pre.21",
     "@polymer/iron-resizable-behavior": "^3.0.0-pre.21",
-    "@polymer/polymer": "^3.0.2",
+    "@polymer/polymer": "^3.0.5",
     "three": "0.93.0"
   },
   "devDependencies": {
