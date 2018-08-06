@@ -171,6 +171,8 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       /**
        * * `visible`: control whether lines are visible
        *
+       * * `color`: line color
+       *
        * * `width`: line width in pixels
        *
        * * `opacity`: between 0.0 (fully transparent) and 1.0 (fully opaque)
@@ -285,10 +287,17 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
     }
 
     // Line Properties
-    if (this.defaultLineProperties != undefined) {
-      request = Object.assign(request, {"defaultLineProperties":this.defaultLineProperties});
+    if (this.defaultLineProperties == undefined) {
+      this.defaultLineProperties = {};
+    }
+    request = Object.assign(request, {"defaultLineProperties":this.defaultLineProperties});
+
+    if (this.defaultLineProperties.color == undefined) {
+      var lineColor = window.getComputedStyle(this, null).getPropertyValue("color");
+      request.defaultLineProperties = Object.assign(request.defaultLineProperties, {"color":lineColor});
     }
 
+    // Stream Properties
     if (this.streamProperties != undefined) {
       this.streamProperties.chunkId = undefined;
       this.streamProperties.streamUpdate = function( count ) {
