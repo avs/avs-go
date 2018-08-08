@@ -64,7 +64,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         >
       </iron-ajax>
 
-      <div id="viewerDiv" on-mousemove="handleMouseMove"></div>
+      <div id="viewerDiv"></div>
     `;
   }
 
@@ -113,9 +113,9 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
        *
        * * `highlight`: Control whether to highlight selected geometry.
        *
-       * * `highlightHexColor`: Color to highlight with if `highlight` is true.
+       * * `highlightColor`: Color to highlight with if `highlight` is true.
        *
-       * @type {{level: string, depth: string, highlight: boolean, highlightHexColor: string}}
+       * @type {{level: string, depth: string, highlight: boolean, highlightColor: string}}
        */
       hoverProperties: {
         type: Object        
@@ -129,11 +129,11 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
        *
        * * `highlight`: Control whether to highlight selected geometry.
        *
-       * * `highlightHexColor`: Color to highlight with if `highlight` is true.
+       * * `highlightColor`: Color to highlight with if `highlight` is true.
        *
        * * `evaluateServer`: Override the default picking location (if `viewerProperties.renderer` is `THREEJS` default is false, otherwise true).
        *
-       * @type {{level: string, depth: string, type: string, highlight: boolean, highlightHexColor: string, evaluateServer: boolean}}
+       * @type {{level: string, depth: string, type: string, highlight: boolean, highlightColor: string, evaluateServer: boolean}}
        */
       pickProperties: {
         type: Object
@@ -431,19 +431,32 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
     this.pickProperties.mouseX=[x];
     this.pickProperties.mouseY=[y];
 
+    var customEvent = {detail: {x: x, y: y, selected: []}};
+
     if (this.viewerProperties.renderer !== 'THREEJS' || (this.pickProperties.evaluateServer !== undefined && this.pickProperties.evaluateServer === true)) {
+
       this.$.getScene.body = this.buildChartRequest();
       this.$.getScene.body = Object.assign(this.$.getScene.body, {"pickProperties":this.pickProperties});
       this.$.getScene.url = this.sceneProperties.url;
       this.$.getScene.generateRequest();
+     
+    } else if (this.viewerProperties.renderer === 'THREEJS') {
 
-      var selectedObject = {detail: {"selected": "went to server to get new scene"}};
-      this.dispatchEvent(new CustomEvent('pick', selectedObject));        
-    }
-    else if (this.viewerProperties.renderer === 'THREEJS') {
+      this.__viewer.setPickDepth( this.getPickDepth(this.pickProperties.depth) );
+      this.__viewer.pickLevel = this.getPickLevel(this.pickProperties.level);
       this.__viewer.setPickRay( x, y );
       this.__viewer.pick();
+
+      customEvent.detail.selected = this.__viewer.selectionList.list;
+
+      if (this.pickProperties.highlight) {
+        this.__viewer.highlightColor.set( this.pickProperties.highlightColor );
+        this.__viewer.highlightObjects( this.__viewer.selectionList );
+      }
+
     }
+
+    this.dispatchEvent(new CustomEvent('pick', customEvent));
   }
 
   /**
@@ -474,19 +487,32 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         this.pickProperties.mouseX=[startX, clampX];
         this.pickProperties.mouseY=[startY, clampY];
 
+        var customEvent = {detail: {x: x, y: y, selected: []}};
+
         if (this.viewerProperties.renderer !== 'THREEJS' || (this.pickProperties.evaluateServer !== undefined && this.pickProperties.evaluateServer === true)) {
+
           this.$.getScene.body = this.buildChartRequest();
           this.$.getScene.body = Object.assign(this.$.getScene.body, {"pickProperties":this.pickProperties});
           this.$.getScene.url = this.sceneProperties.url;
           this.$.getScene.generateRequest();
+       
+        } else if (this.viewerProperties.renderer === 'THREEJS') {
 
-          var selectedObject = {detail: {"selected": "went to server to get new scene"}};
-          this.dispatchEvent(new CustomEvent('pick', selectedObject));        
-        }
-        else if (this.viewerProperties.renderer === 'THREEJS') {
+          this.__viewer.setPickDepth( this.getPickDepth(this.pickProperties.depth) );
+          this.__viewer.pickLevel = this.getPickLevel(this.pickProperties.level);
           this.__viewer.setPickRectangle( startX, startY, clampX, clampY );
           this.__viewer.pick();
+
+          customEvent.detail.selected = this.__viewer.selectionList.list;
+
+          if (this.pickProperties.highlight) {
+            this.__viewer.highlightColor.set( this.pickProperties.highlightColor );
+            this.__viewer.highlightObjects( this.__viewer.selectionList );
+          }
+
         }
+
+        this.dispatchEvent(new CustomEvent('pick', customEvent));
         break;
     }
   }
@@ -495,22 +521,31 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
    * @param e
    */
   handleMouseMove(e) {
-    if (this.hoverProperties !== undefined) {
-      var rect = this.$.viewerDiv.getBoundingClientRect();
-      var x = Math.round(e.pageX - rect.left);
-      var y = Math.round(e.pageY - rect.top);
-      var clampX = Math.max(0, Math.min(x, this.width));
-      var clampY = Math.max(0, Math.min(y, this.height));
+    var rect = this.$.viewerDiv.getBoundingClientRect();
+    var x = Math.round(e.pageX - rect.left);
+    var y = Math.round(e.pageY - rect.top);
+    var clampX = Math.max(0, Math.min(x, this.width));
+    var clampY = Math.max(0, Math.min(y, this.height));
 
-      if (this.viewerProperties.renderer !== 'THREEJS' || (this.hoverProperties.evaluateServer !== undefined && this.hoverProperties.evaluateServer === true)) {
-        var selectedObject = {detail: {x: clampX, y: clampY, selected: []}};
-        this.dispatchEvent(new CustomEvent('hover', selectedObject));        
+    var customEvent = {detail: {x: clampX, y: clampY, selected: []}};
+
+    if (this.viewerProperties.renderer === 'THREEJS' && this.hoverProperties.evaluateServer !== true) {
+
+      this.__viewer.setPickDepth( this.getPickDepth(this.hoverProperties.depth) );
+      this.__viewer.pickLevel = this.getPickLevel(this.hoverProperties.level);
+      this.__viewer.setPickRay( clampX, clampY );
+      this.__viewer.pick();
+
+      customEvent.detail.selected = this.__viewer.selectionList.list;
+
+      if (this.hoverProperties.highlight) {
+        this.__viewer.highlightColor.set( this.hoverProperties.highlightColor );
+        this.__viewer.highlightObjects( this.__viewer.selectionList );
       }
-      else if (this.viewerProperties.renderer === 'THREEJS') {
-        this.__viewer.setPickRay( clampX, clampY );
-        this.__viewer.pick();
-      }
+
     }
+
+    this.dispatchEvent(new CustomEvent('hover', customEvent));
   }
 
   /**
@@ -598,61 +633,12 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         console.log("reference existing webGL renderer = " + rendererId);
       }
       this.__viewer.setWebGLRenderer( renderer.getWebGLRenderer() );
- 
+
       // Setup hover interactor
       if (this.hoverProperties != undefined) {
-
-        this.__viewer.setPickDepth( this.getPickDepth(this.hoverProperties.depth) );
-        this.__viewer.pickLevel = this.getPickLevel(this.hoverProperties.level);
-		this.__viewer.highlight = this.hoverProperties.highlight;
-		this.__viewer.highlightColor.setHex( this.hoverProperties.highlightHexColor );
-
-//        this.hoverProperties.depth = this.getPickDepth(this.hoverProperties.depth);
-//        this.hoverProperties.level = this.getPickLevel(this.hoverProperties.level);
-
-        var scope = this;
-        this.__viewer.addSelectionListener( function( selectedObject, x, y ) {
-          scope.dispatchEvent(new CustomEvent('hover', {detail: {x: x, y: y, selected: selectedObject}}));
-        });
-//          if (selectedObject != undefined) {
-//            scope.dispatchEvent(new CustomEvent('onHover', selectedObject));        
-//          }
-//        }
-
-//        this.__viewer.addHoverListener(this.hoverProperties);
+        this.addEventListener('mousemove', this.handleMouseMove);
       }
-
-      // Setup pick interactor
-      if (this.pickProperties != undefined) {
-
-        this.__viewer.setPickDepth( this.getPickDepth(this.pickProperties.depth) );
-        this.__viewer.pickLevel = this.getPickLevel(this.pickProperties.level);
-		this.__viewer.highlight = this.pickProperties.highlight;
-		this.__viewer.highlightColor.setHex( this.pickProperties.highlightHexColor );
-
-//        this.pickProperties.depth = this.getPickDepth(this.pickProperties.depth);
-//        this.pickProperties.level = this.getPickLevel(this.pickProperties.level);
-
-        var scope = this;
-        this.__viewer.addSelectionListener( function( selectedObject ) {
-          scope.dispatchEvent(new CustomEvent('pick', {detail: {selected: selectedObject}}));
-        });
-//        this.pickProperties.onPick = function( selectedObject ) {
-//          if (selectedObject != undefined) {
-//            scope.dispatchEvent(new CustomEvent('onPick', selectedObject));        
-//          }
-//        }
-
-//        if (this.pickProperties.type === 'RECTANGLE') {
-//          this.__viewer.addRectanglePickListener(this.pickProperties);
-//        }
-//        else {
-//          this.__viewer.addPickListener(this.pickProperties);
-//        }
-      }
-
     }
-
     else if (this.viewerProperties.renderer === 'IMAGE') {
       var imageElem = document.createElement("img");
       imageElem.setAttribute("id", "sceneImage");
@@ -665,13 +651,13 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       // this.$.viewerDiv.appendChild(mapElem);
     }
 
+    // Setup pick interactor
     if (this.pickProperties != undefined) {
       if (this.pickProperties.type === 'RECTANGLE') {
         var canvasElem = document.createElement("canvas");
         canvasElem.setAttribute("id", "rectCanvas");
         this.$.viewerDiv.appendChild(canvasElem);
 
-        this.pickProperties.active = true;
         this.__rectCtx = canvasElem.getContext('2d');
 
         Gestures.addListener(this, 'track', this.handleTrack.bind(this));
