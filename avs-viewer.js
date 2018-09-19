@@ -111,11 +111,13 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
        *
        * * `depth`: `ALL` or `CLOSEST`
        *
+       * * `selectionInfo`: Control whether to return the selection info via avs-selection-info event.
+       *
        * * `highlight`: Control whether to highlight selected geometry.
        *
        * * `highlightColor`: Color to highlight with if `highlight` is true.
        *
-       * @type {{level: string, depth: string, highlight: boolean, highlightColor: string}}
+       * @type {{level: string, depth: string, selectionInfo: boolean, highlight: boolean, highlightColor: string}}
        */
       hoverProperties: {
         type: Object        
@@ -125,17 +127,35 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
        *
        * * `depth`: `ALL` or `CLOSEST`
        *
-       * * `type`: `POINT` or `RECTANGLE`
+       * * `selectionInfo`: Control whether to return the selection info via avs-selection-info event.
        *
        * * `highlight`: Control whether to highlight selected geometry.
        *
        * * `highlightColor`: Color to highlight with if `highlight` is true.
        *
-       * * `evaluateServer`: Override the default picking location (if `viewerProperties.renderer` is `THREEJS` default is false, otherwise true).
+       * * `processOnServer`: Override the default picking location (if `viewerProperties.renderer` is `THREEJS` default is false, otherwise true).
        *
-       * @type {{level: string, depth: string, type: string, highlight: boolean, highlightColor: string, evaluateServer: boolean}}
+       * @type {{level: string, depth: string, selectionInfo: boolean, highlight: boolean, highlightColor: string, processOnServer: boolean}}
        */
-      pickProperties: {
+      tapProperties: {
+        type: Object
+      },
+      /**
+       * * `level`: `CELL`, `CELL_SET` or `SCENE_NODE`
+       *
+       * * `depth`: `ALL` or `CLOSEST`
+       *
+       * * `selectionInfo`: Control whether to return the selection info via avs-selection-info event.
+       *
+       * * `highlight`: Control whether to highlight selected geometry.
+       *
+       * * `highlightColor`: Color to highlight with if `highlight` is true.
+       *
+       * * `processOnServer`: Override the default picking location (if `viewerProperties.renderer` is `THREEJS` default is false, otherwise true).
+       *
+       * @type {{level: string, depth: string, selectionInfo: boolean, highlight: boolean, highlightColor: string, processOnServer: boolean}}
+       */
+      trackProperties: {
         type: Object
       },
       /**
@@ -340,7 +360,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       this.height = 200;  // default
     }
 
-    if (this.pickProperties != undefined && this.pickProperties.type === 'RECTANGLE') {
+    if (this.trackProperties !== undefined) {
       this.$$("#rectCanvas").width = this.width;
       this.$$("#rectCanvas").height = this.height;
     }
@@ -383,7 +403,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
     if (this.viewerProperties.renderer === 'THREEJS') {
       this.__viewer.render();
     }
-    if (this.pickProperties != undefined && this.pickProperties.type === 'RECTANGLE') {
+    if (this.trackProperties !== undefined) {
       this.$$("#rectCanvas").width = this.width;
       this.$$("#rectCanvas").height = this.height;
     }
@@ -393,83 +413,61 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
    * @param obj
    */
   handleResponse(obj) {
-    if (this.viewerProperties.renderer === 'IMAGE') {
-      var responseJSON = null;
-      try {
-        responseJSON = JSON.parse(obj.detail.response);
-      } catch (_) {
-        console.warn('Failed to parse JSON requested from ' + this.sceneProperties.url);
-        return;
-      }
-
-      if (responseJSON == undefined || responseJSON == null) {
-        console.log("Null JSON response");
-        return;
-      }
-
-      this.$$("#sceneImage").src = responseJSON.imageurl;
-      if (responseJSON.imagemap != undefined) {
-//        this.$$("#sceneImageMap").innerHTML = decodeURIComponent(responseJSON.imagemap.replace(/\+/g, '%20'));
-      }
-      if (responseJSON.selectionInfo != undefined) {
-        console.log("selection info = " + responseJSON.selectionInfo);
-      }
-    }
-    else if (this.viewerProperties.renderer === 'SVG') {
-      this.$.viewerDiv.innerHTML = obj.detail.response;
-    }
+	var responseJSON = null;
+	try {
+	  responseJSON = JSON.parse(obj.detail.response);
+	} catch (_) {
+	  console.warn('Failed to parse JSON requested from ' + this.sceneProperties.url);
+	  return;
+	}
+	
+	if (responseJSON == undefined || responseJSON == null) {
+	  console.log("Null JSON response");
+	  return;
+	}
+	
+	if (responseJSON.selectionInfo != undefined) {
+	  	  var infoEvent = responseJSON.selectionInfo;
+		  this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
+	}
+	
+	if (this.viewerProperties.renderer === 'IMAGE') {
+	
+	  this.$$("#sceneImage").src = responseJSON.imageurl;
+	  if (responseJSON.imagemap != undefined) {
+	//        this.$$("#sceneImageMap").innerHTML = decodeURIComponent(responseJSON.imagemap.replace(/\+/g, '%20'));
+	  }
+	}
+	else if (this.viewerProperties.renderer === 'SVG') {
+//	    this.$.viewerDiv.innerHTML = obj.detail.response;
+	  this.$.viewerDiv.innerHTML = decodeURIComponent(responseJSON.svg.replace(/\+/g, '%20'));
+	}
   }
 
   /**
    * @param e
    */
   handleTap(e) {
-	var rect = this.$.viewerDiv.getBoundingClientRect();
-    var x = Math.round(e.detail.x - rect.left);
-    var y = Math.round(e.detail.y - rect.top);
+	var pick = this.getPickCoords(e.detail.x, e.detail.y);
 
-    this.pickProperties.mouseX=[x];
-    this.pickProperties.mouseY=[y];
-
-    var customEvent = {detail: {x: x, y: y, selected: []}};
-
-    if (this.viewerProperties.renderer !== 'THREEJS' || (this.pickProperties.evaluateServer !== undefined && this.pickProperties.evaluateServer === true)) {
-
-      this.$.getScene.body = this.buildChartRequest();
-      this.$.getScene.body = Object.assign(this.$.getScene.body, {"pickProperties":this.pickProperties});
-      this.$.getScene.url = this.sceneProperties.url;
-      this.$.getScene.generateRequest();
-     
-    } else if (this.viewerProperties.renderer === 'THREEJS') {
-
-      this.__viewer.setPickDepth( this.getPickDepth(this.pickProperties.depth) );
-      this.__viewer.pickLevel = this.getPickLevel(this.pickProperties.level);
-      this.__viewer.setPickRay( x, y );
-      this.__viewer.pick();
-
-      customEvent.detail.selected = this.__viewer.selectionList.list;
-
-      if (this.pickProperties.highlight) {
-        this.__viewer.highlightColor.set( this.pickProperties.highlightColor );
-        this.__viewer.highlightObjects( this.__viewer.selectionList );
-      }
-
-    }
-
-    this.dispatchEvent(new CustomEvent('pick', customEvent));
+    var tapEvent = {detail: {x: pick.x, y: pick.y}};
+    this.dispatchEvent(new CustomEvent('avs-tap', tapEvent));
+    
+    var pickProperties = this.createPickProperties(this.tapProperties, 'tap');
+    pickProperties.mouseX=[pick.x];
+    pickProperties.mouseY=[pick.y];
+    
+    this.processPick( pickProperties );
   }
-
+  
   /**
    * @param e
    */
   handleTrack(e) {
-	var rect = this.$.viewerDiv.getBoundingClientRect();
-    var x = Math.round(e.detail.x - rect.left);
-    var y = Math.round(e.detail.y - rect.top);
-    var clampX = Math.max(0, Math.min(x, this.width));
-    var clampY = Math.max(0, Math.min(y, this.height));
-    var startX = x - e.detail.dx;
-    var startY = y - e.detail.dy;
+	var rect = this.getPickRectangleCoords(e);
+	
+    var trackEvent = {detail: {state: e.detail.state, x: rect.x, y: rect.y}};
+    this.dispatchEvent(new CustomEvent('avs-track', trackEvent));
 
     switch(e.detail.state) {
       case 'start':
@@ -478,74 +476,94 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       case 'track':
         this.__rectCtx.clearRect(0,0,this.width,this.height);
         this.rectangleStyle();
-        this.__rectCtx.strokeRect(startX, startY, clampX - startX, clampY - startY);
+        this.__rectCtx.strokeRect(rect.x[0], rect.y[0], rect.x[1] - rect.x[0], rect.y[1] - rect.y[0]);
         break;
 
       case 'end':
         this.__rectCtx.clearRect(0,0,this.width,this.height);
 
-        this.pickProperties.mouseX=[startX, clampX];
-        this.pickProperties.mouseY=[startY, clampY];
-
-        var customEvent = {detail: {x: x, y: y, selected: []}};
-
-        if (this.viewerProperties.renderer !== 'THREEJS' || (this.pickProperties.evaluateServer !== undefined && this.pickProperties.evaluateServer === true)) {
-
-          this.$.getScene.body = this.buildChartRequest();
-          this.$.getScene.body = Object.assign(this.$.getScene.body, {"pickProperties":this.pickProperties});
-          this.$.getScene.url = this.sceneProperties.url;
-          this.$.getScene.generateRequest();
-       
-        } else if (this.viewerProperties.renderer === 'THREEJS') {
-
-          this.__viewer.setPickDepth( this.getPickDepth(this.pickProperties.depth) );
-          this.__viewer.pickLevel = this.getPickLevel(this.pickProperties.level);
-          this.__viewer.setPickRectangle( startX, startY, clampX, clampY );
-          this.__viewer.pick();
-
-          customEvent.detail.selected = this.__viewer.selectionList.list;
-
-          if (this.pickProperties.highlight) {
-            this.__viewer.highlightColor.set( this.pickProperties.highlightColor );
-            this.__viewer.highlightObjects( this.__viewer.selectionList );
-          }
-
-        }
-
-        this.dispatchEvent(new CustomEvent('pick', customEvent));
+        var pickProperties = this.createPickProperties(this.trackProperties, 'track');
+        pickProperties.mouseX=rect.x;
+        pickProperties.mouseY=rect.y;
+        pickProperties.type="RECTANGLE";
+        
+        this.processPick( pickProperties );
         break;
     }
   }
-
+  
   /**
    * @param e
    */
   handleMouseMove(e) {
-    var rect = this.$.viewerDiv.getBoundingClientRect();
-    var x = Math.round(e.pageX - rect.left);
-    var y = Math.round(e.pageY - rect.top);
+	var pick = this.getPickCoords(e.pageX, e.pageY);
+	  
+    var hoverEvent = {detail: {x: pick.x, y: pick.y}};
+    this.dispatchEvent(new CustomEvent('avs-hover', hoverEvent));
+    
+    var pickProperties = this.createPickProperties(this.hoverProperties, 'hover');
+    pickProperties.mouseX=[pick.x];
+    pickProperties.mouseY=[pick.y];
+    
+    this.processPick( pickProperties );
+  }
+  
+  getPickCoords(x, y) {
+	var rect = this.$.viewerDiv.getBoundingClientRect();
+	var x = Math.round(x - rect.left);
+	var y = Math.round(y - rect.top);
+	var clampX = Math.max(0, Math.min(x, this.width));
+	var clampY = Math.max(0, Math.min(y, this.height));
+	
+	return {x:clampX, y:clampY};
+  }
+  
+  getPickRectangleCoords(e) {
+	var rect = this.$.viewerDiv.getBoundingClientRect();
+    var x = Math.round(e.detail.x - rect.left);
+    var y = Math.round(e.detail.y - rect.top);
     var clampX = Math.max(0, Math.min(x, this.width));
     var clampY = Math.max(0, Math.min(y, this.height));
+    var startX = x - e.detail.dx;
+    var startY = y - e.detail.dy;
+    
+	return {x:[startX, clampX], y:[startY, clampY]};
+  }
 
-    var customEvent = {detail: {x: clampX, y: clampY, selected: []}};
+  processPick( pickProperties ) {
+    // Server side processing
+    if (this.viewerProperties.renderer !== 'THREEJS' || (pickProperties.processOnServer !== undefined && pickProperties.processOnServer === true)) {
 
-    if (this.viewerProperties.renderer === 'THREEJS' && this.hoverProperties.evaluateServer !== true) {
+      this.$.getScene.body = this.buildChartRequest();
+      this.$.getScene.body = Object.assign(this.$.getScene.body, {"pickProperties":pickProperties});
+      this.$.getScene.url = this.sceneProperties.url;
+      this.$.getScene.generateRequest();
+     
+    } 
+    
+    // Client side processing
+    else if (this.viewerProperties.renderer === 'THREEJS') {
 
-      this.__viewer.setPickDepth( this.getPickDepth(this.hoverProperties.depth) );
-      this.__viewer.pickLevel = this.getPickLevel(this.hoverProperties.level);
-      this.__viewer.setPickRay( clampX, clampY );
+      this.__viewer.setPickDepth( this.getPickDepth(pickProperties.depth) );
+      this.__viewer.pickLevel = this.getPickLevel(pickProperties.level);
+      if (pickProperties.mouseX.length > 1) {
+          this.__viewer.setPickRectangle( pickProperties.mouseX[0], pickProperties.mouseY[0], pickProperties.mouseX[1], pickProperties.mouseY[1] );
+      }
+      else {
+       	  this.__viewer.setPickRay( pickProperties.mouseX[0], pickProperties.mouseY[0] );
+      }
       this.__viewer.pick();
-
-      customEvent.detail.selected = this.__viewer.selectionList.list;
-
-      if (this.hoverProperties.highlight) {
-        this.__viewer.highlightColor.set( this.hoverProperties.highlightColor );
+      
+      if (pickProperties.selectionInfo == true) {
+    	  var infoEvent = {detail: {mode: pickProperties.mode, x: pickProperties.mouseX, y: pickProperties.mouseY, selected: this.__viewer.selectionList.list}};
+    	  this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
+      }
+      
+      if (pickProperties.highlight) {
+        this.__viewer.highlightColor.set( pickProperties.highlightColor );
         this.__viewer.highlightObjects( this.__viewer.selectionList );
       }
-
-    }
-
-    this.dispatchEvent(new CustomEvent('hover', customEvent));
+    }  
   }
 
   /**
@@ -573,6 +591,23 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
     else {
       return AVSThree.PickLevelEnum.Cell;
     }
+  }
+
+  /**
+   * @param source
+   * @param mode
+   */
+  createPickProperties(source, mode) {
+	  var pickProperties = {};
+	  pickProperties.selectionInfo = source.selectionInfo;
+	  pickProperties.highlight = source.highlight;
+	  pickProperties.highlightColor = source.highlightColor;
+	  pickProperties.depth = source.depth;
+	  pickProperties.level = source.level;
+	  pickProperties.processOnServer = source.processOnServer;
+	  pickProperties.mode = mode;
+	  
+	  return pickProperties;
   }
 
   /**
@@ -651,20 +686,20 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       // this.$.viewerDiv.appendChild(mapElem);
     }
 
-    // Setup pick interactor
-    if (this.pickProperties != undefined) {
-      if (this.pickProperties.type === 'RECTANGLE') {
-        var canvasElem = document.createElement("canvas");
-        canvasElem.setAttribute("id", "rectCanvas");
-        this.$.viewerDiv.appendChild(canvasElem);
+    // Setup tap interactor
+    if (this.tapProperties !== undefined) {
+      Gestures.addListener(this, 'tap', this.handleTap.bind(this));
+    }
 
-        this.__rectCtx = canvasElem.getContext('2d');
+    // Setup track interactor
+    if (this.trackProperties !== undefined) {
+      var canvasElem = document.createElement("canvas");
+      canvasElem.setAttribute("id", "rectCanvas");
+      this.$.viewerDiv.appendChild(canvasElem);
 
-        Gestures.addListener(this, 'track', this.handleTrack.bind(this));
-      }
-      else {
-        Gestures.addListener(this, 'tap', this.handleTap.bind(this));
-      }
+      this.__rectCtx = canvasElem.getContext('2d');
+
+      Gestures.addListener(this, 'track', this.handleTrack.bind(this));
     }
   }
 }
