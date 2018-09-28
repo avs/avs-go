@@ -24,7 +24,7 @@
     "@polymer/iron-ajax": "^3.0.1",
     "@polymer/iron-resizable-behavior": "^3.0.1",
     "@polymer/polymer": "^3.0.5",
-    "three": "0.96.0"
+    "three": "0.97.0"
   },
   "devDependencies": {
     "@polymer/iron-component-page": "^3.0.0-pre.21",
