@@ -1,7 +1,7 @@
 {
-  "name": "avs-web-components",
-  "version": "0.0.22",
-  "description": "AVS Web Components",
+  "name": "avs-go",
+  "version": "0.0.23",
+  "description": "AVS Go",
   "keywords": [
     "polymer",
     "polymer 3.0",
@@ -17,7 +17,7 @@
   "main": "avs-viewer.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/avs/webcomponents.git"
+    "url": "https://github.com/avs/avs-go.git"
   },
   "license": "Apache-2.0",
   "dependencies": {
