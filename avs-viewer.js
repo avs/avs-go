@@ -85,6 +85,14 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       },
 
       /**
+       * * `dataLibraryKey`: Name of the data on the server to acquire.
+       *
+       * @type {{dataLibraryKey: string}}
+       */
+      dataProperties: {
+        type: Object
+      },
+      /**
        * * `url`: Fully qualified URL to an instance of AVS Web Components server.
        *
        * * `sceneLibraryKey`: Name of the scene on the server to acquire.
@@ -95,17 +103,17 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         type: Object
       },
       /**
-       * * `renderer`: `IMAGE`, `SVG` or `THREEJS`
+       * * `rendererType`: `IMAGE`, `SVG` or `THREEJS`
        *
        * * `backgroundColor`: Default background color, can be overridden using CSS.
        *
-       * @type {{renderer: string, backgroundColor: string}}
+       * @type {{rendererType: string, backgroundColor: string}}
        */
-      viewerProperties: {
+      rendererProperties: {
         type: Object
       },
       /**
-       * Only used when `viewerProperties.renderer` is `THREEJS`
+       * Only used when `rendererProperties.rendererType` is `THREEJS`
        *
        * * `level`: `CELL`, `CELL_SET` or `SCENE_NODE`
        *
@@ -133,7 +141,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
        *
        * * `highlightColor`: Color to highlight with if `highlight` is true.
        *
-       * * `processOnServer`: Override the default picking location (if `viewerProperties.renderer` is `THREEJS` default is false, otherwise true).
+       * * `processOnServer`: Override the default picking location (if `rendererProperties.rendererType` is `THREEJS` default is false, otherwise true).
        *
        * @type {{level: string, depth: string, selectionInfo: boolean, highlight: boolean, highlightColor: string, processOnServer: boolean}}
        */
@@ -151,7 +159,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
        *
        * * `highlightColor`: Color to highlight with if `highlight` is true.
        *
-       * * `processOnServer`: Override the default picking location (if `viewerProperties.renderer` is `THREEJS` default is false, otherwise true).
+       * * `processOnServer`: Override the default picking location (if `rendererProperties.rendererType` is `THREEJS` default is false, otherwise true).
        *
        * @type {{level: string, depth: string, selectionInfo: boolean, highlight: boolean, highlightColor: string, processOnServer: boolean}}
        */
@@ -159,7 +167,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         type: Object
       },
       /**
-       * Only used when `viewerProperties.renderer` is `THREEJS`
+       * Only used when `rendererProperties.rendererType` is `THREEJS`
        *
        * * `type`: `CHUNK` or `OBOE_STREAM`
        *
@@ -173,7 +181,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         type: Object
       },
       /**
-       * Only used when `viewerProperties.renderer` is `THREEJS`
+       * Only used when `rendererProperties.rendererType` is `THREEJS`
        *
        * * `sceneNode`: Name of the scene node to attach a TransformInteractor to.
        *
@@ -270,52 +278,18 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
    */
   buildChartRequest() {
     var scope = this;
+    var request = {};
 
-    // Scene properties 
-    if (this.sceneProperties == undefined) {
-      this.sceneProperties = {};
+    // Data properties 
+    if (this.dataProperties == undefined) {
+        this.dataProperties = {};
     }
-    var request = Object.assign(this.sceneProperties, {width:this.width, height:this.height});
-
-    // Viewer Properties
-    if (this.viewerProperties == undefined) {
-      this.viewerProperties = {};
+    
+    // Renderer Properties
+    if (this.rendererProperties == undefined) {
+      this.rendererProperties = {};
     }
-    request = Object.assign(request, {"viewerProperties":this.viewerProperties});
-
-    // User Properties
-    if (this.userProperties == undefined) {
-      this.userProperties = {};
-    }
-    request = Object.assign(request, {"userProperties":this.userProperties});
-
-    // Text properties
-    if (this.defaultTextProperties == undefined) {
-      this.defaultTextProperties = {};
-    }
-    request = Object.assign(request, {"defaultTextProperties":this.defaultTextProperties});
-
-    if (this.defaultTextProperties.color == undefined) {
-      var textColor = window.getComputedStyle(this, null).getPropertyValue("color");
-      request.defaultTextProperties = Object.assign(request.defaultTextProperties, {"color":textColor});
-    }
-
-    if (this.defaultTextProperties.fontFamily == undefined) {
-      var fontFamily = window.getComputedStyle(this, null).getPropertyValue("font-family");
-      fontFamily = fontFamily.replace(/['"]+/g, '');
-      request.defaultTextProperties = Object.assign(request.defaultTextProperties, {"fontFamily":fontFamily});
-    }
-
-    // Line Properties
-    if (this.defaultLineProperties == undefined) {
-      this.defaultLineProperties = {};
-    }
-    request = Object.assign(request, {"defaultLineProperties":this.defaultLineProperties});
-
-    if (this.defaultLineProperties.color == undefined) {
-      var lineColor = window.getComputedStyle(this, null).getPropertyValue("color");
-      request.defaultLineProperties = Object.assign(request.defaultLineProperties, {"color":lineColor});
-    }
+    var rendererPropertiesRequest = Object.assign(this.rendererProperties, {width:this.width, height:this.height});
 
     // Stream Properties
     if (this.streamProperties != undefined) {
@@ -324,8 +298,51 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
          console.log("Stream count = " + count);
          scope.__viewer.render();
       }
-      request = Object.assign(request, {"streamProperties":this.streamProperties});
+      rendererPropertiesRequest = Object.assign(rendererPropertiesRequest, {"streamProperties":this.streamProperties});
     }
+
+    // Scene properties 
+    if (this.sceneProperties == undefined) {
+      this.sceneProperties = {};
+    }
+
+    // User Properties
+    if (this.userProperties == undefined) {
+      this.userProperties = {};
+    }
+    var scenePropertiesRequest = Object.assign(this.sceneProperties, {"userProperties":this.userProperties});
+
+    // Text properties
+    if (this.defaultTextProperties == undefined) {
+      this.defaultTextProperties = {};
+    }
+    scenePropertiesRequest = Object.assign(scenePropertiesRequest, {"defaultTextProperties":this.defaultTextProperties});
+
+    if (this.defaultTextProperties.color == undefined) {
+      var textColor = window.getComputedStyle(this, null).getPropertyValue("color");
+      scenePropertiesRequest.defaultTextProperties = Object.assign(scenePropertiesRequest.defaultTextProperties, {"color":textColor});
+    }
+
+    if (this.defaultTextProperties.fontFamily == undefined) {
+      var fontFamily = window.getComputedStyle(this, null).getPropertyValue("font-family");
+      fontFamily = fontFamily.replace(/['"]+/g, '');
+      scenePropertiesRequest.defaultTextProperties = Object.assign(scenePropertiesRequest.defaultTextProperties, {"fontFamily":fontFamily});
+    }
+
+    // Line Properties
+    if (this.defaultLineProperties == undefined) {
+      this.defaultLineProperties = {};
+    }
+    scenePropertiesRequest = Object.assign(scenePropertiesRequest, {"defaultLineProperties":this.defaultLineProperties});
+
+    if (this.defaultLineProperties.color == undefined) {
+      var lineColor = window.getComputedStyle(this, null).getPropertyValue("color");
+      scenePropertiesRequest.defaultLineProperties = Object.assign(scenePropertiesRequest.defaultLineProperties, {"color":lineColor});
+    }
+
+    request = Object.assign(request, {"dataRequest":this.dataProperties});
+    request = Object.assign(request, {"rendererRequest":rendererPropertiesRequest});
+    request = Object.assign(request, {"sceneRequest":scenePropertiesRequest});
 
     return request;
   }
@@ -372,7 +389,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
   updateViewer() {
     this.updateStyles();
     this.updateSize();
-    if (this.viewerProperties.renderer === 'THREEJS') {
+    if (this.rendererProperties.rendererType === 'THREEJS') {
       var scope = this;
       var chartRequest = this.buildChartRequest();
       this.__viewer.loadGeometryAsUrl({
@@ -400,7 +417,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
    */
   updateViewerClient() {
     this.updateSize();
-    if (this.viewerProperties.renderer === 'THREEJS') {
+    if (this.rendererProperties.rendererType === 'THREEJS') {
       this.__viewer.render();
     }
     if (this.trackProperties !== undefined) {
@@ -431,14 +448,14 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
 		  this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
 	}
 	
-	if (this.viewerProperties.renderer === 'IMAGE') {
+	if (this.rendererProperties.rendererType === 'IMAGE') {
 	
 	  this.$$("#sceneImage").src = responseJSON.imageurl;
 	  if (responseJSON.imagemap != undefined) {
 	//        this.$$("#sceneImageMap").innerHTML = decodeURIComponent(responseJSON.imagemap.replace(/\+/g, '%20'));
 	  }
 	}
-	else if (this.viewerProperties.renderer === 'SVG') {
+	else if (this.rendererProperties.rendererType === 'SVG') {
 //	    this.$.viewerDiv.innerHTML = obj.detail.response;
 	  this.$.viewerDiv.innerHTML = decodeURIComponent(responseJSON.svg.replace(/\+/g, '%20'));
 	}
@@ -532,17 +549,17 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
 
   processPick( pickProperties ) {
     // Server side processing
-    if (this.viewerProperties.renderer !== 'THREEJS' || (pickProperties.processOnServer !== undefined && pickProperties.processOnServer === true)) {
+    if (this.rendererProperties.rendererType !== 'THREEJS' || (pickProperties.processOnServer !== undefined && pickProperties.processOnServer === true)) {
 
       this.$.getScene.body = this.buildChartRequest();
-      this.$.getScene.body = Object.assign(this.$.getScene.body, {"pickProperties":pickProperties});
+      this.$.getScene.body.rendererRequest = Object.assign(this.$.getScene.body.rendererRequest, {"pickProperties":pickProperties});
       this.$.getScene.url = this.sceneProperties.url;
       this.$.getScene.generateRequest();
      
     } 
     
     // Client side processing
-    else if (this.viewerProperties.renderer === 'THREEJS') {
+    else if (this.rendererProperties.rendererType === 'THREEJS') {
 
       this.__viewer.setPickDepth( this.getPickDepth(pickProperties.depth) );
       this.__viewer.pickLevel = this.getPickLevel(pickProperties.level);
@@ -632,7 +649,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
   // Add interactors after canvas has been initialized and sized
   initInteractors() {
     // Setup transform interactor
-    if (this.viewerProperties.renderer === 'THREEJS') {
+    if (this.rendererProperties.rendererType === 'THREEJS') {
       if (this.transformProperties != undefined && this.transformProperties.sceneNode != undefined) {
         var ti = new AVSThree.TransformInteractor( this.__viewer.domElement );
         ti.setSceneNodeByName( this.transformProperties.sceneNode );  // the name of the workbox component set on the server
@@ -642,7 +659,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
   }
 
   initViewer() {
-    if (this.viewerProperties.renderer === 'THREEJS') {
+    if (this.rendererProperties.rendererType === 'THREEJS') {
       if (this.__viewer != undefined) {  
         this.$.viewerDiv.removeChild( this.__viewer.domElement );
       }
@@ -652,8 +669,8 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
 
       // Check if the user has requested a specific renderer
       var rendererId = 'avsDefaultWebGLRenderer';
-      if (this.viewerProperties.webGLRendererId !== undefined) {
-    	  rendererId = this.viewerProperties.webGLRendererId;
+      if (this.rendererProperties.webGLRendererId !== undefined) {
+    	  rendererId = this.rendererProperties.webGLRendererId;
       }
 
       // Search for renderer, if not found create one and save to the DOM
@@ -674,7 +691,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         this.addEventListener('mousemove', this.handleMouseMove);
       }
     }
-    else if (this.viewerProperties.renderer === 'IMAGE') {
+    else if (this.rendererProperties.rendererType === 'IMAGE') {
       var imageElem = document.createElement("img");
       imageElem.setAttribute("id", "sceneImage");
       // imageElem.setAttribute("usemap", "#sceneImageMap");
