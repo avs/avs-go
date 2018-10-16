@@ -93,7 +93,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         type: Object
       },
       /**
-       * * `url`: Fully qualified URL to an instance of AVS Web Components server.
+       * * `url`: Fully qualified URL to an instance of AVS Go server.
        *
        * * `sceneLibraryKey`: Name of the scene on the server to acquire.
        *
@@ -191,9 +191,15 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         type: Object
       },
       /**
-       * User properties passed directly to the server.
+       * User properties for the data passed directly to the server.
        */
-      userProperties: {
+      dataUserProperties: {
+        type: Object
+      },
+      /**
+       * User properties for the scene passed directly to the server.
+       */
+      sceneUserProperties: {
         type: Object
       },
       /**
@@ -284,6 +290,12 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
     if (this.dataProperties == undefined) {
         this.dataProperties = {};
     }
+
+    // Data user Properties
+    if (this.dataUserProperties == undefined) {
+      this.dataUserProperties = {};
+    }
+    var dataPropertiesRequest = Object.assign(this.dataProperties, {"userProperties":this.dataUserProperties});
     
     // Renderer Properties
     if (this.rendererProperties == undefined) {
@@ -306,11 +318,11 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       this.sceneProperties = {};
     }
 
-    // User Properties
-    if (this.userProperties == undefined) {
-      this.userProperties = {};
+    // Scene user Properties
+    if (this.sceneUserProperties == undefined) {
+      this.sceneUserProperties = {};
     }
-    var scenePropertiesRequest = Object.assign(this.sceneProperties, {"userProperties":this.userProperties});
+    var scenePropertiesRequest = Object.assign(this.sceneProperties, {"userProperties":this.sceneUserProperties});
 
     // Text properties
     if (this.defaultTextProperties == undefined) {
@@ -340,7 +352,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       scenePropertiesRequest.defaultLineProperties = Object.assign(scenePropertiesRequest.defaultLineProperties, {"color":lineColor});
     }
 
-    request = Object.assign(request, {"dataRequest":this.dataProperties});
+    request = Object.assign(request, {"dataRequest":dataPropertiesRequest});
     request = Object.assign(request, {"rendererRequest":rendererPropertiesRequest});
     request = Object.assign(request, {"sceneRequest":scenePropertiesRequest});
 
