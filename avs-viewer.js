@@ -560,39 +560,55 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
   }
 
   processPick( pickProperties ) {
-    // Server side processing
-    if (this.rendererProperties.rendererType !== 'THREEJS' || (pickProperties.processOnServer !== undefined && pickProperties.processOnServer === true)) {
+    if (this.rendererProperties.rendererType === 'THREEJS') {
+
+      // Server side processing
+      if (pickProperties.processOnServer === true) {
+     
+        var scope = this;
+        var chartRequest = this.buildChartRequest();
+        chartRequest.rendererRequest = Object.assign(chartRequest.rendererRequest, {"pickProperties":pickProperties});
+        this.__viewer.loadGeometryAsUrl({
+          url: this.sceneProperties.url, 
+          success: function() {
+            scope.__viewer.render();
+          },	
+          jsonRequest: chartRequest
+        });
+      } 
+    
+      // Client side processing
+      else {
+
+        this.__viewer.setPickDepth( this.getPickDepth(pickProperties.depth) );
+        this.__viewer.pickLevel = this.getPickLevel(pickProperties.level);
+        if (pickProperties.mouseX.length > 1) {
+          this.__viewer.setPickRectangle( pickProperties.mouseX[0], pickProperties.mouseY[0], pickProperties.mouseX[1], pickProperties.mouseY[1] );
+        }
+        else {
+       	  this.__viewer.setPickRay( pickProperties.mouseX[0], pickProperties.mouseY[0] );
+        }
+        this.__viewer.pick();
+      
+        if (pickProperties.selectionInfo == true) {
+    	  var infoEvent = {detail: {mode: pickProperties.mode, x: pickProperties.mouseX, y: pickProperties.mouseY, selected: this.__viewer.selectionList.list}};
+    	  this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
+        }
+      
+        if (pickProperties.highlight) {
+          this.__viewer.highlightColor.set( pickProperties.highlightColor );
+          this.__viewer.highlightObjects( this.__viewer.selectionList );
+        }
+      }
+    }
+    else {
 
       this.$.getScene.body = this.buildChartRequest();
       this.$.getScene.body.rendererRequest = Object.assign(this.$.getScene.body.rendererRequest, {"pickProperties":pickProperties});
       this.$.getScene.url = this.sceneProperties.url;
       this.$.getScene.generateRequest();
-     
-    } 
-    
-    // Client side processing
-    else if (this.rendererProperties.rendererType === 'THREEJS') {
 
-      this.__viewer.setPickDepth( this.getPickDepth(pickProperties.depth) );
-      this.__viewer.pickLevel = this.getPickLevel(pickProperties.level);
-      if (pickProperties.mouseX.length > 1) {
-          this.__viewer.setPickRectangle( pickProperties.mouseX[0], pickProperties.mouseY[0], pickProperties.mouseX[1], pickProperties.mouseY[1] );
-      }
-      else {
-       	  this.__viewer.setPickRay( pickProperties.mouseX[0], pickProperties.mouseY[0] );
-      }
-      this.__viewer.pick();
-      
-      if (pickProperties.selectionInfo == true) {
-    	  var infoEvent = {detail: {mode: pickProperties.mode, x: pickProperties.mouseX, y: pickProperties.mouseY, selected: this.__viewer.selectionList.list}};
-    	  this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
-      }
-      
-      if (pickProperties.highlight) {
-        this.__viewer.highlightColor.set( pickProperties.highlightColor );
-        this.__viewer.highlightObjects( this.__viewer.selectionList );
-      }
-    }  
+    } 
   }
 
   /**
