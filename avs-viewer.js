@@ -456,7 +456,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
 	}
 	
 	if (responseJSON.selectionInfo != undefined) {
-	  	  var infoEvent = responseJSON.selectionInfo;
+	  	  var infoEvent = {detail: responseJSON.selectionInfo};
 		  this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
 	}
 	
@@ -479,12 +479,12 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
   handleTap(e) {
 	var pick = this.getPickCoords(e.detail.x, e.detail.y);
 
-    var tapEvent = {detail: {x: pick.x, y: pick.y}};
+    var tapEvent = {detail: {x: pick.x, y: pick.y, sourceEvent: e}};
     this.dispatchEvent(new CustomEvent('avs-tap', tapEvent));
     
     var pickProperties = this.createPickProperties(this.tapProperties, 'tap');
-    pickProperties.mouseX=[pick.x];
-    pickProperties.mouseY=[pick.y];
+    pickProperties.x=pick.x;
+    pickProperties.y=pick.y;
     
     this.processPick( pickProperties );
   }
@@ -495,7 +495,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
   handleTrack(e) {
 	var rect = this.getPickRectangleCoords(e);
 	
-    var trackEvent = {detail: {state: e.detail.state, x: rect.x, y: rect.y}};
+    var trackEvent = {detail: {state: e.detail.state, left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, sourceEvent: e}};
     this.dispatchEvent(new CustomEvent('avs-track', trackEvent));
 
     switch(e.detail.state) {
@@ -505,16 +505,17 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       case 'track':
         this.__rectCtx.clearRect(0,0,this.width,this.height);
         this.rectangleStyle();
-        this.__rectCtx.strokeRect(rect.x[0], rect.y[0], rect.x[1] - rect.x[0], rect.y[1] - rect.y[0]);
+        this.__rectCtx.strokeRect(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
         break;
 
       case 'end':
         this.__rectCtx.clearRect(0,0,this.width,this.height);
 
         var pickProperties = this.createPickProperties(this.trackProperties, 'track');
-        pickProperties.mouseX=rect.x;
-        pickProperties.mouseY=rect.y;
-        pickProperties.type="RECTANGLE";
+        pickProperties.left=rect.left;
+        pickProperties.right=rect.right;
+        pickProperties.top=rect.top;
+        pickProperties.bottom=rect.bottom;
         
         this.processPick( pickProperties );
         break;
@@ -527,12 +528,12 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
   handleMouseMove(e) {
 	var pick = this.getPickCoords(e.pageX, e.pageY);
 	  
-    var hoverEvent = {detail: {x: pick.x, y: pick.y}};
+    var hoverEvent = {detail: {x: pick.x, y: pick.y, sourceEvent: e.detail.sourceEvent}};
     this.dispatchEvent(new CustomEvent('avs-hover', hoverEvent));
     
     var pickProperties = this.createPickProperties(this.hoverProperties, 'hover');
-    pickProperties.mouseX=[pick.x];
-    pickProperties.mouseY=[pick.y];
+    pickProperties.x=pick.x;
+    pickProperties.y=pick.y;
     
     this.processPick( pickProperties );
   }
@@ -556,7 +557,12 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
     var startX = x - e.detail.dx;
     var startY = y - e.detail.dy;
     
-	return {x:[startX, clampX], y:[startY, clampY]};
+    var left = Math.min(startX, clampX);
+    var right = Math.max(startX, clampX);
+    var top = Math.min(startY, clampY);
+    var bottom = Math.max(startY, clampY);
+
+	return {left: left, right: right, top: top, bottom: bottom};
   }
 
   processPick( pickProperties ) {
@@ -582,16 +588,16 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
 
         this.__viewer.setPickDepth( this.getPickDepth(pickProperties.depth) );
         this.__viewer.pickLevel = this.getPickLevel(pickProperties.level);
-        if (pickProperties.mouseX.length > 1) {
-          this.__viewer.setPickRectangle( pickProperties.mouseX[0], pickProperties.mouseY[0], pickProperties.mouseX[1], pickProperties.mouseY[1] );
+        if (pickProperties.type === 'track') {
+          this.__viewer.setPickRectangle( pickProperties.left, pickProperties.top, pickProperties.right, pickProperties.bottom );
         }
         else {
-       	  this.__viewer.setPickRay( pickProperties.mouseX[0], pickProperties.mouseY[0] );
+       	  this.__viewer.setPickRay( pickProperties.x, pickProperties.y );
         }
         this.__viewer.pick();
       
         if (pickProperties.selectionInfo == true) {
-    	  var infoEvent = {detail: {mode: pickProperties.mode, x: pickProperties.mouseX, y: pickProperties.mouseY, selected: this.__viewer.selectionList.list}};
+    	  var infoEvent = {detail: {mode: pickProperties.type, x: pickProperties.x, y: pickProperties.y, selected: this.__viewer.selectionList.list}};
     	  this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
         }
       
@@ -640,9 +646,9 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
 
   /**
    * @param source
-   * @param mode
+   * @param type
    */
-  createPickProperties(source, mode) {
+  createPickProperties(source, type) {
 	  var pickProperties = {};
 	  pickProperties.selectionInfo = source.selectionInfo;
 	  pickProperties.highlight = source.highlight;
@@ -650,7 +656,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
 	  pickProperties.depth = source.depth;
 	  pickProperties.level = source.level;
 	  pickProperties.processOnServer = source.processOnServer;
-	  pickProperties.mode = mode;
+	  pickProperties.type = type;
 	  
 	  return pickProperties;
   }
