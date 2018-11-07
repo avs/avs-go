@@ -143,7 +143,9 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
        *
        * * `processOnServer`: Override the default picking location (if `rendererProperties.rendererType` is `THREEJS` default is false, otherwise true).
        *
-       * @type {{level: string, depth: string, selectionInfo: boolean, highlight: boolean, highlightColor: string, processOnServer: boolean}}
+       * * `updateScene`: Control whether to update the scene due to the tap (default true, must be enabled to perform highlight).
+       *
+       * @type {{level: string, depth: string, selectionInfo: boolean, highlight: boolean, highlightColor: string, processOnServer: boolean, updateScene: boolean}}
        */
       tapProperties: {
         type: Object
@@ -161,7 +163,9 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
        *
        * * `processOnServer`: Override the default picking location (if `rendererProperties.rendererType` is `THREEJS` default is false, otherwise true).
        *
-       * @type {{level: string, depth: string, selectionInfo: boolean, highlight: boolean, highlightColor: string, processOnServer: boolean}}
+       * * `updateScene`: Control whether to update the scene due to the tap (default true, must be enabled to perform highlight).
+       *
+       * @type {{level: string, depth: string, selectionInfo: boolean, highlight: boolean, highlightColor: string, processOnServer: boolean, updateScene: boolean}}
        */
       trackProperties: {
         type: Object
@@ -450,25 +454,24 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
 	  return;
 	}
 	
-	if (responseJSON == undefined || responseJSON == null) {
+	if (responseJSON === undefined || responseJSON === null) {
 	  console.log("Null JSON response");
 	  return;
 	}
 	
-	if (responseJSON.selectionInfo != undefined) {
-	  	  var infoEvent = {detail: responseJSON.selectionInfo};
-		  this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
+	if (responseJSON.selectionInfo !== undefined) {
+	  var infoEvent = {detail: responseJSON.selectionInfo};
+	  this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
 	}
 	
-	if (this.rendererProperties.rendererType === 'IMAGE') {
+	if (responseJSON.imageurl !== undefined) {
 	
 	  this.$$("#sceneImage").src = responseJSON.imageurl;
-	  if (responseJSON.imagemap != undefined) {
+	  if (responseJSON.imagemap !== undefined) {
 	//        this.$$("#sceneImageMap").innerHTML = decodeURIComponent(responseJSON.imagemap.replace(/\+/g, '%20'));
 	  }
 	}
-	else if (this.rendererProperties.rendererType === 'SVG') {
-//	    this.$.viewerDiv.innerHTML = obj.detail.response;
+	else if (responseJSON.svg !== undefined) {
 	  this.$.viewerDiv.innerHTML = decodeURIComponent(responseJSON.svg.replace(/\+/g, '%20'));
 	}
   }
@@ -661,6 +664,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
 	  pickProperties.depth = source.depth;
 	  pickProperties.level = source.level;
 	  pickProperties.processOnServer = source.processOnServer;
+	  pickProperties.updateScene = source.updateScene;
 	  pickProperties.type = type;
 	  
 	  return pickProperties;
