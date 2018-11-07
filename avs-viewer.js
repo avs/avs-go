@@ -26,7 +26,7 @@ import * as Gestures from '../@polymer/polymer/lib/utils/gestures.js';
 import {afterNextRender} from '../@polymer/polymer/lib/utils/render-status.js';
 import '../@polymer/iron-ajax/iron-ajax.js';
 import {AvsRenderer} from './avs-renderer.js';
-import * as AVSThree from './avsthree.js';
+import * as AVSThree from './avs-three.js';
 
 /**
  * `avs-viewer` is a Polymer 3.0 element which uses `iron-ajax` to acquire
