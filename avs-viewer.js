@@ -576,8 +576,13 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         chartRequest.rendererRequest = Object.assign(chartRequest.rendererRequest, {"pickProperties":pickProperties});
         this.__viewer.loadGeometryAsUrl({
           url: this.sceneProperties.url, 
-          success: function() {
+          success: function(selectionInfo) {
             scope.__viewer.render();
+
+            if (selectionInfo !== undefined) {
+              var infoEvent = {detail: selectionInfo};
+              scope.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
+            }
           },	
           jsonRequest: chartRequest
         });
