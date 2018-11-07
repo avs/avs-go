@@ -410,9 +410,6 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       var chartRequest = this.buildChartRequest();
       this.__viewer.loadGeometryAsUrl({
         url: this.sceneProperties.url, 
-        success: function() {
-          scope.__viewer.render();
-        },	
         jsonRequest: chartRequest
       });
     }
@@ -580,8 +577,6 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         this.__viewer.loadGeometryAsUrl({
           url: this.sceneProperties.url, 
           success: function(selectionInfo) {
-            scope.__viewer.render();
-
             if (selectionInfo !== undefined) {
               var infoEvent = {detail: selectionInfo};
               scope.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
