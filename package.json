@@ -1,6 +1,6 @@
 {
   "name": "avs-go",
-  "version": "0.0.25",
+  "version": "0.0.26",
   "description": "AVS Go",
   "keywords": [
     "polymer",
@@ -24,7 +24,7 @@
     "@polymer/iron-ajax": "^3.0.1",
     "@polymer/iron-resizable-behavior": "^3.0.1",
     "@polymer/polymer": "^3.1.0",
-    "three": "0.97.0"
+    "three": "0.98.0"
   },
   "devDependencies": {
     "@polymer/iron-component-page": "^3.0.0-pre.21",
