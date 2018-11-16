@@ -113,8 +113,6 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         type: Object
       },
       /**
-       * Only used when `rendererProperties.rendererType` is `THREEJS`
-       *
        * * `level`: `CELL`, `CELL_SET` or `SCENE_NODE`
        *
        * * `depth`: `ALL` or `CLOSEST`
@@ -125,10 +123,14 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
        *
        * * `highlightColor`: Color to highlight with if `highlight` is true.
        *
-       * @type {{level: string, depth: string, selectionInfo: boolean, highlight: boolean, highlightColor: string}}
+       * * `processOnServer`: Override the default picking location (if `rendererProperties.rendererType` is `THREEJS` default is false, otherwise true).
+       *
+       * * `updateScene`: Control whether to update the scene due to the hover (default true, must be enabled to perform highlight).
+       *
+       * @type {{level: string, depth: string, selectionInfo: boolean, highlight: boolean, highlightColor: string, processOnServer: boolean, updateScene: boolean}}
        */
       hoverProperties: {
-        type: Object        
+        type: Object
       },
       /**
        * * `level`: `CELL`, `CELL_SET` or `SCENE_NODE`
@@ -163,7 +165,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
        *
        * * `processOnServer`: Override the default picking location (if `rendererProperties.rendererType` is `THREEJS` default is false, otherwise true).
        *
-       * * `updateScene`: Control whether to update the scene due to the tap (default true, must be enabled to perform highlight).
+       * * `updateScene`: Control whether to update the scene due to the track (default true, must be enabled to perform highlight).
        *
        * @type {{level: string, depth: string, selectionInfo: boolean, highlight: boolean, highlightColor: string, processOnServer: boolean, updateScene: boolean}}
        */
@@ -590,7 +592,6 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       else {
 
         this.__viewer.setPickDepth( this.getPickDepth(pickProperties.depth) );
-        this.__viewer.pickLevel = this.getPickLevel(pickProperties.level);
         if (pickProperties.type === 'track') {
           this.__viewer.setPickRectangle( pickProperties.left, pickProperties.top, pickProperties.right, pickProperties.bottom );
         }
@@ -598,15 +599,26 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
        	  this.__viewer.setPickRay( pickProperties.x, pickProperties.y );
         }
         this.__viewer.pick();
-      
-        if (pickProperties.selectionInfo == true) {
-    	  var infoEvent = {detail: {mode: pickProperties.type, x: pickProperties.x, y: pickProperties.y, selected: this.__viewer.selectionList.list}};
+
+        var selectionList = {};
+        if (pickProperties.level === "CELL") {
+          selectionList = this.__viewer.getPickedCells();
+        }
+        else if (pickProperties.level === "CELL_SET") {
+          selectionList = this.__viewer.getPickedCellSets();
+        }
+        else {
+          selectionList = this.__viewer.getPickedSceneNodes();
+        }
+
+        if (pickProperties.selectionInfo) {
+    	  var infoEvent = {detail: {mode: pickProperties.type, x: pickProperties.x, y: pickProperties.y, selected: this.__viewer.getSelectionInfo(selectionList)}};
     	  this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
         }
       
-        if (pickProperties.highlight) {
+        if (pickProperties.updateScene !== false && pickProperties.highlight) {
           this.__viewer.highlightColor.set( pickProperties.highlightColor );
-          this.__viewer.highlightObjects( this.__viewer.selectionList );
+          this.__viewer.highlightObjects( selectionList );
         }
       }
     }
@@ -630,21 +642,6 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
     else {
       return AVSThree.PickDepthEnum.Closest;
     } 
-  }
-
-  /**
-   * @param strValue
-   */
-  getPickLevel( strValue) {
-    if (strValue == "CELL_SET") {
-      return AVSThree.PickLevelEnum.CellSet;
-    }
-    else if (strValue == "SCENE_NODE") {
-      return AVSThree.PickLevelEnum.SceneNode;
-    }
-    else {
-      return AVSThree.PickLevelEnum.Cell;
-    }
   }
 
   /**
@@ -723,11 +720,6 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         console.log("reference existing webGL renderer = " + rendererId);
       }
       this.__viewer.setWebGLRenderer( renderer.getWebGLRenderer() );
-
-      // Setup hover interactor
-      if (this.hoverProperties != undefined) {
-        this.addEventListener('mousemove', this.handleMouseMove);
-      }
     }
     else if (this.rendererProperties.rendererType === 'IMAGE') {
       var imageElem = document.createElement("img");
@@ -755,6 +747,11 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       this.__rectCtx = canvasElem.getContext('2d');
 
       Gestures.addListener(this, 'track', this.handleTrack.bind(this));
+    }
+
+    // Setup hover interactor
+    if (this.hoverProperties !== undefined) {
+      this.addEventListener('mousemove', this.handleMouseMove);
     }
   }
 }
