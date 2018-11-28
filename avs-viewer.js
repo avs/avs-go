@@ -24,18 +24,19 @@ import {IronResizableBehavior} from '../@polymer/iron-resizable-behavior/iron-re
 import {GestureEventListeners} from '../@polymer/polymer/lib/mixins/gesture-event-listeners.js';
 import * as Gestures from '../@polymer/polymer/lib/utils/gestures.js';
 import {afterNextRender} from '../@polymer/polymer/lib/utils/render-status.js';
-import '../@polymer/iron-ajax/iron-ajax.js';
 import {AvsRenderer} from './avs-renderer.js';
 import * as AVSThree from './avs-three.js';
+import {AvsHttpMixin} from './avs-http-mixin.js';
+import {AvsDataMixin} from './avs-data-mixin.js';
 
 /**
- * `avs-viewer` is a Polymer 3.0 element which uses `iron-ajax` to acquire
+ * `avs-viewer` is a Polymer 3.0 element which uses `AvsHttpMixin` to acquire
  * a scene from the specified URL as either an image, SVG or three.js.
  *
  * @customElement
  * @polymer
  */
-class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListeners], PolymerElement) {
+class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableBehavior, GestureEventListeners], PolymerElement))) {
   static get template() {
     return html`
       <style>
@@ -44,7 +45,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
           height: 100%;
           position: relative;
         }   
-          #sceneImage {
+        #sceneImage {
           width:100%; height:100%; 
           position:absolute; top:0px; left:0px;
         }   
@@ -54,16 +55,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
           position:absolute; top:0px; left:0px;
         }   
       </style>
-
-      <iron-ajax id="getScene"
-        url=[[sceneUrl]]
-        handle-as="text"
-        method="post"
-        content-type="application/json"
-        on-response="handleResponse"
-        >
-      </iron-ajax>
-
+      ${super.template}
       <div id="viewerDiv"></div>
     `;
   }
@@ -85,29 +77,19 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       },
 
       /**
-       * * `dataLibraryKey`: Name of the data on the server to acquire.
+       * * `libraryKey`: Name of the scene on the server to acquire.
        *
-       * @type {{dataLibraryKey: string}}
-       */
-      dataProperties: {
-        type: Object
-      },
-      /**
-       * * `url`: Fully qualified URL to an instance of AVS Go server.
-       *
-       * * `sceneLibraryKey`: Name of the scene on the server to acquire.
-       *
-       * @type {{url: string, sceneLibraryKey: string}}
+       * @type {{libraryKey: string}}
        */
       sceneProperties: {
         type: Object
       },
       /**
-       * * `rendererType`: `IMAGE`, `SVG` or `THREEJS`
+       * * `type`: `IMAGE`, `SVG` or `THREEJS`
        *
        * * `backgroundColor`: Default background color, can be overridden using CSS.
        *
-       * @type {{rendererType: string, backgroundColor: string}}
+       * @type {{type: string, backgroundColor: string}}
        */
       rendererProperties: {
         type: Object
@@ -123,7 +105,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
        *
        * * `highlightColor`: Color to highlight with if `highlight` is true.
        *
-       * * `processOnServer`: Override the default picking location (if `rendererProperties.rendererType` is `THREEJS` default is false, otherwise true).
+       * * `processOnServer`: Override the default picking location (if `rendererProperties.type` is `THREEJS` default is false, otherwise true).
        *
        * * `updateScene`: Control whether to update the scene due to the hover (default true, must be enabled to perform highlight).
        *
@@ -143,7 +125,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
        *
        * * `highlightColor`: Color to highlight with if `highlight` is true.
        *
-       * * `processOnServer`: Override the default picking location (if `rendererProperties.rendererType` is `THREEJS` default is false, otherwise true).
+       * * `processOnServer`: Override the default picking location (if `rendererProperties.type` is `THREEJS` default is false, otherwise true).
        *
        * * `updateScene`: Control whether to update the scene due to the tap (default true, must be enabled to perform highlight).
        *
@@ -163,7 +145,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
        *
        * * `highlightColor`: Color to highlight with if `highlight` is true.
        *
-       * * `processOnServer`: Override the default picking location (if `rendererProperties.rendererType` is `THREEJS` default is false, otherwise true).
+       * * `processOnServer`: Override the default picking location (if `rendererProperties.type` is `THREEJS` default is false, otherwise true).
        *
        * * `updateScene`: Control whether to update the scene due to the track (default true, must be enabled to perform highlight).
        *
@@ -173,7 +155,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         type: Object
       },
       /**
-       * Only used when `rendererProperties.rendererType` is `THREEJS`
+       * Only used when `rendererProperties.type` is `THREEJS`
        *
        * * `type`: `CHUNK` or `OBOE_STREAM`
        *
@@ -187,19 +169,13 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         type: Object
       },
       /**
-       * Only used when `rendererProperties.rendererType` is `THREEJS`
+       * Only used when `rendererProperties.type` is `THREEJS`
        *
        * * `sceneNode`: Name of the scene node to attach a TransformInteractor to.
        *
        * @type {{sceneNode: string}}
        */
       transformProperties: {
-        type: Object
-      },
-      /**
-       * User properties for the data passed directly to the server.
-       */
-      dataUserProperties: {
         type: Object
       },
       /**
@@ -288,21 +264,10 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
   /**
    * 
    */
-  buildChartRequest() {
+  _assembleRequest() {
     var scope = this;
     var request = {};
 
-    // Data properties 
-    if (this.dataProperties == undefined) {
-        this.dataProperties = {};
-    }
-
-    // Data user Properties
-    if (this.dataUserProperties == undefined) {
-      this.dataUserProperties = {};
-    }
-    var dataPropertiesRequest = Object.assign(this.dataProperties, {"userProperties":this.dataUserProperties});
-    
     // Renderer Properties
     if (this.rendererProperties == undefined) {
       this.rendererProperties = {};
@@ -358,9 +323,11 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       scenePropertiesRequest.defaultLineProperties = Object.assign(scenePropertiesRequest.defaultLineProperties, {"color":lineColor});
     }
 
-    request = Object.assign(request, {"dataRequest":dataPropertiesRequest});
     request = Object.assign(request, {"rendererRequest":rendererPropertiesRequest});
     request = Object.assign(request, {"sceneRequest":scenePropertiesRequest});
+    
+    // Add Data Properties
+    this._addDataProperties(request);
 
     return request;
   }
@@ -407,18 +374,16 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
   updateViewer() {
     this.updateStyles();
     this.updateSize();
-    if (this.rendererProperties.rendererType === 'THREEJS') {
+    if (this.rendererProperties.type === 'THREEJS') {
       var scope = this;
-      var chartRequest = this.buildChartRequest();
+      var chartRequest = this._assembleRequest();
       this.__viewer.loadGeometryAsUrl({
-        url: this.sceneProperties.url, 
+        url: this.url, 
         jsonRequest: chartRequest
       });
     }
     else {
-      this.$.getScene.body= this.buildChartRequest();
-      this.$.getScene.url = this.sceneProperties.url;
-      this.$.getScene.generateRequest();
+      this._httpRequest(this._assembleRequest());
     }
 
     this.lowResizeWidth = (100 - this.resizeThreshold) / 100 * this.width;
@@ -432,7 +397,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
    */
   updateViewerClient() {
     this.updateSize();
-    if (this.rendererProperties.rendererType === 'THREEJS') {
+    if (this.rendererProperties.type === 'THREEJS') {
       this.__viewer.render();
     }
     if (this.trackProperties !== undefined) {
@@ -442,22 +407,9 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
   }
        
   /**
-   * @param obj
+   * @param responseJSON
    */
-  handleResponse(obj) {
-	var responseJSON = null;
-	try {
-	  responseJSON = JSON.parse(obj.detail.response);
-	} catch (_) {
-	  console.warn('Failed to parse JSON requested from ' + this.sceneProperties.url);
-	  return;
-	}
-	
-	if (responseJSON === undefined || responseJSON === null) {
-	  console.log("Null JSON response");
-	  return;
-	}
-	
+  _handleHttpResponse(responseJSON) {
 	if (responseJSON.selectionInfo !== undefined) {
 	  var infoEvent = {detail: responseJSON.selectionInfo};
 	  this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
@@ -568,16 +520,16 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
   }
 
   processPick( pickProperties ) {
-    if (this.rendererProperties.rendererType === 'THREEJS') {
+    if (this.rendererProperties.type === 'THREEJS') {
 
       // Server side processing
       if (pickProperties.processOnServer === true) {
      
         var scope = this;
-        var chartRequest = this.buildChartRequest();
+        var chartRequest = this._assembleRequest();
         chartRequest.rendererRequest = Object.assign(chartRequest.rendererRequest, {"pickProperties":pickProperties});
         this.__viewer.loadGeometryAsUrl({
-          url: this.sceneProperties.url, 
+          url: this.url, 
           success: function(selectionInfo) {
             if (selectionInfo !== undefined) {
               var infoEvent = {detail: selectionInfo};
@@ -612,7 +564,19 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
         }
 
         if (pickProperties.selectionInfo) {
-    	  var infoEvent = {detail: {mode: pickProperties.type, x: pickProperties.x, y: pickProperties.y, selected: this.__viewer.getSelectionInfo(selectionList)}};
+    	  var infoEvent = {detail: {mode: pickProperties.type}};
+          if (pickProperties.type === 'track') {
+            infoEvent.detail.left   = pickProperties.left;
+            infoEvent.detail.top    = pickProperties.top;
+            infoEvent.detail.right  = pickProperties.right;
+            infoEvent.detail.bottom = pickProperties.bottom;
+          }
+          else {
+            infoEvent.detail.x = pickProperties.x;
+            infoEvent.detail.y = pickProperties.y;
+          }
+          infoEvent.detail.selected =  this.__viewer.getSelectionInfo(selectionList);
+
     	  this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
         }
       
@@ -624,10 +588,9 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
     }
     else {
 
-      this.$.getScene.body = this.buildChartRequest();
-      this.$.getScene.body.rendererRequest = Object.assign(this.$.getScene.body.rendererRequest, {"pickProperties":pickProperties});
-      this.$.getScene.url = this.sceneProperties.url;
-      this.$.getScene.generateRequest();
+      var request = this._assembleRequest();
+      request.rendererRequest = Object.assign(request.rendererRequest, {"pickProperties":pickProperties});
+      this._httpRequest(request);
 
     } 
   }
@@ -684,7 +647,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
   // Add interactors after canvas has been initialized and sized
   initInteractors() {
     // Setup transform interactor
-    if (this.rendererProperties.rendererType === 'THREEJS') {
+    if (this.rendererProperties.type === 'THREEJS') {
       if (this.transformProperties != undefined && this.transformProperties.sceneNode != undefined) {
         var ti = new AVSThree.TransformInteractor( this.__viewer.domElement );
         ti.setSceneNodeByName( this.transformProperties.sceneNode );  // the name of the workbox component set on the server
@@ -694,7 +657,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
   }
 
   initViewer() {
-    if (this.rendererProperties.rendererType === 'THREEJS') {
+    if (this.rendererProperties.type === 'THREEJS') {
       if (this.__viewer != undefined) {  
         this.$.viewerDiv.removeChild( this.__viewer.domElement );
       }
@@ -721,7 +684,7 @@ class AvsViewer extends mixinBehaviors([IronResizableBehavior, GestureEventListe
       }
       this.__viewer.setWebGLRenderer( renderer.getWebGLRenderer() );
     }
-    else if (this.rendererProperties.rendererType === 'IMAGE') {
+    else if (this.rendererProperties.type === 'IMAGE') {
       var imageElem = document.createElement("img");
       imageElem.setAttribute("id", "sceneImage");
       // imageElem.setAttribute("usemap", "#sceneImageMap");
