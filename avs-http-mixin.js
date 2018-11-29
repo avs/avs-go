@@ -54,6 +54,11 @@ export const AvsHttpMixin = dedupingMixin((superClass) => class extends superCla
    * @param body Body content to send to the server.
    */
   _httpRequest(body) {
+    if (this.url === undefined) {
+      console.error('\'url\' property must point to an instance of AVS Go server.');
+      return;
+    }
+
     this.$.ajax.url = this.url;
     this.$.ajax.body = body;
     this.$.ajax.generateRequest();
