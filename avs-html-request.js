@@ -22,7 +22,7 @@ import {PolymerElement, html} from '@polymer/polymer/polymer-element.js';
 import '@polymer/polymer/lib/elements/dom-repeat.js';
 import {afterNextRender} from '@polymer/polymer/lib/utils/render-status.js';
 import {AvsHttpMixin} from './avs-http-mixin.js';
-import {AvsDataMixin} from './avs-data-mixin.js';
+import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
 
 /**
  * `avs-html-request` is a Polymer 3.0 element which uses `AvsHttpMixin` to acquire
@@ -31,7 +31,7 @@ import {AvsDataMixin} from './avs-data-mixin.js';
  * @customElement
  * @polymer
  */
-class AvsHtmlRequest extends AvsDataMixin(AvsHttpMixin(PolymerElement)) {
+class AvsHtmlRequest extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
   static get template() {
     return html`
       <template is="dom-repeat" items="{{linkCss}}">
@@ -90,11 +90,11 @@ class AvsHtmlRequest extends AvsDataMixin(AvsHttpMixin(PolymerElement)) {
     var scope = this;
     var request = {};
 
-    var htmlRequest = Object.assign(this.htmlRequestProperties, {"userProperties":this.htmlRequestUserProperties});
-    request = Object.assign(request, {"htmlRequest":htmlRequest});
+    var htmlRequestProperties = Object.assign(this.htmlRequestProperties, {"userProperties":this.htmlRequestUserProperties});
+    request = Object.assign(request, {"htmlRequestProperties":htmlRequestProperties});
     
-    // Add Data Properties
-    this._addDataProperties(request);
+    // Add DataSource Properties
+    this._addDataSourceProperties(request);
 
     return request;
   }

@@ -29,7 +29,7 @@ export const AvsHttpMixin = dedupingMixin((superClass) => class extends superCla
   static get template() {
     return html`
       <iron-ajax id="ajax"
-        handle-as="text"
+        handle-as="json"
         method="post"
         content-type="application/json"
         on-response="__httpResponse"
@@ -45,22 +45,22 @@ export const AvsHttpMixin = dedupingMixin((superClass) => class extends superCla
        */
       url: {
         type: String
-      },
+      }
     }
   }
 
   /**
    * Generate a HTTP request.
-   * @param body Body content to send to the server.
+   * @param model Model content to send to the server.
    */
-  _httpRequest(body) {
+  _httpRequest(model) {
     if (this.url === undefined) {
       console.error('\'url\' property must point to an instance of AVS Go server.');
       return;
     }
 
     this.$.ajax.url = this.url;
-    this.$.ajax.body = body;
+    this.$.ajax.body = {source: this.localName, model: model};
     this.$.ajax.generateRequest();
   }
 
@@ -69,22 +69,14 @@ export const AvsHttpMixin = dedupingMixin((superClass) => class extends superCla
    * @param e HTTP response event.
    */
   __httpResponse(e) {
-	var json = null;
-	try {
-	  json = JSON.parse(e.detail.response);
-	} catch (_) {
-	  console.error('Failed to parse JSON requested from ' + e.detail.url);
-	  return;
-	}
-	
-	this._handleHttpResponse(json);
+    this._handleHttpResponse(e.detail.response);
   }
 
   /**
    * HTTP response handler, should be implemented by children.
-   * @param json JSON parsed from HTTP response.
+   * @param response Object parsed from JSON HTTP response.
    */
-  _handleHttpResponse(json) {
-    console.error('Implement _handleHttpResponse(json) function when using AvsHttpMixin');
+  _handleHttpResponse(response) {
+    console.error('Implement _handleHttpResponse(response) function when using AvsHttpMixin');
   }
 });

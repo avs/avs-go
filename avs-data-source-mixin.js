@@ -1,5 +1,5 @@
 /*
-avs-data-mixin.js
+avs-data-source-mixin.js
 Copyright 2018 Advanced Visual Systems Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,26 +21,26 @@ Advanced Visual Systems Inc. (http://www.avs.com)
 import {dedupingMixin} from '@polymer/polymer/lib/utils/mixin.js';
 
 /**
- * Mixin to add data-properties functionality.
+ * Mixin to add data-source-properties functionality.
  */
-export const AvsDataMixin = dedupingMixin((superClass) => class extends superClass {
+export const AvsDataSourceMixin = dedupingMixin((superClass) => class extends superClass {
   static get properties() {
     return {
       /**
-       * * `libraryKey`: Name of the data on the server to acquire.
+       * * `libraryKey`: Name of the data source on the server to acquire.
        *
        * @type {{libraryKey: string}}
        */
-      dataProperties: {
+      dataSourceProperties: {
         type: Object,
         value: function () {
           return {};
         }
       },
       /**
-       * User properties for the data passed directly to the server.
+       * User properties for the data source passed directly to the server.
        */
-      dataUserProperties: {
+      dataSourceUserProperties: {
         type: Object,
         value: function () {
           return {};
@@ -50,16 +50,16 @@ export const AvsDataMixin = dedupingMixin((superClass) => class extends superCla
   }
 
   /**
-   * Add data-properties and data-user-properties to request structure.
+   * Add data-source-properties and data-source-user-properties to request structure.
    * @param request Request structure to add to.
    */
-  _addDataProperties(request) {
+  _addDataSourceProperties(request) {
     if (request === undefined) {
       request = {};
     }
 
-    var dataRequest = Object.assign(this.dataProperties, {"userProperties":this.dataUserProperties});
+    var dataSourceProperties = Object.assign(this.dataSourceProperties, {"userProperties":this.dataSourceUserProperties});
 
-    request = Object.assign(request, {"dataRequest":dataRequest});
+    request = Object.assign(request, {"dataSourceProperties":dataSourceProperties});
   }
 });

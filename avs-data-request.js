@@ -21,7 +21,7 @@ Advanced Visual Systems Inc. (http://www.avs.com)
 import {PolymerElement, html} from '@polymer/polymer/polymer-element.js';
 import {afterNextRender} from '@polymer/polymer/lib/utils/render-status.js';
 import {AvsHttpMixin} from './avs-http-mixin.js';
-import {AvsDataMixin} from './avs-data-mixin.js';
+import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
 
 /**
  * `avs-data-request` is a Polymer 3.0 element which uses `AvsHttpMixin` to acquire
@@ -30,7 +30,7 @@ import {AvsDataMixin} from './avs-data-mixin.js';
  * @customElement
  * @polymer
  */
-class AvsDataRequest extends AvsDataMixin(AvsHttpMixin(PolymerElement)) {
+class AvsDataRequest extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
   static get template() {
     return html`
       <style>
@@ -79,11 +79,11 @@ class AvsDataRequest extends AvsDataMixin(AvsHttpMixin(PolymerElement)) {
     var scope = this;
     var request = {};
 
-    var dataRequest = Object.assign(this.dataRequestProperties, {"userProperties":this.dataRequestUserProperties});
-    request = Object.assign(request, {"dataRequestRequest":dataRequest});
+    var dataRequestProperties = Object.assign(this.dataRequestProperties, {"userProperties":this.dataRequestUserProperties});
+    request = Object.assign(request, {"dataRequestProperties":dataRequestProperties});
     
-    // Add Data Properties
-    this._addDataProperties(request);
+    // Add DataSource Properties
+    this._addDataSourceProperties(request);
 
     return request;
   }

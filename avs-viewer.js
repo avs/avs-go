@@ -27,7 +27,7 @@ import {afterNextRender} from '../@polymer/polymer/lib/utils/render-status.js';
 import {AvsRenderer} from './avs-renderer.js';
 import * as AVSThree from './avs-three.js';
 import {AvsHttpMixin} from './avs-http-mixin.js';
-import {AvsDataMixin} from './avs-data-mixin.js';
+import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
 
 /**
  * `avs-viewer` is a Polymer 3.0 element which uses `AvsHttpMixin` to acquire
@@ -36,7 +36,7 @@ import {AvsDataMixin} from './avs-data-mixin.js';
  * @customElement
  * @polymer
  */
-class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableBehavior, GestureEventListeners], PolymerElement))) {
+class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResizableBehavior, GestureEventListeners], PolymerElement))) {
   static get template() {
     return html`
       <style>
@@ -64,25 +64,15 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
     return {
 
       /**
-       * Viewer width in pixels.
-       */
-      width: {
-        type: Number,
-      },
-      /**
-       * Viewer height in pixels.
-       */
-      height: {
-        type: Number,
-      },
-
-      /**
        * * `libraryKey`: Name of the scene on the server to acquire.
        *
        * @type {{libraryKey: string}}
        */
       sceneProperties: {
-        type: Object
+        type: Object,
+        value: function () {
+          return {};
+        }
       },
       /**
        * * `type`: `IMAGE`, `SVG` or `THREEJS`
@@ -92,7 +82,10 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
        * @type {{type: string, backgroundColor: string}}
        */
       rendererProperties: {
-        type: Object
+        type: Object,
+        value: function () {
+          return {};
+        }
       },
       /**
        * * `level`: `CELL`, `CELL_SET` or `SCENE_NODE`
@@ -182,7 +175,10 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
        * User properties for the scene passed directly to the server.
        */
       sceneUserProperties: {
-        type: Object
+        type: Object,
+        value: function () {
+          return {};
+        }
       },
       /**
        * * `visible`: control whether lines are visible
@@ -193,12 +189,15 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
        *
        * * `opacity`: between 0.0 (fully transparent) and 1.0 (fully opaque)
        *
-       * * `style`: `solid`, `dash`, `dot` or `dashdot`
+       * * `style`: `SOLID`, `DASH`, `DOT` or `DASH_DOT`
        *
        * @type {{visible: boolean, color: string, width: number, opacity: number, style: string}}
        */
       defaultLineProperties: {
-        type: Object
+        type: Object,
+        value: function () {
+          return {};
+        }
       },
       /**
        * * `color`: text color
@@ -209,20 +208,23 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
        *
        * * `fontFamily`: font name
        *
-       * * `fontStyle`: `normal` or `italic`
+       * * `fontStyle`: `NORMAL` or `ITALIC`
        *
-       * * `fontWeight`: `normal` or `bold`
+       * * `fontWeight`: `NORMAL` or `BOLD`
        *
-       * * `justification`: `start`, `middle` or `end`
+       * * `justification`: `START`, `MIDDLE` or `END`
        *
-       * * `horizontalAlignment`: `left`, `center` or `right`
+       * * `horizontalAlignment`: `LEFT`, `CENTER` or `RIGHT`
        *
-       * * `verticalAlignment`: `top`, `middle`, `bottom` or `baseline`
+       * * `verticalAlignment`: `TOP`, `MIDDLE`, `BOTTOM` or `BASELINE`
        *
        * @type {{color: string, angle: number, size: number, fontFamily: string, fontStyle: string, fontWeight: string, justification: string, horizontalAlignment: string, verticalAlignment: string}}
        */
       defaultTextProperties: {
-        type: Object
+        type: Object,
+        value: function () {
+          return {};
+        }
       },
 
       /**
@@ -231,34 +233,16 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
       resizeThreshold: {
         type: Number,
         value: 10
-      },
-
-      /** */
-      __initialized: {
-        type: Boolean
-      },
-      /** */
-      __viewer: {
-        type: Object
-      },
-      /** */
-      __rectCtx: {
-        type: Object
-      },
+      }
     }
   }
 
-  constructor() {
-    super();
-  }
-
   /**
-   * 
+   * Default line style and color
    */
-  rectangleStyle() {
-    // default line style and color
-    this.__rectCtx.setLineDash([3]);
-    this.__rectCtx.strokeStyle="#ff0000";
+  _rectangleStyle() {
+    this.rectCtx.setLineDash([3]);
+    this.rectCtx.strokeStyle="#ff0000";
   }
 
   /**
@@ -269,65 +253,48 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
     var request = {};
 
     // Renderer Properties
-    if (this.rendererProperties == undefined) {
-      this.rendererProperties = {};
-    }
-    var rendererPropertiesRequest = Object.assign(this.rendererProperties, {width:this.width, height:this.height});
+    var rendererProperties = Object.assign(this.rendererProperties, {width:this.width, height:this.height});
 
     // Stream Properties
-    if (this.streamProperties != undefined) {
+    if (this.streamProperties !== undefined) {
       this.streamProperties.chunkId = undefined;
       this.streamProperties.streamUpdate = function( count ) {
          console.log("Stream count = " + count);
-         scope.__viewer.render();
+         scope.threeViewer.render();
       }
-      rendererPropertiesRequest = Object.assign(rendererPropertiesRequest, {"streamProperties":this.streamProperties});
+      rendererProperties = Object.assign(rendererProperties, {"streamProperties":this.streamProperties});
     }
 
     // Scene properties 
-    if (this.sceneProperties == undefined) {
-      this.sceneProperties = {};
-    }
-
-    // Scene user Properties
-    if (this.sceneUserProperties == undefined) {
-      this.sceneUserProperties = {};
-    }
-    var scenePropertiesRequest = Object.assign(this.sceneProperties, {"userProperties":this.sceneUserProperties});
+    var sceneProperties = Object.assign(this.sceneProperties, {"userProperties":this.sceneUserProperties});
 
     // Text properties
-    if (this.defaultTextProperties == undefined) {
-      this.defaultTextProperties = {};
-    }
-    scenePropertiesRequest = Object.assign(scenePropertiesRequest, {"defaultTextProperties":this.defaultTextProperties});
+    sceneProperties = Object.assign(sceneProperties, {"defaultTextProperties":this.defaultTextProperties});
 
-    if (this.defaultTextProperties.color == undefined) {
+    if (this.defaultTextProperties.color === undefined) {
       var textColor = window.getComputedStyle(this, null).getPropertyValue("color");
-      scenePropertiesRequest.defaultTextProperties = Object.assign(scenePropertiesRequest.defaultTextProperties, {"color":textColor});
+      sceneProperties.defaultTextProperties = Object.assign(sceneProperties.defaultTextProperties, {"color":textColor});
     }
 
-    if (this.defaultTextProperties.fontFamily == undefined) {
+    if (this.defaultTextProperties.fontFamily === undefined) {
       var fontFamily = window.getComputedStyle(this, null).getPropertyValue("font-family");
       fontFamily = fontFamily.replace(/['"]+/g, '');
-      scenePropertiesRequest.defaultTextProperties = Object.assign(scenePropertiesRequest.defaultTextProperties, {"fontFamily":fontFamily});
+      sceneProperties.defaultTextProperties = Object.assign(sceneProperties.defaultTextProperties, {"fontFamily":fontFamily});
     }
 
     // Line Properties
-    if (this.defaultLineProperties == undefined) {
-      this.defaultLineProperties = {};
-    }
-    scenePropertiesRequest = Object.assign(scenePropertiesRequest, {"defaultLineProperties":this.defaultLineProperties});
+    sceneProperties = Object.assign(sceneProperties, {"defaultLineProperties":this.defaultLineProperties});
 
-    if (this.defaultLineProperties.color == undefined) {
+    if (this.defaultLineProperties.color === undefined) {
       var lineColor = window.getComputedStyle(this, null).getPropertyValue("color");
-      scenePropertiesRequest.defaultLineProperties = Object.assign(scenePropertiesRequest.defaultLineProperties, {"color":lineColor});
+      sceneProperties.defaultLineProperties = Object.assign(sceneProperties.defaultLineProperties, {"color":lineColor});
     }
 
-    request = Object.assign(request, {"rendererRequest":rendererPropertiesRequest});
-    request = Object.assign(request, {"sceneRequest":scenePropertiesRequest});
+    request = Object.assign(request, {"rendererProperties":rendererProperties});
+    request = Object.assign(request, {"sceneProperties":sceneProperties});
     
-    // Add Data Properties
-    this._addDataProperties(request);
+    // Add DataSource Properties
+    this._addDataSourceProperties(request);
 
     return request;
   }
@@ -335,7 +302,7 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
   /**
    * 
    */
-  onResize() {
+  _onResize() {
     if (this.clientWidth < this.lowResizeWidth ||
         this.clientWidth > this.highResizeWidth ||
         this.clientHeight < this.lowResizeHeight ||
@@ -377,9 +344,9 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
     if (this.rendererProperties.type === 'THREEJS') {
       var scope = this;
       var chartRequest = this._assembleRequest();
-      this.__viewer.loadGeometryAsUrl({
+      this.threeViewer.loadGeometryAsUrl({
         url: this.url, 
-        jsonRequest: chartRequest
+        jsonRequest: {source:scope.localName, model:chartRequest}
       });
     }
     else {
@@ -398,7 +365,7 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
   updateViewerClient() {
     this.updateSize();
     if (this.rendererProperties.type === 'THREEJS') {
-      this.__viewer.render();
+      this.threeViewer.render();
     }
     if (this.trackProperties !== undefined) {
       this.$$("#rectCanvas").width = this.width;
@@ -430,26 +397,26 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
   /**
    * @param e
    */
-  handleTap(e) {
-	var pick = this.getPickCoords(e.detail.x, e.detail.y);
+  _handleTap(e) {
+	var adjustedCoords = this._getAdjustedCoords(e.detail.x, e.detail.y);
 
-    var tapEvent = {detail: {x: pick.x, y: pick.y, sourceEvent: e}};
+    var tapEvent = {detail: {x: adjustedCoords.x, y: adjustedCoords.y, sourceEvent: e}};
     this.dispatchEvent(new CustomEvent('avs-tap', tapEvent));
     
-    var pickProperties = this.createPickProperties(this.tapProperties, 'tap');
-    pickProperties.x=pick.x;
-    pickProperties.y=pick.y;
+    var pickProperties = this._createPickProperties(this.tapProperties, 'tap');
+    pickProperties.x = adjustedCoords.x;
+    pickProperties.y = adjustedCoords.y;
     
-    this.processPick( pickProperties );
+    this._processPick( pickProperties );
   }
   
   /**
    * @param e
    */
-  handleTrack(e) {
-	var rect = this.getPickRectangleCoords(e);
+  _handleTrack(e) {
+	var adjustedCoords = this._getAdjustedRectangleCoords(e);
 	
-    var trackEvent = {detail: {state: e.detail.state, left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, sourceEvent: e}};
+    var trackEvent = {detail: {state: e.detail.state, left: adjustedCoords.left, right: adjustedCoords.right, top: adjustedCoords.top, bottom: adjustedCoords.bottom, sourceEvent: e}};
     this.dispatchEvent(new CustomEvent('avs-track', trackEvent));
 
     switch(e.detail.state) {
@@ -457,21 +424,21 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
         break;
 
       case 'track':
-        this.__rectCtx.clearRect(0,0,this.width,this.height);
-        this.rectangleStyle();
-        this.__rectCtx.strokeRect(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
+        this.rectCtx.clearRect(0,0,this.width,this.height);
+        this._rectangleStyle();
+        this.rectCtx.strokeRect(adjustedCoords.left, adjustedCoords.top, adjustedCoords.right - adjustedCoords.left, adjustedCoords.bottom - adjustedCoords.top);
         break;
 
       case 'end':
-        this.__rectCtx.clearRect(0,0,this.width,this.height);
+        this.rectCtx.clearRect(0,0,this.width,this.height);
 
-        var pickProperties = this.createPickProperties(this.trackProperties, 'track');
-        pickProperties.left=rect.left;
-        pickProperties.right=rect.right;
-        pickProperties.top=rect.top;
-        pickProperties.bottom=rect.bottom;
+        var pickProperties = this._createPickProperties(this.trackProperties, 'track');
+        pickProperties.left = adjustedCoords.left;
+        pickProperties.right = adjustedCoords.right;
+        pickProperties.top = adjustedCoords.top;
+        pickProperties.bottom = adjustedCoords.bottom;
         
-        this.processPick( pickProperties );
+        this._processPick( pickProperties );
         break;
     }
   }
@@ -479,20 +446,20 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
   /**
    * @param e
    */
-  handleMouseMove(e) {
-	var pick = this.getPickCoords(e.pageX, e.pageY);
+  _handleMouseMove(e) {
+	var adjustedCoords = this._getAdjustedCoords(e.clientX, e.clientY);
 	  
-    var hoverEvent = {detail: {x: pick.x, y: pick.y, sourceEvent: e.detail.sourceEvent}};
+    var hoverEvent = {detail: {x: adjustedCoords.x, y: adjustedCoords.y, sourceEvent: e.detail.sourceEvent}};
     this.dispatchEvent(new CustomEvent('avs-hover', hoverEvent));
     
-    var pickProperties = this.createPickProperties(this.hoverProperties, 'hover');
-    pickProperties.x=pick.x;
-    pickProperties.y=pick.y;
+    var pickProperties = this._createPickProperties(this.hoverProperties, 'hover');
+    pickProperties.x = adjustedCoords.x;
+    pickProperties.y = adjustedCoords.y;
     
-    this.processPick( pickProperties );
+    this._processPick( pickProperties );
   }
   
-  getPickCoords(x, y) {
+  _getAdjustedCoords(x, y) {
 	var rect = this.$.viewerDiv.getBoundingClientRect();
 	var x = Math.round(x - rect.left);
 	var y = Math.round(y - rect.top);
@@ -502,7 +469,7 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
 	return {x:clampX, y:clampY};
   }
   
-  getPickRectangleCoords(e) {
+  _getAdjustedRectangleCoords(e) {
 	var rect = this.$.viewerDiv.getBoundingClientRect();
     var x = Math.round(e.detail.x - rect.left);
     var y = Math.round(e.detail.y - rect.top);
@@ -519,7 +486,7 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
 	return {left: left, right: right, top: top, bottom: bottom};
   }
 
-  processPick( pickProperties ) {
+  _processPick( pickProperties ) {
     if (this.rendererProperties.type === 'THREEJS') {
 
       // Server side processing
@@ -527,8 +494,8 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
      
         var scope = this;
         var chartRequest = this._assembleRequest();
-        chartRequest.rendererRequest = Object.assign(chartRequest.rendererRequest, {"pickProperties":pickProperties});
-        this.__viewer.loadGeometryAsUrl({
+        chartRequest.rendererProperties = Object.assign(chartRequest.rendererProperties, {"pickProperties":pickProperties});
+        this.threeViewer.loadGeometryAsUrl({
           url: this.url, 
           success: function(selectionInfo) {
             if (selectionInfo !== undefined) {
@@ -543,24 +510,24 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
       // Client side processing
       else {
 
-        this.__viewer.setPickDepth( this.getPickDepth(pickProperties.depth) );
+        this.threeViewer.setPickDepth( this._getPickDepth(pickProperties.depth) );
         if (pickProperties.type === 'track') {
-          this.__viewer.setPickRectangle( pickProperties.left, pickProperties.top, pickProperties.right, pickProperties.bottom );
+          this.threeViewer.setPickRectangle( pickProperties.left, pickProperties.top, pickProperties.right, pickProperties.bottom );
         }
         else {
-       	  this.__viewer.setPickRay( pickProperties.x, pickProperties.y );
+       	  this.threeViewer.setPickRay( pickProperties.x, pickProperties.y );
         }
-        this.__viewer.pick();
+        this.threeViewer.pick();
 
         var selectionList = {};
         if (pickProperties.level === "CELL") {
-          selectionList = this.__viewer.getPickedCells();
+          selectionList = this.threeViewer.getPickedCells();
         }
         else if (pickProperties.level === "CELL_SET") {
-          selectionList = this.__viewer.getPickedCellSets();
+          selectionList = this.threeViewer.getPickedCellSets();
         }
         else {
-          selectionList = this.__viewer.getPickedSceneNodes();
+          selectionList = this.threeViewer.getPickedSceneNodes();
         }
 
         if (pickProperties.selectionInfo) {
@@ -575,21 +542,21 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
             infoEvent.detail.x = pickProperties.x;
             infoEvent.detail.y = pickProperties.y;
           }
-          infoEvent.detail.selected =  this.__viewer.getSelectionInfo(selectionList);
+          infoEvent.detail.selected =  this.threeViewer.getSelectionInfo(selectionList);
 
     	  this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
         }
       
         if (pickProperties.updateScene !== false && pickProperties.highlight) {
-          this.__viewer.highlightColor.set( pickProperties.highlightColor );
-          this.__viewer.highlightObjects( selectionList );
+          this.threeViewer.highlightColor.set( pickProperties.highlightColor );
+          this.threeViewer.highlightObjects( selectionList );
         }
       }
     }
     else {
 
       var request = this._assembleRequest();
-      request.rendererRequest = Object.assign(request.rendererRequest, {"pickProperties":pickProperties});
+      request.rendererProperties = Object.assign(request.rendererProperties, {"pickProperties":pickProperties});
       this._httpRequest(request);
 
     } 
@@ -598,7 +565,7 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
   /**
    * @param strValue
    */
-  getPickDepth( strValue ) {
+  _getPickDepth( strValue ) {
     if (strValue == "ALL") {
       return AVSThree.PickDepthEnum.All;
     }
@@ -611,7 +578,7 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
    * @param source
    * @param type
    */
-  createPickProperties(source, type) {
+  _createPickProperties(source, type) {
 	  var pickProperties = {};
 	  pickProperties.selectionInfo = source.selectionInfo;
 	  pickProperties.highlight = source.highlight;
@@ -631,39 +598,39 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
   connectedCallback() {
     super.connectedCallback();
 
-    // Hack to make sure all CSS and layout has been processed 
+    // Make sure all CSS and layout has been processed 
     afterNextRender(this, function() {
-      if (this.__initialized != true) {  
-        this.initViewer();
+      if (this.initialized !== true) {  
+        this._initViewer();
         this.updateViewer();
-        this.initInteractors();
+        this._initInteractors();
 
-        this.addEventListener('iron-resize', this.onResize);
-        this.__initialized = true;
+        this.addEventListener('iron-resize', this._onResize);
+        this.initialized = true;
       }
     }); 
   }
 
   // Add interactors after canvas has been initialized and sized
-  initInteractors() {
+  _initInteractors() {
     // Setup transform interactor
     if (this.rendererProperties.type === 'THREEJS') {
       if (this.transformProperties != undefined && this.transformProperties.sceneNode != undefined) {
-        var ti = new AVSThree.TransformInteractor( this.__viewer.domElement );
+        var ti = new AVSThree.TransformInteractor( this.threeViewer.domElement );
         ti.setSceneNodeByName( this.transformProperties.sceneNode );  // the name of the workbox component set on the server
-        this.__viewer.addInteractor( ti );  
+        this.threeViewer.addInteractor( ti );  
       }
     }
   }
 
-  initViewer() {
+  _initViewer() {
     if (this.rendererProperties.type === 'THREEJS') {
-      if (this.__viewer != undefined) {  
-        this.$.viewerDiv.removeChild( this.__viewer.domElement );
+      if (this.threeViewer !== undefined) {  
+        this.$.viewerDiv.removeChild( this.threeViewer.domElement );
       }
             
-      this.__viewer = new AVSThree.Viewer();
-      this.$.viewerDiv.appendChild( this.__viewer.domElement );
+      this.threeViewer = new AVSThree.Viewer();
+      this.$.viewerDiv.appendChild( this.threeViewer.domElement );
 
       // Check if the user has requested a specific renderer
       var rendererId = 'avsDefaultWebGLRenderer';
@@ -682,7 +649,7 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
       else {
         console.log("reference existing webGL renderer = " + rendererId);
       }
-      this.__viewer.setWebGLRenderer( renderer.getWebGLRenderer() );
+      this.threeViewer.setWebGLRenderer( renderer.webGLRenderer );
     }
     else if (this.rendererProperties.type === 'IMAGE') {
       var imageElem = document.createElement("img");
@@ -698,7 +665,7 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
 
     // Setup tap interactor
     if (this.tapProperties !== undefined) {
-      Gestures.addListener(this, 'tap', this.handleTap.bind(this));
+      Gestures.addListener(this, 'tap', this._handleTap.bind(this));
     }
 
     // Setup track interactor
@@ -707,14 +674,14 @@ class AvsViewer extends AvsDataMixin(AvsHttpMixin(mixinBehaviors([IronResizableB
       canvasElem.setAttribute("id", "rectCanvas");
       this.$.viewerDiv.appendChild(canvasElem);
 
-      this.__rectCtx = canvasElem.getContext('2d');
+      this.rectCtx = canvasElem.getContext('2d');
 
-      Gestures.addListener(this, 'track', this.handleTrack.bind(this));
+      Gestures.addListener(this, 'track', this._handleTrack.bind(this));
     }
 
     // Setup hover interactor
     if (this.hoverProperties !== undefined) {
-      this.addEventListener('mousemove', this.handleMouseMove);
+      this.addEventListener('mousemove', this._handleMouseMove);
     }
   }
 }
