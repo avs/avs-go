@@ -98,11 +98,13 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
        *
        * * `highlightColor`: Color to highlight with if `highlight` is true.
        *
+       * * `highlightLayer`: Draw highlighted objects in a separate layer in front. Faster but can create undesirable results, default is false. `rendererProperties.type` must be `THREEJS` and scene must be inside a 2D viewport.
+       *
        * * `processOnServer`: Override the default picking location (if `rendererProperties.type` is `THREEJS` default is false, otherwise true).
        *
        * * `updateScene`: Control whether to update the scene due to the hover (default true, must be enabled to perform highlight).
        *
-       * @type {{level: string, depth: string, selectionInfo: boolean, highlight: boolean, highlightColor: string, processOnServer: boolean, updateScene: boolean}}
+       * @type {{level: string, depth: string, selectionInfo: boolean, highlight: boolean, highlightColor: string, highlightLayer: boolean, processOnServer: boolean, updateScene: boolean}}
        */
       hoverProperties: {
         type: Object
@@ -118,11 +120,13 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
        *
        * * `highlightColor`: Color to highlight with if `highlight` is true.
        *
+       * * `highlightLayer`: Draw highlighted objects in a separate layer in front. Faster but can create undesirable results, default is false. `rendererProperties.type` must be `THREEJS` and scene must be inside a 2D viewport.
+       *
        * * `processOnServer`: Override the default picking location (if `rendererProperties.type` is `THREEJS` default is false, otherwise true).
        *
        * * `updateScene`: Control whether to update the scene due to the tap (default true, must be enabled to perform highlight).
        *
-       * @type {{level: string, depth: string, selectionInfo: boolean, highlight: boolean, highlightColor: string, processOnServer: boolean, updateScene: boolean}}
+       * @type {{level: string, depth: string, selectionInfo: boolean, highlight: boolean, highlightColor: string, highlightLayer: boolean, processOnServer: boolean, updateScene: boolean}}
        */
       tapProperties: {
         type: Object
@@ -138,11 +142,13 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
        *
        * * `highlightColor`: Color to highlight with if `highlight` is true.
        *
+       * * `highlightLayer`: Draw highlighted objects in a separate layer in front. Faster but can create undesirable results, default is false. `rendererProperties.type` must be `THREEJS` and scene must be inside a 2D viewport.
+       *
        * * `processOnServer`: Override the default picking location (if `rendererProperties.type` is `THREEJS` default is false, otherwise true).
        *
        * * `updateScene`: Control whether to update the scene due to the track (default true, must be enabled to perform highlight).
        *
-       * @type {{level: string, depth: string, selectionInfo: boolean, highlight: boolean, highlightColor: string, processOnServer: boolean, updateScene: boolean}}
+       * @type {{level: string, depth: string, selectionInfo: boolean, highlight: boolean, highlightColor: string, highlightLayer: boolean, processOnServer: boolean, updateScene: boolean}}
        */
       trackProperties: {
         type: Object
@@ -458,7 +464,7 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
     
     this._processPick( pickProperties );
   }
-  
+
   _getAdjustedCoords(x, y) {
 	var rect = this.$.viewerDiv.getBoundingClientRect();
 	var x = Math.round(x - rect.left);
@@ -549,7 +555,7 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
       
         if (pickProperties.updateScene !== false && pickProperties.highlight) {
           this.threeViewer.highlightColor.set( pickProperties.highlightColor );
-          this.threeViewer.highlightObjects( selectionList );
+          this.threeViewer.highlightObjects( selectionList, pickProperties.highlightLayer );
         }
       }
     }
@@ -583,6 +589,7 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
 	  pickProperties.selectionInfo = source.selectionInfo;
 	  pickProperties.highlight = source.highlight;
 	  pickProperties.highlightColor = source.highlightColor;
+	  pickProperties.highlightLayer = source.highlightLayer;
 	  pickProperties.depth = source.depth;
 	  pickProperties.level = source.level;
 	  pickProperties.processOnServer = source.processOnServer;
@@ -682,6 +689,7 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
     // Setup hover interactor
     if (this.hoverProperties !== undefined) {
       this.addEventListener('mousemove', this._handleMouseMove);
+      this.addEventListener('mouseout', this._handleMouseMove);
     }
   }
 }
