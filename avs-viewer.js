@@ -75,7 +75,7 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
         }
       },
       /**
-       * * `type`: `IMAGE`, `SVG` or `THREEJS`
+       * * `type`: `IMAGE`, `IMAGEURL`, `SVG` or `THREEJS`
        *
        * * `backgroundColor`: Default background color, can be overridden using CSS.
        *
@@ -383,14 +383,23 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
    * @param responseJSON
    */
   _handleHttpResponse(responseJSON) {
+    if (responseJSON == undefined || responseJSON == null) {
+        console.error("Empty response received in the avs-viewer component");
+        return;
+    }  
+    else if (responseJSON.error != undefined) {
+  	    this._logError(responseJSON.error);
+        return;      
+    }  
+      
 	if (responseJSON.selectionInfo !== undefined) {
 	  var infoEvent = {detail: responseJSON.selectionInfo};
 	  this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
 	}
 	
-	if (responseJSON.imageurl !== undefined) {
+	if (responseJSON.image !== undefined) {
 	
-	  this.$$("#sceneImage").src = responseJSON.imageurl;
+	  this.$$("#sceneImage").src = responseJSON.image;
 	  if (responseJSON.imagemap !== undefined) {
 	//        this.$$("#sceneImageMap").innerHTML = decodeURIComponent(responseJSON.imagemap.replace(/\+/g, '%20'));
 	  }
@@ -398,6 +407,50 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
 	else if (responseJSON.svg !== undefined) {
 	  this.$.viewerDiv.innerHTML = decodeURIComponent(responseJSON.svg.replace(/\+/g, '%20'));
 	}
+  }
+    
+  /**
+   * @param responseJSON.error
+   */
+  _handleHttpError(error) {
+    console.error("An unknown error occurred in the avs-viewer component, HTTP Request, or AVS/Go server");
+  }
+
+  /**
+   * @param responseJSON.error
+   */
+  _logError(error) {
+      if (error == undefined || error == null) {
+          console.error("An unknown error occurred on the AVS/Go server.");
+          return;
+      }
+      var goException = JSON.parse(decodeURIComponent(error));
+
+      var output = "An error occurred on the AVS/Go server";
+      
+      for (var key in goException) {
+          if (goException.hasOwnProperty(key)) {
+              if (output != "") {
+                output = output + "\n    ";
+              }
+              output = output + key + " : " + goException[key];
+          }
+      }
+
+      if (goException.GoType != undefined) {
+          if (goException.GoType == 0 || goException.GoType == 3) {
+              console.log(output);
+          }
+          else if (goException.GoType == 1) {
+              console.warn(output);
+          }
+          else if (goException.GoType == 2) {
+              console.error(output);
+          }
+      }
+      else {
+        console.log(output);
+      }
   }
 
   /**
@@ -409,7 +462,7 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
     var tapEvent = {detail: {x: adjustedCoords.x, y: adjustedCoords.y, sourceEvent: e}};
     this.dispatchEvent(new CustomEvent('avs-tap', tapEvent));
     
-    var pickProperties = this._createPickProperties(this.tapProperties, 'tap');
+    var pickProperties = this._createPickProperties(this.tapProperties, 'TAP');
     pickProperties.x = adjustedCoords.x;
     pickProperties.y = adjustedCoords.y;
     
@@ -438,7 +491,7 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
       case 'end':
         this.rectCtx.clearRect(0,0,this.width,this.height);
 
-        var pickProperties = this._createPickProperties(this.trackProperties, 'track');
+        var pickProperties = this._createPickProperties(this.trackProperties, 'TRACK');
         pickProperties.left = adjustedCoords.left;
         pickProperties.right = adjustedCoords.right;
         pickProperties.top = adjustedCoords.top;
@@ -458,7 +511,7 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
     var hoverEvent = {detail: {x: adjustedCoords.x, y: adjustedCoords.y, sourceEvent: e.detail.sourceEvent}};
     this.dispatchEvent(new CustomEvent('avs-hover', hoverEvent));
     
-    var pickProperties = this._createPickProperties(this.hoverProperties, 'hover');
+    var pickProperties = this._createPickProperties(this.hoverProperties, 'HOVER');
     pickProperties.x = adjustedCoords.x;
     pickProperties.y = adjustedCoords.y;
     
@@ -517,7 +570,7 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
       else {
 
         this.threeViewer.setPickDepth( this._getPickDepth(pickProperties.depth) );
-        if (pickProperties.type === 'track') {
+        if (pickProperties.type === 'TRACK') {
           this.threeViewer.setPickRectangle( pickProperties.left, pickProperties.top, pickProperties.right, pickProperties.bottom );
         }
         else {
@@ -538,7 +591,7 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
 
         if (pickProperties.selectionInfo) {
     	  var infoEvent = {detail: {mode: pickProperties.type}};
-          if (pickProperties.type === 'track') {
+          if (pickProperties.type === 'TRACK') {
             infoEvent.detail.left   = pickProperties.left;
             infoEvent.detail.top    = pickProperties.top;
             infoEvent.detail.right  = pickProperties.right;
@@ -658,7 +711,7 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
       }
       this.threeViewer.setWebGLRenderer( renderer.webGLRenderer );
     }
-    else if (this.rendererProperties.type === 'IMAGE') {
+    else if (this.rendererProperties.type === 'IMAGE' || this.rendererProperties.type === 'IMAGEURL') {
       var imageElem = document.createElement("img");
       imageElem.setAttribute("id", "sceneImage");
       // imageElem.setAttribute("usemap", "#sceneImageMap");

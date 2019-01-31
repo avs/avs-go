@@ -33,6 +33,7 @@ export const AvsHttpMixin = dedupingMixin((superClass) => class extends superCla
         method="post"
         content-type="application/json"
         on-response="__httpResponse"
+	    on-error="__httpError"
         >
       </iron-ajax>
     `;
@@ -73,10 +74,26 @@ export const AvsHttpMixin = dedupingMixin((superClass) => class extends superCla
   }
 
   /**
+   * HTTP error handler.
+   * @param e HTTP error event.
+   */
+  __httpError(e) {
+    this._handleHttpError(e.detail.error);
+  }
+
+  /**
    * HTTP response handler, should be implemented by children.
    * @param response Object parsed from JSON HTTP response.
    */
   _handleHttpResponse(response) {
     console.error('Implement _handleHttpResponse(response) function when using AvsHttpMixin');
+  }
+
+  /**
+   * HTTP error handler, should be implemented by children.
+   * @param error Object parsed from JSON HTTP response.
+   */
+  _handleHttpError(error) {
+    console.error('Implement _handleHttpError(error) function when using AvsHttpMixin.  Error = ' + error);
   }
 });
