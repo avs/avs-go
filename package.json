@@ -1,6 +1,6 @@
 {
   "name": "avs-go",
-  "version": "0.0.32",
+  "version": "0.0.33",
   "description": "AVS Go",
   "keywords": [
     "polymer",
@@ -23,13 +23,13 @@
   "dependencies": {
     "@polymer/iron-ajax": "^3.0.1",
     "@polymer/iron-resizable-behavior": "^3.0.1",
-    "@polymer/polymer": "^3.1.0",
-    "three": "0.99.0"
+    "@polymer/polymer": "^3.2.0",
+    "three": "0.102.1"
   },
   "devDependencies": {
     "@polymer/iron-component-page": "^3.0.0-pre.21",
-    "@polymer/iron-demo-helpers": "^3.0.2",
-    "@webcomponents/webcomponentsjs": "^2.2.5",
+    "@polymer/iron-demo-helpers": "^3.1.0",
+    "@webcomponents/webcomponentsjs": "^2.2.10",
     "wct-browser-legacy": "^1.0.2"
   }
 }
