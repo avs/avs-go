@@ -170,11 +170,29 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
       /**
        * Only used when `rendererProperties.type` is `THREEJS`
        *
-       * * `sceneNode`: Name of the scene node to attach a TransformInteractor to.
+       * * `enableRotate`: Control whether the interactor can rotate the object.
        *
-       * @type {{sceneNode: string}}
+       * * `enableZoom`: Control whether the interactor can zoom the object.
+       *
+       * * `enablePan`: Control whether the interactor can pan the object.
+       *
+       * * `matrix`: Manually set the transform matrix of the object.
+       *
+       * @type {{enableRotate: boolean, enableZoom: boolean, enablePan: boolean, matrix: array}}
        */
       transformProperties: {
+        type: Object
+      },
+      /**
+       * Only used when `rendererProperties.type` is `THREEJS`
+       *
+       * * `widthScale`: Horizontal zoom factor (number should be greater than 1.0)
+       *
+       * * `heightScale`: Vertical zoom factor (number should be greater than 1.0)
+       *
+       * @type {{widthScale: number, heightScale: number}}
+       */
+      domainTransformProperties: {
         type: Object
       },
       /**
@@ -260,6 +278,27 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
 
     // Renderer Properties
     var rendererProperties = Object.assign(this.rendererProperties, {width:this.width, height:this.height});
+
+    // Transform Properties
+    if (this.transformInteractor !== undefined) {
+      this.transformProperties.matrix = this.transformInteractor.object.matrix.elements;
+    }
+    if (this.transformProperties !== undefined) {
+      rendererProperties = Object.assign(rendererProperties, {transformMatrix:this.transformProperties.matrix});
+    }
+
+    // Domain Transform Properties
+    if (this.domainTransformProperties !== undefined) {
+      var width = this.width;
+      if (this.domainTransformProperties.widthScale !== undefined) {
+        width = Math.max(this.width, Math.round(width * this.domainTransformProperties.widthScale));
+      }
+      var height = this.height;
+      if (this.domainTransformProperties.heightScale !== undefined) {
+        height = Math.max(this.height, Math.round(height * this.domainTransformProperties.heightScale));
+      }
+      rendererProperties = Object.assign(rendererProperties, {width:width, height:height});
+    }
 
     // Stream Properties
     if (this.streamProperties !== undefined) {
@@ -424,7 +463,7 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
           console.error("An unknown error occurred on the AVS/Go server.");
           return;
       }
-      var goException = JSON.parse(decodeURIComponent(error));
+      var goException = JSON.parse(decodeURIComponent(error.replace(/\+/g, '%20')));
 
       var output = "An error occurred on the AVS/Go server";
       
@@ -433,7 +472,14 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
               if (output != "") {
                 output = output + "\n    ";
               }
-              output = output + key + " : " + goException[key];
+              output = output + key + " : ";
+              var child = goException[key];
+              if (child === Object(child)) {
+                  output = output + JSON.stringify(child);
+              }
+              else {
+                  output = output + goException[key];
+              }
           }
       }
 
@@ -675,10 +721,27 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
   _initInteractors() {
     // Setup transform interactor
     if (this.rendererProperties.type === 'THREEJS') {
-      if (this.transformProperties != undefined && this.transformProperties.sceneNode != undefined) {
-        var ti = new AVSThree.TransformInteractor( this.threeViewer.domElement );
-        ti.setSceneNodeByName( this.transformProperties.sceneNode );  // the name of the workbox component set on the server
-        this.threeViewer.addInteractor( ti );  
+      if (this.transformProperties !== undefined) {
+        this.transformInteractor = new AVSThree.TransformInteractor();
+        this.threeViewer.addInteractor( this.transformInteractor );
+
+        if (this.transformProperties.enableRotate === false) {
+          this.transformInteractor.enableRotate = false;
+        }
+        if (this.transformProperties.enableZoom === false) {
+          this.transformInteractor.enableZoom = false;
+        }
+        if (this.transformProperties.enablePan === false) {
+          this.transformInteractor.enablePan = false;
+        }
+      }
+
+      if (this.domainTransformProperties !== undefined) {
+        this.domainTransformInteractor = new AVSThree.DomainTransformInteractor();
+        this.threeViewer.addInteractor( this.domainTransformInteractor );
+
+		this.domainTransformInteractor.widthScale = this.domainTransformProperties.widthScale;
+		this.domainTransformInteractor.heightScale = this.domainTransformProperties.heightScale;
       }
     }
   }
