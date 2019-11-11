@@ -12,7 +12,23 @@ npm install avs-go
 
 ## Usage
 ```html
-<script type="module" src="avs-go/avs-viewer.js"></script>
+<html>
+  <head>
+    <script type="module" src="avs-go/avs-go-dataviz.js"></script>
+  </head>
+  <body>
+    <avs-go-dataviz id="mydataviz"
+       url="<url-to-avs-go-server>"
+       scene-properties='{
+         "libraryKey":"MyGoScene"
+       }'
+       renderer-properties='{
+         "type":"<IMAGE|SVG|THREEJS>"
+       }'
+    >
+    </avs-go-dataviz>
+  </body>
+</html>
 ```
 
 ## License
