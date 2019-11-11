@@ -27,6 +27,7 @@ import {afterNextRender} from '../@polymer/polymer/lib/utils/render-status.js';
 import {AvsRenderer} from './avs-renderer.js';
 import * as AVSThree from './avs-three.js';
 import {AvsHttpMixin} from './avs-http-mixin.js';
+import {AvsStreamMixin} from './avs-stream-mixin.js';
 import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
 
 /**
@@ -36,7 +37,7 @@ import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
  * @customElement
  * @polymer
  */
-class AvsGoDataViz extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResizableBehavior, GestureEventListeners], PolymerElement))) {
+class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinBehaviors([IronResizableBehavior, GestureEventListeners], PolymerElement)))) {
   static get template() {
     return html`
       <style>
@@ -69,6 +70,19 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronR
        * @type {{libraryKey: string}}
        */
       sceneProperties: {
+        type: Object,
+        value: function () {
+          return {};
+        }
+      },
+      /**
+       * * `color`: text and line color when default properties are not set
+       *
+       * * `fontFamily`: font name
+       *
+       * @type {{color: color, fontFamily: string}}
+       */
+      cssProperties: {
         type: Object,
         value: function () {
           return {};
@@ -151,20 +165,6 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronR
        * @type {{level: string, depth: string, selectionInfo: boolean, highlight: boolean, highlightColor: string, highlightLayer: boolean, processOnServer: boolean, updateScene: boolean}}
        */
       trackProperties: {
-        type: Object
-      },
-      /**
-       * Only used when `rendererProperties.type` is `THREEJS`
-       *
-       * * `type`: `CHUNK` or `OBOE_STREAM`
-       *
-       * * `chunkSizeFirstUpdate`: Number of objects in the first chunk when type is `CHUNK`
-       *
-       * * `chunkSize`: Number of objects in remaining chunks when type is `CHUNK`
-       *
-       * @type {{type: string, chunkSizeFirstUpdate: number, chunkSize: number}}
-       */
-      streamProperties: {
         type: Object
       },
       /**
@@ -273,7 +273,6 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronR
    * 
    */
   _assembleRequest() {
-    var scope = this;
     var request = {};
 
     // Renderer Properties
@@ -300,46 +299,30 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronR
       rendererProperties = Object.assign(rendererProperties, {width:width, height:height});
     }
 
-    // Stream Properties
-    if (this.streamProperties !== undefined) {
-      this.streamProperties.chunkId = undefined;
-      this.streamProperties.streamUpdate = function( count ) {
-         console.log("Stream count = " + count);
-         scope.threeViewer.render();
-      }
-      rendererProperties = Object.assign(rendererProperties, {"streamProperties":this.streamProperties});
-    }
-
     // Scene properties 
     var sceneProperties = Object.assign(this.sceneProperties, {"userProperties":this.sceneUserProperties});
+    
+    // Css Properties
+    var cssColor = window.getComputedStyle(this, null).getPropertyValue("color");
+    var cssFontFamily = window.getComputedStyle(this, null).getPropertyValue("font-family");
+    cssFontFamily = cssFontFamily.replace(/['"]+/g, '');
+    var cssProperties = Object.assign(this.cssProperties, {color:cssColor, fontFamily:cssFontFamily});
+    sceneProperties = Object.assign(sceneProperties, {"cssProperties":cssProperties});
 
-    // Text properties
+      // Text properties
     sceneProperties = Object.assign(sceneProperties, {"defaultTextProperties":this.defaultTextProperties});
-
-    if (this.defaultTextProperties.color === undefined) {
-      var textColor = window.getComputedStyle(this, null).getPropertyValue("color");
-      sceneProperties.defaultTextProperties = Object.assign(sceneProperties.defaultTextProperties, {"color":textColor});
-    }
-
-    if (this.defaultTextProperties.fontFamily === undefined) {
-      var fontFamily = window.getComputedStyle(this, null).getPropertyValue("font-family");
-      fontFamily = fontFamily.replace(/['"]+/g, '');
-      sceneProperties.defaultTextProperties = Object.assign(sceneProperties.defaultTextProperties, {"fontFamily":fontFamily});
-    }
 
     // Line Properties
     sceneProperties = Object.assign(sceneProperties, {"defaultLineProperties":this.defaultLineProperties});
-
-    if (this.defaultLineProperties.color === undefined) {
-      var lineColor = window.getComputedStyle(this, null).getPropertyValue("color");
-      sceneProperties.defaultLineProperties = Object.assign(sceneProperties.defaultLineProperties, {"color":lineColor});
-    }
 
     request = Object.assign(request, {"rendererProperties":rendererProperties});
     request = Object.assign(request, {"sceneProperties":sceneProperties});
     
     // Add DataSource Properties
     this._addDataSourceProperties(request);
+
+	// Add stream properties
+	this._addStreamProperties(rendererProperties);
 
     return request;
   }
@@ -386,17 +369,10 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronR
   updateViewer() {
     this.updateStyles();
     this.updateSize();
-    if (this.rendererProperties.type === 'THREEJS') {
-      var scope = this;
-      var chartRequest = this._assembleRequest();
-      this.threeViewer.loadGeometryAsUrl({
-        url: this.url, 
-        jsonRequest: {source:scope.localName, model:chartRequest}
-      });
-    }
-    else {
-      this._httpRequest(this._assembleRequest());
-    }
+
+    // Use avs-http-mixin to send the request to the server
+    var request = this._assembleRequest();
+    this._httpRequest(request);
 
     this.lowResizeWidth = (100 - this.resizeThreshold) / 100 * this.width;
     this.highResizeWidth = (100 + this.resizeThreshold) / 100 * this.width;
@@ -419,84 +395,40 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronR
   }
        
   /**
-   * @param responseJSON
+   * HTTP response handler.
+   * @param json JSON parsed from HTTP response.
    */
-  _handleHttpResponse(responseJSON) {
-    if (responseJSON == undefined || responseJSON == null) {
-        console.error("Empty response received in the avs-go-dataviz component");
-        return;
-    }  
-    else if (responseJSON.error != undefined) {
-  	    this._logError(responseJSON.error);
-        return;      
-    }  
-      
-	if (responseJSON.selectionInfo !== undefined) {
-	  var infoEvent = {detail: responseJSON.selectionInfo};
+  _handleHttpResponse(json) {
+	if (json.selectionInfo !== undefined) {
+	  var infoEvent = {detail: json.selectionInfo};
 	  this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
 	}
 	
-	if (responseJSON.image !== undefined) {
+	if (json.image !== undefined) {
 	
-	  this.$$("#sceneImage").src = responseJSON.image;
-	  if (responseJSON.imagemap !== undefined) {
-	//        this.$$("#sceneImageMap").innerHTML = decodeURIComponent(responseJSON.imagemap.replace(/\+/g, '%20'));
+	  this.$$("#sceneImage").src = json.image;
+	  if (json.imagemap !== undefined) {
+	//        this.$$("#sceneImageMap").innerHTML = decodeURIComponent(json.imagemap.replace(/\+/g, '%20'));
 	  }
 	}
-	else if (responseJSON.svg !== undefined) {
-	  this.$.dataVizDiv.innerHTML = decodeURIComponent(responseJSON.svg.replace(/\+/g, '%20'));
+	else if (json.svg !== undefined) {
+	  this.$.dataVizDiv.innerHTML = decodeURIComponent(json.svg.replace(/\+/g, '%20'));
 	}
-  }
-    
-  /**
-   * @param responseJSON.error
-   */
-  _handleHttpError(error) {
-    console.error("An unknown error occurred in the avs-go-dataviz component, HTTP Request, or AVS/Go server");
-  }
+    else if (json.threejs !== undefined) {
+      this.threeViewer.loadGeometryAsJson(json.threejs);
+    }
+    else if (json.chunkId !== undefined) {
+//      this.threeViewer.clearGeometry();
+      this.threeViewer.loadGeometryAsEvents(json);
 
-  /**
-   * @param responseJSON.error
-   */
-  _logError(error) {
-      if (error == undefined || error == null) {
-          console.error("An unknown error occurred on the AVS/Go server.");
-          return;
-      }
-      var goException = JSON.parse(decodeURIComponent(error.replace(/\+/g, '%20')));
-
-      var output = "An error occurred on the AVS/Go server";
-      
-      for (var key in goException) {
-          if (goException.hasOwnProperty(key)) {
-              if (output != "") {
-                output = output + "\n    ";
-              }
-              output = output + key + " : ";
-              var child = goException[key];
-              if (child === Object(child)) {
-                  output = output + JSON.stringify(child);
-              }
-              else {
-                  output = output + goException[key];
-              }
-          }
-      }
-
-      if (goException.GoType != undefined) {
-          if (goException.GoType == 0 || goException.GoType == 3) {
-              console.log(output);
-          }
-          else if (goException.GoType == 1) {
-              console.warn(output);
-          }
-          else if (goException.GoType == 2) {
-              console.error(output);
-          }
+      if (json.moreChunks === true) {
+        this.streamProperties.chunkId = json.chunkId;
+        this._httpRequest(this._assembleRequest());
       }
       else {
-        console.log(output);
+        this.streamProperties.chunkId = undefined;
       }
+    }
   }
 
   /**
@@ -592,74 +524,54 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronR
   }
 
   _processPick( pickProperties ) {
-    if (this.rendererProperties.type === 'THREEJS') {
+    if (this.rendererProperties.type === 'THREEJS' && pickProperties.processOnServer !== true) {
 
-      // Server side processing
-      if (pickProperties.processOnServer === true) {
-     
-        var scope = this;
-        var chartRequest = this._assembleRequest();
-        chartRequest.rendererProperties = Object.assign(chartRequest.rendererProperties, {"pickProperties":pickProperties});
-        this.threeViewer.loadGeometryAsUrl({
-          url: this.url, 
-          success: function(selectionInfo) {
-            if (selectionInfo !== undefined) {
-              var infoEvent = {detail: selectionInfo};
-              scope.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
-            }
-          },	
-          jsonRequest: chartRequest
-        });
-      } 
-    
-      // Client side processing
+      // Client side pick processing
+      this.threeViewer.setPickDepth( this._getPickDepth(pickProperties.depth) );
+      if (pickProperties.type === 'TRACK') {
+        this.threeViewer.setPickRectangle( pickProperties.left, pickProperties.top, pickProperties.right, pickProperties.bottom );
+      }
       else {
+   	    this.threeViewer.setPickRay( pickProperties.x, pickProperties.y );
+      }
+      this.threeViewer.pick();
 
-        this.threeViewer.setPickDepth( this._getPickDepth(pickProperties.depth) );
+      var selectionList = {};
+      if (pickProperties.level === "CELL") {
+        selectionList = this.threeViewer.getPickedCells();
+      }
+      else if (pickProperties.level === "CELL_SET") {
+        selectionList = this.threeViewer.getPickedCellSets();
+      }
+      else {
+        selectionList = this.threeViewer.getPickedSceneNodes();
+      }
+
+      if (pickProperties.selectionInfo) {
+        var infoEvent = {detail: {mode: pickProperties.type}};
         if (pickProperties.type === 'TRACK') {
-          this.threeViewer.setPickRectangle( pickProperties.left, pickProperties.top, pickProperties.right, pickProperties.bottom );
+          infoEvent.detail.left   = pickProperties.left;
+          infoEvent.detail.top    = pickProperties.top;
+          infoEvent.detail.right  = pickProperties.right;
+          infoEvent.detail.bottom = pickProperties.bottom;
         }
         else {
-       	  this.threeViewer.setPickRay( pickProperties.x, pickProperties.y );
+          infoEvent.detail.x = pickProperties.x;
+          infoEvent.detail.y = pickProperties.y;
         }
-        this.threeViewer.pick();
+        infoEvent.detail.selected =  this.threeViewer.getSelectionInfo(selectionList);
 
-        var selectionList = {};
-        if (pickProperties.level === "CELL") {
-          selectionList = this.threeViewer.getPickedCells();
-        }
-        else if (pickProperties.level === "CELL_SET") {
-          selectionList = this.threeViewer.getPickedCellSets();
-        }
-        else {
-          selectionList = this.threeViewer.getPickedSceneNodes();
-        }
-
-        if (pickProperties.selectionInfo) {
-    	  var infoEvent = {detail: {mode: pickProperties.type}};
-          if (pickProperties.type === 'TRACK') {
-            infoEvent.detail.left   = pickProperties.left;
-            infoEvent.detail.top    = pickProperties.top;
-            infoEvent.detail.right  = pickProperties.right;
-            infoEvent.detail.bottom = pickProperties.bottom;
-          }
-          else {
-            infoEvent.detail.x = pickProperties.x;
-            infoEvent.detail.y = pickProperties.y;
-          }
-          infoEvent.detail.selected =  this.threeViewer.getSelectionInfo(selectionList);
-
-    	  this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
-        }
+    	this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
+      }
       
-        if (pickProperties.updateScene !== false && pickProperties.highlight) {
-          this.threeViewer.highlightColor.set( pickProperties.highlightColor );
-          this.threeViewer.highlightObjects( selectionList, pickProperties.highlightLayer );
-        }
+      if (pickProperties.updateScene !== false && pickProperties.highlight) {
+        this.threeViewer.highlightColor.set( pickProperties.highlightColor );
+        this.threeViewer.highlightObjects( selectionList, pickProperties.highlightLayer );
       }
     }
     else {
 
+      // Server side pick processing
       var request = this._assembleRequest();
       request.rendererProperties = Object.assign(request.rendererProperties, {"pickProperties":pickProperties});
       this._httpRequest(request);
@@ -767,10 +679,10 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronR
         renderer = new AvsRenderer();
         renderer.setAttribute('id', rendererId);
         document.body.appendChild(renderer);
-        console.log("create new webGL renderer = " + rendererId);
+//        console.log("create new webGL renderer = " + rendererId);
       }
       else {
-        console.log("reference existing webGL renderer = " + rendererId);
+//        console.log("reference existing webGL renderer = " + rendererId);
       }
       this.threeViewer.setWebGLRenderer( renderer.webGLRenderer );
     }

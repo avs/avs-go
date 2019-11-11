@@ -56,7 +56,7 @@ export const AvsHttpMixin = dedupingMixin((superClass) => class extends superCla
    */
   _httpRequest(model) {
     if (this.url === undefined) {
-      console.error('\'url\' property must point to an instance of AVS Go server.');
+      console.error('\'url\' property must point to an instance of AVS/Go server.');
       return;
     }
 
@@ -70,7 +70,18 @@ export const AvsHttpMixin = dedupingMixin((superClass) => class extends superCla
    * @param e HTTP response event.
    */
   __httpResponse(e) {
-    this._handleHttpResponse(e.detail.response);
+    var response = e.detail.response;
+
+    if (response == undefined || response == null) {
+        console.error("Empty response received in the " + this.localName + " web component");
+        return;
+    }  
+    else if (response.error !== undefined) {
+  	    this._logError(response.error);
+        return;      
+    }  
+
+    this._handleHttpResponse(response);
   }
 
   /**
@@ -78,7 +89,7 @@ export const AvsHttpMixin = dedupingMixin((superClass) => class extends superCla
    * @param e HTTP error event.
    */
   __httpError(e) {
-    this._handleHttpError(e.detail.error);
+    console.error("An error occurred on the AVS/Go server. Error = " + e.detail.error);
   }
 
   /**
@@ -90,10 +101,47 @@ export const AvsHttpMixin = dedupingMixin((superClass) => class extends superCla
   }
 
   /**
-   * HTTP error handler, should be implemented by children.
-   * @param error Object parsed from JSON HTTP response.
+   * @param error
    */
-  _handleHttpError(error) {
-    console.error('Implement _handleHttpError(error) function when using AvsHttpMixin.  Error = ' + error);
-  }
+  _logError(error) {
+      if (error == undefined || error == null) {
+          console.error("An unknown error occurred on the AVS/Go server.");
+          return;
+      }
+      var goException = JSON.parse(decodeURIComponent(error.replace(/\+/g, '%20')));
+
+      var output = "An error occurred on the AVS/Go server";
+      
+      for (var key in goException) {
+          if (goException.hasOwnProperty(key)) {
+              if (output != "") {
+                output = output + "\n    ";
+              }
+              output = output + key + " : ";
+              var child = goException[key];
+              if (child === Object(child)) {
+                  output = output + JSON.stringify(child);
+              }
+              else {
+                  output = output + goException[key];
+              }
+          }
+      }
+
+      if (goException.GoType != undefined) {
+          if (goException.GoType == 0 || goException.GoType == 3) {
+              console.log(output);
+          }
+          else if (goException.GoType == 1) {
+              console.warn(output);
+          }
+          else if (goException.GoType == 2) {
+              console.error(output);
+          }
+      }
+      else {
+        console.log(output);
+      }
+   }
+
 });
