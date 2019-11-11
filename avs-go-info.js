@@ -1,5 +1,5 @@
 /*
-avs-data-request.js
+avs-go-info.js
 Copyright 2018 Advanced Visual Systems Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,37 +24,37 @@ import {AvsHttpMixin} from './avs-http-mixin.js';
 import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
 
 /**
- * `avs-data-request` is a Polymer 3.0 element which uses `AvsHttpMixin` to acquire
+ * `avs-go-info` is a Polymer 3.0 element which uses `AvsHttpMixin` to acquire
  * data in a particular format from the specified URL.
  *
  * @customElement
  * @polymer
  */
-class AvsDataRequest extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
+class AvsGoInfo extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
   static get template() {
     return html`
       <style>
-        #dataDiv {
+        #infoDiv {
           width: 100%;
           height: 100%;
           position: relative;
         }   
       </style>
       ${super.template}
-      <div id="dataDiv"></div>
+      <div id="infoDiv"></div>
     `;
   }
 
   static get properties() {
     return {
       /**
-       * * `libraryKey`: Name of the data request key on the server to run.
+       * * `libraryKey`: Name of the info key on the server to run.
        *
        * * `outputFormat`: Output format for the data from the server.
        *
        * @type {{libraryKey: string, outputFormat: string}}
        */
-      dataRequestProperties: {
+      infoProperties: {
         type: Object,
         value: function () {
           return {};
@@ -63,7 +63,7 @@ class AvsDataRequest extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
       /**
        * User properties passed directly to the server.
        */
-      dataRequestUserProperties: {
+      infoUserProperties: {
         type: Object,
         value: function () {
           return {};
@@ -79,8 +79,8 @@ class AvsDataRequest extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
     var scope = this;
     var request = {};
 
-    var dataRequestProperties = Object.assign(this.dataRequestProperties, {"userProperties":this.dataRequestUserProperties});
-    request = Object.assign(request, {"dataRequestProperties":dataRequestProperties});
+    var infoProperties = Object.assign(this.infoProperties, {"userProperties":this.infoUserProperties});
+    request = Object.assign(request, {"infoProperties":infoProperties});
     
     // Add DataSource Properties
     this._addDataSourceProperties(request);
@@ -93,9 +93,10 @@ class AvsDataRequest extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
    * @param json JSON parsed from HTTP response.
    */
   _handleHttpResponse(json) {
-	if (json.data !== undefined) {
-	  var dataEvent = {detail: json.data};
-	  this.dispatchEvent(new CustomEvent('avs-data-response', dataEvent));
+	if (json.info !== undefined) {
+	  var infoJSON = JSON.parse(decodeURIComponent(json.info.replace(/\+/g, '%20')));
+	  var infoEvent = {detail: infoJSON};
+	  this.dispatchEvent(new CustomEvent('avs-go-info-response', infoEvent));
 	}
   }
 
@@ -115,4 +116,4 @@ class AvsDataRequest extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
   }
 }
 
-window.customElements.define('avs-data-request', AvsDataRequest);
+window.customElements.define('avs-go-info', AvsGoInfo);

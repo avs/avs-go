@@ -1,5 +1,5 @@
 /*
-avs-viewer.js
+avs-go-dataviz.js
 Copyright 2018 Advanced Visual Systems Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,17 +30,17 @@ import {AvsHttpMixin} from './avs-http-mixin.js';
 import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
 
 /**
- * `avs-viewer` is a Polymer 3.0 element which uses `AvsHttpMixin` to acquire
+ * `avs-go-dataviz` is a Polymer 3.0 element which uses `AvsHttpMixin` to acquire
  * a scene from the specified URL as either an image, SVG or three.js.
  *
  * @customElement
  * @polymer
  */
-class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResizableBehavior, GestureEventListeners], PolymerElement))) {
+class AvsGoDataViz extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResizableBehavior, GestureEventListeners], PolymerElement))) {
   static get template() {
     return html`
       <style>
-        #viewerDiv {
+        #dataVizDiv {
           width: 100%;
           height: 100%;
           position: relative;
@@ -56,7 +56,7 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
         }   
       </style>
       ${super.template}
-      <div id="viewerDiv"></div>
+      <div id="dataVizDiv"></div>
     `;
   }
 
@@ -423,7 +423,7 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
    */
   _handleHttpResponse(responseJSON) {
     if (responseJSON == undefined || responseJSON == null) {
-        console.error("Empty response received in the avs-viewer component");
+        console.error("Empty response received in the avs-go-dataviz component");
         return;
     }  
     else if (responseJSON.error != undefined) {
@@ -444,7 +444,7 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
 	  }
 	}
 	else if (responseJSON.svg !== undefined) {
-	  this.$.viewerDiv.innerHTML = decodeURIComponent(responseJSON.svg.replace(/\+/g, '%20'));
+	  this.$.dataVizDiv.innerHTML = decodeURIComponent(responseJSON.svg.replace(/\+/g, '%20'));
 	}
   }
     
@@ -452,7 +452,7 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
    * @param responseJSON.error
    */
   _handleHttpError(error) {
-    console.error("An unknown error occurred in the avs-viewer component, HTTP Request, or AVS/Go server");
+    console.error("An unknown error occurred in the avs-go-dataviz component, HTTP Request, or AVS/Go server");
   }
 
   /**
@@ -565,7 +565,7 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
   }
 
   _getAdjustedCoords(x, y) {
-	var rect = this.$.viewerDiv.getBoundingClientRect();
+	var rect = this.$.dataVizDiv.getBoundingClientRect();
 	var x = Math.round(x - rect.left);
 	var y = Math.round(y - rect.top);
 	var clampX = Math.max(0, Math.min(x, this.width));
@@ -575,7 +575,7 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
   }
   
   _getAdjustedRectangleCoords(e) {
-	var rect = this.$.viewerDiv.getBoundingClientRect();
+	var rect = this.$.dataVizDiv.getBoundingClientRect();
     var x = Math.round(e.detail.x - rect.left);
     var y = Math.round(e.detail.y - rect.top);
     var clampX = Math.max(0, Math.min(x, this.width));
@@ -749,11 +749,11 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
   _initViewer() {
     if (this.rendererProperties.type === 'THREEJS') {
       if (this.threeViewer !== undefined) {  
-        this.$.viewerDiv.removeChild( this.threeViewer.domElement );
+        this.$.dataVizDiv.removeChild( this.threeViewer.domElement );
       }
             
       this.threeViewer = new AVSThree.Viewer();
-      this.$.viewerDiv.appendChild( this.threeViewer.domElement );
+      this.$.dataVizDiv.appendChild( this.threeViewer.domElement );
 
       // Check if the user has requested a specific renderer
       var rendererId = 'avsDefaultWebGLRenderer';
@@ -778,12 +778,12 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
       var imageElem = document.createElement("img");
       imageElem.setAttribute("id", "sceneImage");
       // imageElem.setAttribute("usemap", "#sceneImageMap");
-      this.$.viewerDiv.appendChild(imageElem);
+      this.$.dataVizDiv.appendChild(imageElem);
 
       // var mapElem = document.createElement("map");
       // mapElem.setAttribute("id", "sceneImageMap");
       // mapElem.setAttribute("name", "sceneImageMap");
-      // this.$.viewerDiv.appendChild(mapElem);
+      // this.$.dataVizDiv.appendChild(mapElem);
     }
 
     // Setup tap interactor
@@ -795,7 +795,7 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
     if (this.trackProperties !== undefined) {
       var canvasElem = document.createElement("canvas");
       canvasElem.setAttribute("id", "rectCanvas");
-      this.$.viewerDiv.appendChild(canvasElem);
+      this.$.dataVizDiv.appendChild(canvasElem);
 
       this.rectCtx = canvasElem.getContext('2d');
 
@@ -810,4 +810,4 @@ class AvsViewer extends AvsDataSourceMixin(AvsHttpMixin(mixinBehaviors([IronResi
   }
 }
 
-window.customElements.define('avs-viewer', AvsViewer);
+window.customElements.define('avs-go-dataviz', AvsGoDataViz);

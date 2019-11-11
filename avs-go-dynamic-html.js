@@ -1,5 +1,5 @@
 /*
-avs-html-request.js
+avs-go-dynamic-html.js
 Copyright 2018 Advanced Visual Systems Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,13 +25,13 @@ import {AvsHttpMixin} from './avs-http-mixin.js';
 import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
 
 /**
- * `avs-html-request` is a Polymer 3.0 element which uses `AvsHttpMixin` to acquire
+ * `avs-go-dynamic-html` is a Polymer 3.0 element which uses `AvsHttpMixin` to acquire
  * HTML from the specified URL.
  *
  * @customElement
  * @polymer
  */
-class AvsHtmlRequest extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
+class AvsGoDynamicHtml extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
   static get template() {
     return html`
       <template is="dom-repeat" items="{{linkCss}}">
@@ -61,11 +61,11 @@ class AvsHtmlRequest extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
         }
       },
       /**
-       * * `libraryKey`: Name of the HTML key on the server to run.
+       * * `libraryKey`: Name of the dynamic HTML key on the server to run.
        *
        * @type {{libraryKey: string}}
        */
-      htmlRequestProperties: {
+      dynamicHtmlProperties: {
         type: Object,
         value: function () {
           return {};
@@ -74,7 +74,7 @@ class AvsHtmlRequest extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
       /**
        * User properties passed directly to the server.
        */
-      htmlRequestUserProperties: {
+      dynamicHtmlUserProperties: {
         type: Object,
         value: function () {
           return {};
@@ -90,8 +90,8 @@ class AvsHtmlRequest extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
     var scope = this;
     var request = {};
 
-    var htmlRequestProperties = Object.assign(this.htmlRequestProperties, {"userProperties":this.htmlRequestUserProperties});
-    request = Object.assign(request, {"htmlRequestProperties":htmlRequestProperties});
+    var dynamicHtmlProperties = Object.assign(this.dynamicHtmlProperties, {"userProperties":this.dynamicHtmlUserProperties});
+    request = Object.assign(request, {"dynamicHtmlProperties":dynamicHtmlProperties});
     
     // Add DataSource Properties
     this._addDataSourceProperties(request);
@@ -125,4 +125,4 @@ class AvsHtmlRequest extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
   }
 }
 
-window.customElements.define('avs-html-request', AvsHtmlRequest);
+window.customElements.define('avs-go-dynamic-html', AvsGoDynamicHtml);
