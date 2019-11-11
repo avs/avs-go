@@ -76,19 +76,6 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         }
       },
       /**
-       * * `color`: text and line color when default properties are not set
-       *
-       * * `fontFamily`: font name
-       *
-       * @type {{color: color, fontFamily: string}}
-       */
-      cssProperties: {
-        type: Object,
-        value: function () {
-          return {};
-        }
-      },
-      /**
        * * `type`: `IMAGE`, `IMAGEURL`, `SVG` or `THREEJS`
        *
        * * `backgroundColor`: Default background color, can be overridden using CSS.
@@ -170,15 +157,22 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       /**
        * Only used when `rendererProperties.type` is `THREEJS`
        *
-       * * `enableRotate`: Control whether the interactor can rotate the object.
+       * Create an interactor for transforming a particular scene object on the client.
+       * Use the addInteractor() method on the server to select which object to transform.
        *
-       * * `enableZoom`: Control whether the interactor can zoom the object.
+       * * `enableRotate`: Control whether the interactor can rotate the object (default is true).
        *
-       * * `enablePan`: Control whether the interactor can pan the object.
+       * * `enableZoom`: Control whether the interactor can zoom the object (default is true).
        *
-       * * `matrix`: Manually set the transform matrix of the object.
+       * * `enablePan`: Control whether the interactor can pan the object (default is true).
        *
-       * @type {{enableRotate: boolean, enableZoom: boolean, enablePan: boolean, matrix: array}}
+       * * `twistAngle`: Set the starting twist angle of the object in degrees.
+       *
+       * * `tiltAngle`: Set the starting tilt angle of the object in degrees.
+       *
+       * * `scale`: Set the starting scale of the object.
+       *
+       * @type {{enableRotate: boolean, enableZoom: boolean, enablePan: boolean, twistAngle: number, tiltAngle: number, scale: number}}
        */
       transformProperties: {
         type: Object
@@ -279,11 +273,28 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     var rendererProperties = Object.assign(this.rendererProperties, {width:this.width, height:this.height});
 
     // Transform Properties
-    if (this.transformInteractor !== undefined) {
-      this.transformProperties.matrix = this.transformInteractor.object.matrix.elements;
-    }
     if (this.transformProperties !== undefined) {
-      rendererProperties = Object.assign(rendererProperties, {transformMatrix:this.transformProperties.matrix});
+      // Transform interactor not yet created, create a matrix using the starting twist angle, tilt angle and scale from transformProperties
+      if (this.transformInteractor === undefined) {
+        var twist = this.transformProperties.twistAngle !== undefined ? this.transformProperties.twistAngle * Math.PI / 180 : 0;
+        var tilt = this.transformProperties.tiltAngle !== undefined ? this.transformProperties.tiltAngle * Math.PI / 180 : 0;
+        var scale = this.transformProperties.scale !== undefined ? this.transformProperties.scale : 1;
+
+        var sinTW = Math.sin(twist);
+        var cosTW = Math.cos(twist);
+        var sinTI = Math.sin(tilt);
+        var cosTI = Math.cos(tilt);
+
+        var matrix = [ scale * cosTW, 0,             cosTI * sinTW,         0,
+                       0,             scale * cosTI, -sinTI,                0,
+                       -sinTW,        cosTW * sinTI, scale * cosTW * cosTI, 0,
+                       0,             0,             0,                     1 ];
+        rendererProperties = Object.assign(rendererProperties, {transformMatrix:matrix});
+      }
+      // Send the transform matrix directly from the transform interactor, we may have transformed locally since the last request
+      else {
+        rendererProperties = Object.assign(rendererProperties, {transformMatrix:this.transformInteractor.object.matrix.elements});
+      }
     }
 
     // Domain Transform Properties
@@ -306,22 +317,22 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     var cssColor = window.getComputedStyle(this, null).getPropertyValue("color");
     var cssFontFamily = window.getComputedStyle(this, null).getPropertyValue("font-family");
     cssFontFamily = cssFontFamily.replace(/['"]+/g, '');
-    var cssProperties = Object.assign(this.cssProperties, {color:cssColor, fontFamily:cssFontFamily});
+    var cssProperties = {color:cssColor, fontFamily:cssFontFamily};
     sceneProperties = Object.assign(sceneProperties, {"cssProperties":cssProperties});
 
-      // Text properties
+    // Default text properties
     sceneProperties = Object.assign(sceneProperties, {"defaultTextProperties":this.defaultTextProperties});
 
-    // Line Properties
+    // Default line properties
     sceneProperties = Object.assign(sceneProperties, {"defaultLineProperties":this.defaultLineProperties});
 
     request = Object.assign(request, {"rendererProperties":rendererProperties});
     request = Object.assign(request, {"sceneProperties":sceneProperties});
     
-    // Add DataSource Properties
+    // Add dataSource properties from the mixin
     this._addDataSourceProperties(request);
 
-	// Add stream properties
+	// Add stream properties from the mixin
 	this._addStreamProperties(rendererProperties);
 
     return request;
