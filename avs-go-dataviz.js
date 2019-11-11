@@ -180,13 +180,15 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       /**
        * Only used when `rendererProperties.type` is `THREEJS`
        *
+       * Create an interactor for panning an OpenViz domain (and its axes and charts) on the client.
+       *
        * * `widthScale`: Horizontal zoom factor (number should be greater than 1.0)
        *
        * * `heightScale`: Vertical zoom factor (number should be greater than 1.0)
        *
        * @type {{widthScale: number, heightScale: number}}
        */
-      domainTransformProperties: {
+      panProperties: {
         type: Object
       },
       /**
@@ -285,10 +287,10 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         var sinTI = Math.sin(tilt);
         var cosTI = Math.cos(tilt);
 
-        var matrix = [ scale * cosTW, 0,             cosTI * sinTW,         0,
-                       0,             scale * cosTI, -sinTI,                0,
-                       -sinTW,        cosTW * sinTI, scale * cosTW * cosTI, 0,
-                       0,             0,             0,                     1 ];
+        var matrix = [ cosTW * scale,  0,                     cosTI * sinTW * scale, 0,
+                       0,              cosTI * scale,         -sinTI * scale,        0,
+                       -sinTW * scale, cosTW * sinTI * scale, cosTW * cosTI * scale, 0,
+                       0,              0,                     0,                     1 ];
         rendererProperties = Object.assign(rendererProperties, {transformMatrix:matrix});
       }
       // Send the transform matrix directly from the transform interactor, we may have transformed locally since the last request
@@ -297,15 +299,15 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       }
     }
 
-    // Domain Transform Properties
-    if (this.domainTransformProperties !== undefined) {
+    // Pan Properties
+    if (this.panProperties !== undefined) {
       var width = this.width;
-      if (this.domainTransformProperties.widthScale !== undefined) {
-        width = Math.max(this.width, Math.round(width * this.domainTransformProperties.widthScale));
+      if (this.panProperties.widthScale !== undefined) {
+        width = Math.max(this.width, Math.round(width * this.panProperties.widthScale));
       }
       var height = this.height;
-      if (this.domainTransformProperties.heightScale !== undefined) {
-        height = Math.max(this.height, Math.round(height * this.domainTransformProperties.heightScale));
+      if (this.panProperties.heightScale !== undefined) {
+        height = Math.max(this.height, Math.round(height * this.panProperties.heightScale));
       }
       rendererProperties = Object.assign(rendererProperties, {width:width, height:height});
     }
@@ -642,7 +644,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 
   // Add interactors after canvas has been initialized and sized
   _initInteractors() {
-    // Setup transform interactor
+    // Setup client-side interactors for ThreeJS
     if (this.rendererProperties.type === 'THREEJS') {
       if (this.transformProperties !== undefined) {
         this.transformInteractor = new AVSThree.TransformInteractor();
@@ -659,12 +661,12 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         }
       }
 
-      if (this.domainTransformProperties !== undefined) {
-        this.domainTransformInteractor = new AVSThree.DomainTransformInteractor();
-        this.threeViewer.addInteractor( this.domainTransformInteractor );
+      if (this.panProperties !== undefined) {
+        this.panInteractor = new AVSThree.PanInteractor();
+        this.threeViewer.addInteractor( this.panInteractor );
 
-		this.domainTransformInteractor.widthScale = this.domainTransformProperties.widthScale;
-		this.domainTransformInteractor.heightScale = this.domainTransformProperties.heightScale;
+		this.panInteractor.widthScale = this.panProperties.widthScale;
+		this.panInteractor.heightScale = this.panProperties.heightScale;
       }
     }
   }
