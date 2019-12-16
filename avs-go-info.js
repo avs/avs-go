@@ -72,6 +72,16 @@ class AvsGoInfo extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
     }
   }
 
+    
+  /**
+   * 
+   */
+  updateInfo() {
+    // Use avs-http-mixin to send the request to the server
+    var request = this._assembleRequest();
+    this._httpRequest(request);
+  }
+
   /**
    * Assemble the JSON request from our properties to send to the server.
    */
