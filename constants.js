@@ -18,19 +18,6 @@
  * Advanced Visual Systems Inc. (http://www.avs.com)
  */
 
-import {WebGLRenderer} from 'three';
-
-/**
- * `avs-renderer` is a custom element created internally by
- * `avs-go-dataviz` to share a single instance of THREE.WebGLRenderer
- * between multiple viewers.
- *
- * @customElement
- */
-export class AvsRenderer extends HTMLElement {
-  connectedCallback() {
-    this.webGLRenderer = new WebGLRenderer( {alpha: true} );
-  }
-}
-
-window.customElements.define('avs-renderer', AvsRenderer);
+export var VERSION_MAJOR = 0;
+export var VERSION_MINOR = 1;
+export var VERSION_CHANGE = '$Change: 67178 $';

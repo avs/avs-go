@@ -1,29 +1,29 @@
-/*
-avs-go-dataviz.js
-Copyright 2018 Advanced Visual Systems Inc.
+/**
+ * @license
+ * Copyright 2018 Advanced Visual Systems Inc.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * 
+ * This product includes software developed at
+ * Advanced Visual Systems Inc. (http://www.avs.com)
+ */
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
-This product includes software developed at
-Advanced Visual Systems Inc. (http://www.avs.com)
-*/
-
-import {PolymerElement, html} from '../@polymer/polymer/polymer-element.js';
-import {mixinBehaviors} from '../@polymer/polymer/lib/legacy/class.js';
-import {IronResizableBehavior} from '../@polymer/iron-resizable-behavior/iron-resizable-behavior.js';
-import {GestureEventListeners} from '../@polymer/polymer/lib/mixins/gesture-event-listeners.js';
-import * as Gestures from '../@polymer/polymer/lib/utils/gestures.js';
-import {afterNextRender} from '../@polymer/polymer/lib/utils/render-status.js';
+import {PolymerElement, html} from '@polymer/polymer/polymer-element.js';
+import {mixinBehaviors} from '@polymer/polymer/lib/legacy/class.js';
+import {IronResizableBehavior} from '@polymer/iron-resizable-behavior/iron-resizable-behavior.js';
+import {GestureEventListeners} from '@polymer/polymer/lib/mixins/gesture-event-listeners.js';
+import * as Gestures from '@polymer/polymer/lib/utils/gestures.js';
+import {afterNextRender} from '@polymer/polymer/lib/utils/render-status.js';
 import {AvsRenderer} from './avs-renderer.js';
 import * as AVSThree from './avs-three.js';
 import {AvsHttpMixin} from './avs-http-mixin.js';
@@ -647,7 +647,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     // Setup client-side interactors for ThreeJS
     if (this.rendererProperties.type === 'THREEJS') {
       if (this.transformProperties !== undefined) {
-        this.transformInteractor = new AVSThree.TransformInteractor();
+        this.transformInteractor = new AVSThree.TransformInteractor( this.threeViewer.domElement );
         this.threeViewer.addInteractor( this.transformInteractor );
 
         if (this.transformProperties.enableRotate === false) {
@@ -662,7 +662,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       }
 
       if (this.panProperties !== undefined) {
-        this.panInteractor = new AVSThree.PanInteractor();
+        this.panInteractor = new AVSThree.PanInteractor( this.threeViewer.domElement );
         this.threeViewer.addInteractor( this.panInteractor );
 
 		this.panInteractor.widthScale = this.panProperties.widthScale;
