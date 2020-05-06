@@ -25,10 +25,11 @@ import {GestureEventListeners} from '@polymer/polymer/lib/mixins/gesture-event-l
 import * as Gestures from '@polymer/polymer/lib/utils/gestures.js';
 import {afterNextRender} from '@polymer/polymer/lib/utils/render-status.js';
 import {AvsRenderer} from './avs-renderer.js';
-import * as AVSThree from './avs-three.js';
+import {Viewer, TransformInteractor, PanInteractor, PickDepthEnum} from './avs-three.module.min.js';
 import {AvsHttpMixin} from './avs-http-mixin.js';
 import {AvsStreamMixin} from './avs-stream-mixin.js';
 import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
+import {LOGO} from './logo.js';
 
 /**
  * `avs-go-dataviz` is a Polymer 3.0 element which uses `AvsHttpMixin` to acquire
@@ -41,23 +42,36 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   static get template() {
     return html`
       <style>
+        :host {
+          display:block;
+          width:100%;
+          height:100%;
+          overflow:hidden;
+        }
         #dataVizDiv {
-          width: 100%;
-          height: 100%;
-          position: relative;
+          position:relative;
         }   
         #sceneImage {
-          width:100%; height:100%; 
-          position:absolute; top:0px; left:0px;
+          width:100%;
+          height:100%;
+          position:absolute;
+          outline:none;
         }   
         #rectCanvas {
-          width:100%; height:100%; 
-          overflow: hidden;
-          position:absolute; top:0px; left:0px;
-        }   
+          position:absolute;
+          top:0px;
+          left:0px;
+        }
+        .spin {
+          -webkit-animation:spin 4s linear infinite;
+           -moz-animation:spin 4s linear infinite;
+           animation:spin 4s linear infinite;
+        }
+        @-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
+        @-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
+        @keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
       </style>
-      ${super.template}
-      <div id="dataVizDiv"></div>
+      <div id="container"></div>
     `;
   }
 
@@ -253,6 +267,18 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       resizeThreshold: {
         type: Number,
         value: 10
+      },
+
+      /**
+       * Aspect ratio (w/h) of the viewer if it is unable to determine the height of its parent element.
+       */
+      aspectRatio: {
+        type: Number,
+        value: 1.777777
+      },
+
+      fileUrl: {
+        type: Boolean
       }
     }
   }
@@ -344,10 +370,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
    * 
    */
   _onResize() {
-    if (this.clientWidth < this.lowResizeWidth ||
-        this.clientWidth > this.highResizeWidth ||
-        this.clientHeight < this.lowResizeHeight ||
-        this.clientHeight > this.highResizeHeight) {
+    if (!this.fileUrl && (this.clientWidth < this.lowResizeWidth ||
+        this.clientWidth > this.highResizeWidth)) {
 
       this.updateViewer();
     }
@@ -359,16 +383,27 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   /**
    * 
    */
-  updateSize() {          
+  updateSize() {
+    // Get the width provided by our container
     this.width = this.clientWidth;
     if (this.width <= 0) {
-      this.width = 200;  // default
+      this.width = 200;  // fallback if clientWidth fails
     }
-        
+
+    // Get the height provided by our container
     this.height = this.clientHeight;
     if (this.height <= 0) {
-      this.height = 200;  // default
+      if (this.aspectRatio > 0.1) {
+        // Use the aspect ratio if one is set
+        this.height = this.width / this.aspectRatio;
+      }
+      else {
+         this.height = 200; // fallback if clientHeight fails
+      }
     }
+
+    this.dataVizDiv.style.width = this.width + 'px';
+    this.dataVizDiv.style.height = this.height + 'px';
 
     if (this.trackProperties !== undefined) {
       this.$$("#rectCanvas").width = this.width;
@@ -383,14 +418,43 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     this.updateStyles();
     this.updateSize();
 
-    // Use avs-http-mixin to send the request to the server
-    var request = this._assembleRequest();
-    this._httpRequest(request);
-
     this.lowResizeWidth = (100 - this.resizeThreshold) / 100 * this.width;
     this.highResizeWidth = (100 + this.resizeThreshold) / 100 * this.width;
-    this.lowResizeHeight = (100 - this.resizeThreshold) / 100 * this.height;
-    this.highResizeHeight = (100 + this.resizeThreshold) / 100 * this.height;
+
+    if (this.spinner === undefined) {
+      this.spinner = document.createElement('img');
+      this.spinner.style.position = 'absolute';
+      this.spinner.style.top = '50%';
+      this.spinner.style.left = '50%';
+      this.spinner.style.transform = 'translate(-50%, -50%);';
+      this.spinner.id = 'spinner';
+      this.spinner.style.width = '100px';
+      this.spinner.style.height = '100px';
+      this.spinner.src = LOGO;
+      this.dataVizDiv.appendChild(this.spinner);
+    }
+    this.spinner.style.display = 'block';
+    if (this.url !== undefined) {
+      this.spinner.className = 'spin';
+    }
+
+    // Use avs-http-mixin to send the request to the server
+    if (this.fileUrl) {
+      this.chunkFile = 0;
+      this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this));
+    } else {
+      var request = this._assembleRequest();
+      this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), request);
+    }
+  }
+
+  /**
+   *
+   */
+  _handleHttpError(event) {
+    if (this.spinner !== undefined) {
+      this.spinner.style.display = 'none';
+    }
   }
 
   /**
@@ -399,14 +463,45 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   updateViewerClient() {
     this.updateSize();
     if (this.rendererProperties.type === 'THREEJS') {
-      this.threeViewer.render();
-    }
-    if (this.trackProperties !== undefined) {
-      this.$$("#rectCanvas").width = this.width;
-      this.$$("#rectCanvas").height = this.height;
+      this.threeViewer.render(true);
     }
   }
-       
+
+  /**
+   *
+   */
+  clear() {
+    if (this.rendererProperties.type === 'THREEJS') {
+      this.threeViewer.clearGeometry();
+      this.threeViewer.render();
+    }
+    else if (this.rendererProperties.type === 'SVG') {
+      var el = this.dataVizDiv;
+      while (el.firstChild) el.removeChild(el.firstChild);
+    }
+    else {
+      this.$$("#sceneImage").src = 'data:,';
+    }
+  }
+
+  /**
+   *
+   */
+  hide() {
+    if (this.$.container.hasChildNodes()) {
+      this.$.container.removeChild(this.dataVizDiv);
+    }
+  }
+
+  /**
+   *
+   */
+  unhide() {
+    if (!this.$.container.hasChildNodes()) {
+      this.$.container.appendChild(this.dataVizDiv);
+    }
+  }
+  
   /**
    * HTTP response handler.
    * @param json JSON parsed from HTTP response.
@@ -416,7 +511,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 	  var infoEvent = {detail: json.selectionInfo};
 	  this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
 	}
-	
+
 	if (json.image !== undefined) {
 	
 	  this.$$("#sceneImage").src = json.image;
@@ -425,22 +520,30 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 	  }
 	}
 	else if (json.svg !== undefined) {
-	  this.$.dataVizDiv.innerHTML = decodeURIComponent(json.svg.replace(/\+/g, '%20'));
+	  this.dataVizDiv.innerHTML = decodeURIComponent(json.svg.replace(/\+/g, '%20'));
 	}
     else if (json.threejs !== undefined) {
       this.threeViewer.loadGeometryAsJson(json.threejs);
     }
     else if (json.chunkId !== undefined) {
-//      this.threeViewer.clearGeometry();
       this.threeViewer.loadGeometryAsEvents(json);
 
       if (json.moreChunks === true) {
-        this.streamProperties.chunkId = json.chunkId;
-        this._httpRequest(this._assembleRequest());
+        if (this.fileUrl) {
+          this.chunkFile++;
+          this._httpRequest(this.url + '.' + this.chunkFile, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this));
+        } else {
+          this.streamProperties.chunkId = json.chunkId;
+          this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), this._assembleRequest());
+        }
       }
-      else {
+      else if (!this.fileUrl) {
         this.streamProperties.chunkId = undefined;
       }
+    }
+
+    if (this.spinner !== undefined) {
+      this.spinner.style.display = 'none';
     }
   }
 
@@ -510,7 +613,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   }
 
   _getAdjustedCoords(x, y) {
-	var rect = this.$.dataVizDiv.getBoundingClientRect();
+	var rect = this.dataVizDiv.getBoundingClientRect();
 	var x = Math.round(x - rect.left);
 	var y = Math.round(y - rect.top);
 	var clampX = Math.max(0, Math.min(x, this.width));
@@ -520,7 +623,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   }
   
   _getAdjustedRectangleCoords(e) {
-	var rect = this.$.dataVizDiv.getBoundingClientRect();
+	var rect = this.dataVizDiv.getBoundingClientRect();
     var x = Math.round(e.detail.x - rect.left);
     var y = Math.round(e.detail.y - rect.top);
     var clampX = Math.max(0, Math.min(x, this.width));
@@ -587,7 +690,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       // Server side pick processing
       var request = this._assembleRequest();
       request.rendererProperties = Object.assign(request.rendererProperties, {"pickProperties":pickProperties});
-      this._httpRequest(request);
+      this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), request);
 
     } 
   }
@@ -597,10 +700,10 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
    */
   _getPickDepth( strValue ) {
     if (strValue == "ALL") {
-      return AVSThree.PickDepthEnum.All;
+      return PickDepthEnum.All;
     }
     else {
-      return AVSThree.PickDepthEnum.Closest;
+      return PickDepthEnum.Closest;
     } 
   }
 
@@ -647,7 +750,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     // Setup client-side interactors for ThreeJS
     if (this.rendererProperties.type === 'THREEJS') {
       if (this.transformProperties !== undefined) {
-        this.transformInteractor = new AVSThree.TransformInteractor( this.threeViewer.domElement );
+        this.transformInteractor = new TransformInteractor( this.threeViewer.domElement );
         this.threeViewer.addInteractor( this.transformInteractor );
 
         if (this.transformProperties.enableRotate === false) {
@@ -662,7 +765,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       }
 
       if (this.panProperties !== undefined) {
-        this.panInteractor = new AVSThree.PanInteractor( this.threeViewer.domElement );
+        this.panInteractor = new PanInteractor( this.threeViewer.domElement );
         this.threeViewer.addInteractor( this.panInteractor );
 
 		this.panInteractor.widthScale = this.panProperties.widthScale;
@@ -672,13 +775,17 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   }
 
   _initViewer() {
+    this.dataVizDiv = document.createElement('div');
+    this.dataVizDiv.setAttribute('id', 'dataVizDiv');
+    this.$.container.appendChild(this.dataVizDiv);
+
     if (this.rendererProperties.type === 'THREEJS') {
       if (this.threeViewer !== undefined) {  
-        this.$.dataVizDiv.removeChild( this.threeViewer.domElement );
+        this.dataVizDiv.removeChild( this.threeViewer.domElement );
       }
             
-      this.threeViewer = new AVSThree.Viewer();
-      this.$.dataVizDiv.appendChild( this.threeViewer.domElement );
+      this.threeViewer = new Viewer();
+      this.dataVizDiv.appendChild( this.threeViewer.domElement );
 
       // Check if the user has requested a specific renderer
       var rendererId = 'avsDefaultWebGLRenderer';
@@ -703,12 +810,12 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       var imageElem = document.createElement("img");
       imageElem.setAttribute("id", "sceneImage");
       // imageElem.setAttribute("usemap", "#sceneImageMap");
-      this.$.dataVizDiv.appendChild(imageElem);
+      this.dataVizDiv.appendChild(imageElem);
 
       // var mapElem = document.createElement("map");
       // mapElem.setAttribute("id", "sceneImageMap");
       // mapElem.setAttribute("name", "sceneImageMap");
-      // this.$.dataVizDiv.appendChild(mapElem);
+      // this.dataVizDiv.appendChild(mapElem);
     }
 
     // Setup tap interactor
@@ -720,7 +827,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     if (this.trackProperties !== undefined) {
       var canvasElem = document.createElement("canvas");
       canvasElem.setAttribute("id", "rectCanvas");
-      this.$.dataVizDiv.appendChild(canvasElem);
+      this.dataVizDiv.appendChild(canvasElem);
 
       this.rectCtx = canvasElem.getContext('2d');
 

@@ -18,8 +18,7 @@
  * Advanced Visual Systems Inc. (http://www.avs.com)
  */
 
-import {PolymerElement, html} from '@polymer/polymer/polymer-element.js';
-import {afterNextRender} from '@polymer/polymer/lib/utils/render-status.js';
+import {PolymerElement} from '@polymer/polymer/polymer-element.js';
 import {AvsHttpMixin} from './avs-http-mixin.js';
 import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
 
@@ -31,19 +30,6 @@ import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
  * @polymer
  */
 class AvsGoInfo extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
-  static get template() {
-    return html`
-      <style>
-        #infoDiv {
-          width: 100%;
-          height: 100%;
-          position: relative;
-        }   
-      </style>
-      ${super.template}
-      <div id="infoDiv"></div>
-    `;
-  }
 
   static get properties() {
     return {
@@ -79,7 +65,7 @@ class AvsGoInfo extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
   updateInfo() {
     // Use avs-http-mixin to send the request to the server
     var request = this._assembleRequest();
-    this._httpRequest(request);
+    this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), request);
   }
 
   /**
@@ -97,7 +83,14 @@ class AvsGoInfo extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
 
     return request;
   }
-       
+
+  /**
+   *
+   */
+  _handleHttpError(event) {
+
+  }
+
   /**
    * HTTP response handler.
    * @param json JSON parsed from HTTP response.
@@ -108,21 +101,6 @@ class AvsGoInfo extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
 	  var infoEvent = {detail: infoJSON};
 	  this.dispatchEvent(new CustomEvent('avs-go-info-response', infoEvent));
 	}
-  }
-
-  /**
-   * 
-   */
-  connectedCallback() {
-    super.connectedCallback();
-
-    // Make sure all CSS and layout has been processed 
-    afterNextRender(this, function() {
-      if (this.__initialized != true) {
-        this._httpRequest(this._assembleRequest());
-        this.__initialized = true;
-      }
-    }); 
   }
 }
 

@@ -18,32 +18,18 @@
  * Advanced Visual Systems Inc. (http://www.avs.com)
  */
 
-import {html} from '@polymer/polymer/polymer-element.js';
 import {dedupingMixin} from '@polymer/polymer/lib/utils/mixin.js';
-import '@polymer/iron-ajax/iron-ajax.js';
 import {VERSION_MAJOR, VERSION_MINOR, VERSION_CHANGE} from './constants.js';
 
 /**
- * Mixin to provide client-server communication using `iron-ajax`
+ * Mixin to provide client-server communication using `XMLHttpRequest`
  */
 export const AvsHttpMixin = dedupingMixin((superClass) => class extends superClass {
-  static get template() {
-    return html`
-      <iron-ajax id="ajax"
-        handle-as="json"
-        method="post"
-        content-type="application/json"
-        on-response="__httpResponse"
-	    on-error="__httpError"
-        >
-      </iron-ajax>
-    `;
-  }
 
   static get properties() {
     return {
       /**
-       * Fully qualified URL to an instance of AVS Go server.
+       * URL to an instance of AVS/Go server or file to get.
        */
       url: {
         type: String
@@ -53,57 +39,90 @@ export const AvsHttpMixin = dedupingMixin((superClass) => class extends superCla
 
   /**
    * Generate a HTTP request.
-   * @param model Model content to send to the server.
+   * @param url URL to an instance of AVS/Go server or file to get.
+   * @param model Model content to POST to the server (or leave out to generate a GET request).
    */
-  _httpRequest(model) {
-    if (this.url === undefined) {
-      console.error('\'url\' property must point to an instance of AVS/Go server.');
-      return;
+  _httpRequest(url, onLoad, onProgress, onError, model) {
+
+    if ( url === undefined ) {
+
+		this._logError( JSON.stringify( {"GoType":1, "error":"\'url\' property must point to an instance of AVS/Go server."} ) );
+
+		return;
+
     }
 
-    // Take the $Change$ RCS keyword from constants.js and parse out the revision number
-    var re = /\$Change: (\d+) \$/;
-    var revision = parseInt(re.exec(VERSION_CHANGE)[1]);
-    var version = [ VERSION_MAJOR, VERSION_MINOR, revision ];
+	if ( this.xhr !== undefined ) {
 
-    this.$.ajax.url = this.url;
-    this.$.ajax.body = {source: this.localName, model: model, version: version};
-    this.$.ajax.generateRequest();
-  }
+		this.xhr.cancel = true;
 
-  /**
-   * HTTP response handler.
-   * @param e HTTP response event.
-   */
-  __httpResponse(e) {
-    var response = e.detail.response;
+	}
 
-    if (response == undefined || response == null) {
-        console.error("Empty response received in the " + this.localName + " web component");
-        return;
-    }  
-    else if (response.error !== undefined) {
-  	    this._logError(response.error);
-        return;      
-    }  
+	var xhr = new XMLHttpRequest();
+	var scope = this;
 
-    this._handleHttpResponse(response);
-  }
+    xhr.onload = function ( event ) {
 
-  /**
-   * HTTP error handler.
-   * @param e HTTP error event.
-   */
-  __httpError(e) {
-    console.error("An error occurred on the AVS/Go server. Error = " + e.detail.error);
-  }
+		if ( xhr.status === 200 ) {
 
-  /**
-   * HTTP response handler, should be implemented by children.
-   * @param response Object parsed from JSON HTTP response.
-   */
-  _handleHttpResponse(response) {
-    console.error('Implement _handleHttpResponse(response) function when using AvsHttpMixin');
+			var response = JSON.parse( xhr.responseText );
+
+			if ( response == undefined || response == null ) {
+
+				console.error("Empty response received in the " + scope.localName + " Web Component");
+
+			} else if ( response.error !== undefined ) {
+
+				scope._logError( response.error );
+
+			}
+
+			if ( xhr.cancel === undefined && onLoad !== undefined ) {
+
+				onLoad( response );
+
+			}
+
+		} else {
+
+			console.error("An error occurred in the " + scope.localName + " Web Component");
+
+			if ( onError !== undefined ) {
+
+				onError( event );
+
+			}
+
+		}
+
+    };
+
+	xhr.onprogress = onProgress;
+    xhr.onerror = onError;
+
+	if ( model === undefined ) {
+
+		xhr.open( 'GET', url, true );
+
+		xhr.send();
+
+	} else {
+
+		// Take the $Change$ RCS keyword from constants.js and parse out the revision number
+		var re = /\$Change: (\d+) \$/;
+		var revision = parseInt(re.exec(VERSION_CHANGE)[1]);
+		var version = [ VERSION_MAJOR, VERSION_MINOR, revision ];
+
+		var body = {source: this.localName, model: model, version: version};
+
+		xhr.open( 'POST', url, true );
+
+		xhr.send( JSON.stringify( body ) );
+
+	}
+
+    this.xhr = xhr;
+
   }
 
   /**

@@ -44,7 +44,6 @@ class AvsGoDynamicHtml extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) 
           position: relative;
         }   
       </style>
-      ${super.template}
       <div id="htmlDiv"></div>
     `;
   }
@@ -98,7 +97,14 @@ class AvsGoDynamicHtml extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) 
 
     return request;
   }
-       
+
+  /**
+   *
+   */
+  _handleHttpError(event) {
+
+  }
+
   /**
    * HTTP response handler.
    * @param json JSON parsed from HTTP response.
@@ -118,7 +124,7 @@ class AvsGoDynamicHtml extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) 
     // Make sure all CSS and layout has been processed 
     afterNextRender(this, function() {
       if (this.__initialized != true) {
-        this._httpRequest(this._assembleRequest());
+        this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), this._assembleRequest());
         this.__initialized = true;
       }
     }); 

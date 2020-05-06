@@ -3,7 +3,6 @@
 module.exports = {
 	entry: [
 		"./node_modules/@webcomponents/webcomponentsjs/custom-elements-es5-adapter.js",
-		"./node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js",
 		"./avs-go-dataviz.js",
 		"./avs-go-dynamic-html.js",
         "./avs-go-info.js"

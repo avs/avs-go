@@ -1,6 +1,6 @@
 {
   "name": "avs-go",
-  "version": "0.1.67178",
+  "version": "0.1.67312",
   "description": "AVS Go",
   "keywords": [
     "polymer",
@@ -14,28 +14,27 @@
     "web-components"
   ],
   "author": "AVS",
-  "main": "avs-go-dataviz.js",
+  "main": "dist/avs-go.min.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/avs/avs-go.git"
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "@polymer/iron-ajax": "^3.0.1",
     "@polymer/iron-resizable-behavior": "^3.0.1",
-    "@polymer/polymer": "^3.3.1",
-    "three": "0.112.0"
+    "@polymer/polymer": "^3.4.1",
+    "three": "0.116.1"
   },
   "devDependencies": {
-    "@babel/core": "^7.7.5",
-    "@babel/plugin-transform-classes": "^7.7.4",
-    "@babel/preset-env": "^7.7.6",
+    "@babel/core": "^7.9.0",
+    "@babel/plugin-transform-classes": "^7.9.2",
+    "@babel/preset-env": "^7.9.0",
     "@polymer/iron-demo-helpers": "^3.1.0",
     "@polymer/test-fixture": "^4.0.2",
-    "@webcomponents/webcomponentsjs": "^2.4.0",
-    "babel-loader": "^8.0.6",
+    "@webcomponents/webcomponentsjs": "^2.4.3",
+    "babel-loader": "^8.1.0",
     "chai": "^4.2.0",
-    "mocha": "^5.2.0",
-    "wct-mocha": "^1.0.1"
+    "mocha": "^6.1.4",
+    "wct-mocha": "^1.1.0"
   }
 }
