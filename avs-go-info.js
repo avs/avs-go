@@ -34,26 +34,22 @@ class AvsGoInfo extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
   static get properties() {
     return {
       /**
-       * * `libraryKey`: Name of the info key on the server to run.
-       *
-       * * `outputFormat`: Output format for the data from the server.
-       *
-       * @type {{libraryKey: string, outputFormat: string}}
+       * The URL to an instance of AVS/Go server application.
        */
-      infoProperties: {
-        type: Object,
-        value: function () {
-          return {};
-        }
+      url: {
+        type: String
+      },
+      /**
+       * The name of the info registered in the library map on the server.
+       */
+      infoName: {
+        type: String
       },
       /**
        * User properties passed directly to the server.
        */
       infoUserProperties: {
-        type: Object,
-        value: function () {
-          return {};
-        }
+        type: Object
       }
     }
   }
@@ -63,25 +59,32 @@ class AvsGoInfo extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
    * 
    */
   updateInfo() {
-    // Use avs-http-mixin to send the request to the server
-    var request = this._assembleRequest();
-    this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), request);
+    // Use avs-http-mixin to send the model to the server
+    var model = this._assembleModel();
+    if (model !== undefined) {
+      this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
+    }
   }
 
   /**
-   * Assemble the JSON request from our properties to send to the server.
+   * Assemble the model from our properties to send to the server.
    */
-  _assembleRequest() {
-    var scope = this;
-    var request = {};
+  _assembleModel() {
+    if (this.infoName === undefined) {
+      this._logError( JSON.stringify( {"GoType":1, "error":"\'info-name\' property must be set to the name of the info registered in the library map on the server."} ) );
+      return undefined;
+    }
 
-    var infoProperties = Object.assign(this.infoProperties, {"userProperties":this.infoUserProperties});
-    request = Object.assign(request, {"infoProperties":infoProperties});
+    var model = {infoProperties:{}};
+
+    model.infoProperties.name = this.infoName;
+    if (this.infoUserProperties !== undefined) {
+      model.infoProperties.userProperties = this.infoUserProperties;
+    }
     
-    // Add DataSource Properties
-    this._addDataSourceProperties(request);
+    this._addDataSourceProperties(model);
 
-    return request;
+    return model;
   }
 
   /**

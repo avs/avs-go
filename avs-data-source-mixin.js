@@ -21,45 +21,37 @@
 import {dedupingMixin} from '@polymer/polymer/lib/utils/mixin.js';
 
 /**
- * Mixin to add data-source-properties functionality.
+ * Mixin to add data source properties functionality.
  */
 export const AvsDataSourceMixin = dedupingMixin((superClass) => class extends superClass {
+
   static get properties() {
     return {
       /**
-       * * `libraryKey`: Name of the data source on the server to acquire.
-       *
-       * @type {{libraryKey: string}}
+       * Name of the data source registered in the library map on the server.
        */
-      dataSourceProperties: {
-        type: Object,
-        value: function () {
-          return {};
-        }
+      dataSourceName: {
+        type: String
       },
       /**
        * User properties for the data source passed directly to the server.
        */
       dataSourceUserProperties: {
-        type: Object,
-        value: function () {
-          return {};
-        }
+        type: Object
       }
     }
   }
 
   /**
-   * Add data-source-properties and data-source-user-properties to request structure.
-   * @param request Request structure to add to.
+   * Add data-source-name and data-source-user-properties to model.
+   * @param model Model to add to.
    */
-  _addDataSourceProperties(request) {
-    if (request === undefined) {
-      request = {};
+  _addDataSourceProperties(model) {
+    if (this.dataSourceName !== undefined) {
+      model.dataSourceProperties = {"name":this.dataSourceName};
+      if (this.dataSourceUserProperties !== undefined) {
+        model.dataSourceProperties.userProperties = this.dataSourceUserProperties;
+      }
     }
-
-    var dataSourceProperties = Object.assign(this.dataSourceProperties, {"userProperties":this.dataSourceUserProperties});
-
-    request = Object.assign(request, {"dataSourceProperties":dataSourceProperties});
   }
 });

@@ -39,6 +39,7 @@ import {LOGO} from './logo.js';
  * @polymer
  */
 class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinBehaviors([IronResizableBehavior, GestureEventListeners], PolymerElement)))) {
+
   static get template() {
     return html`
       <style>
@@ -62,6 +63,12 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
           top:0px;
           left:0px;
         }
+        #spinnerDiv {
+          position:absolute;
+          left:50%;
+          top:50%;
+          transform:translate(-50%,-50%);
+        }
         .spin {
           -webkit-animation:spin 4s linear infinite;
            -moz-animation:spin 4s linear infinite;
@@ -79,188 +86,36 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     return {
 
       /**
-       * * `libraryKey`: Name of the scene on the server to acquire.
-       *
-       * @type {{libraryKey: string}}
+       * The URL to an instance of AVS/Go server application or file.
        */
-      sceneProperties: {
-        type: Object,
-        value: function () {
-          return {};
-        }
+      url: {
+        type: String
       },
       /**
-       * * `type`: `IMAGE`, `IMAGEURL`, `SVG` or `THREEJS`
-       *
-       * * `backgroundColor`: Default background color, can be overridden using CSS.
-       *
-       * @type {{type: string, backgroundColor: string}}
+       * Enables loading JSON from a file.
        */
-      rendererProperties: {
-        type: Object,
-        value: function () {
-          return {};
-        }
+      urlLoadJsonFile: {
+        type: Boolean
       },
       /**
-       * * `level`: `CELL`, `CELL_SET` or `SCENE_NODE`
-       *
-       * * `depth`: `ALL` or `CLOSEST`
-       *
-       * * `selectionInfo`: Control whether to return the selection info via avs-selection-info event.
-       *
-       * * `highlight`: Control whether to highlight selected geometry.
-       *
-       * * `highlightColor`: Color to highlight with if `highlight` is true.
-       *
-       * * `highlightLayer`: Draw highlighted objects in a separate layer in front. Faster but can create undesirable results, default is false. `rendererProperties.type` must be `THREEJS` and scene must be inside a 2D viewport.
-       *
-       * * `processOnServer`: Override the default picking location (if `rendererProperties.type` is `THREEJS` default is false, otherwise true).
-       *
-       * * `updateScene`: Control whether to update the scene due to the hover (default true, must be enabled to perform highlight).
-       *
-       * @type {{level: string, depth: string, selectionInfo: boolean, highlight: boolean, highlightColor: string, highlightLayer: boolean, processOnServer: boolean, updateScene: boolean}}
+       * The name of the scene registered in the library map on the server.
        */
-      hoverProperties: {
-        type: Object
-      },
-      /**
-       * * `level`: `CELL`, `CELL_SET` or `SCENE_NODE`
-       *
-       * * `depth`: `ALL` or `CLOSEST`
-       *
-       * * `selectionInfo`: Control whether to return the selection info via avs-selection-info event.
-       *
-       * * `highlight`: Control whether to highlight selected geometry.
-       *
-       * * `highlightColor`: Color to highlight with if `highlight` is true.
-       *
-       * * `highlightLayer`: Draw highlighted objects in a separate layer in front. Faster but can create undesirable results, default is false. `rendererProperties.type` must be `THREEJS` and scene must be inside a 2D viewport.
-       *
-       * * `processOnServer`: Override the default picking location (if `rendererProperties.type` is `THREEJS` default is false, otherwise true).
-       *
-       * * `updateScene`: Control whether to update the scene due to the tap (default true, must be enabled to perform highlight).
-       *
-       * @type {{level: string, depth: string, selectionInfo: boolean, highlight: boolean, highlightColor: string, highlightLayer: boolean, processOnServer: boolean, updateScene: boolean}}
-       */
-      tapProperties: {
-        type: Object
-      },
-      /**
-       * * `level`: `CELL`, `CELL_SET` or `SCENE_NODE`
-       *
-       * * `depth`: `ALL` or `CLOSEST`
-       *
-       * * `selectionInfo`: Control whether to return the selection info via avs-selection-info event.
-       *
-       * * `highlight`: Control whether to highlight selected geometry.
-       *
-       * * `highlightColor`: Color to highlight with if `highlight` is true.
-       *
-       * * `highlightLayer`: Draw highlighted objects in a separate layer in front. Faster but can create undesirable results, default is false. `rendererProperties.type` must be `THREEJS` and scene must be inside a 2D viewport.
-       *
-       * * `processOnServer`: Override the default picking location (if `rendererProperties.type` is `THREEJS` default is false, otherwise true).
-       *
-       * * `updateScene`: Control whether to update the scene due to the track (default true, must be enabled to perform highlight).
-       *
-       * @type {{level: string, depth: string, selectionInfo: boolean, highlight: boolean, highlightColor: string, highlightLayer: boolean, processOnServer: boolean, updateScene: boolean}}
-       */
-      trackProperties: {
-        type: Object
-      },
-      /**
-       * Only used when `rendererProperties.type` is `THREEJS`
-       *
-       * Create an interactor for transforming a particular scene object on the client.
-       * Use the addInteractor() method on the server to select which object to transform.
-       *
-       * * `enableRotate`: Control whether the interactor can rotate the object (default is true).
-       *
-       * * `enableZoom`: Control whether the interactor can zoom the object (default is true).
-       *
-       * * `enablePan`: Control whether the interactor can pan the object (default is true).
-       *
-       * * `twistAngle`: Set the starting twist angle of the object in degrees.
-       *
-       * * `tiltAngle`: Set the starting tilt angle of the object in degrees.
-       *
-       * * `scale`: Set the starting scale of the object.
-       *
-       * @type {{enableRotate: boolean, enableZoom: boolean, enablePan: boolean, twistAngle: number, tiltAngle: number, scale: number}}
-       */
-      transformProperties: {
-        type: Object
-      },
-      /**
-       * Only used when `rendererProperties.type` is `THREEJS`
-       *
-       * Create an interactor for panning an OpenViz domain (and its axes and charts) on the client.
-       *
-       * * `widthScale`: Horizontal zoom factor (number should be greater than 1.0)
-       *
-       * * `heightScale`: Vertical zoom factor (number should be greater than 1.0)
-       *
-       * @type {{widthScale: number, heightScale: number}}
-       */
-      panProperties: {
-        type: Object
+      sceneName: {
+        type: String
       },
       /**
        * User properties for the scene passed directly to the server.
        */
       sceneUserProperties: {
-        type: Object,
-        value: function () {
-          return {};
-        }
+        type: Object
       },
       /**
-       * * `visible`: control whether lines are visible
-       *
-       * * `color`: line color
-       *
-       * * `width`: line width in pixels
-       *
-       * * `opacity`: between 0.0 (fully transparent) and 1.0 (fully opaque)
-       *
-       * * `style`: `SOLID`, `DASH`, `DOT` or `DASH_DOT`
-       *
-       * @type {{visible: boolean, color: string, width: number, opacity: number, style: string}}
+       * The type of renderer to be used to display a scene: `IMAGE`, `IMAGEURL`, `SVG` or `THREEJS`
        */
-      defaultLineProperties: {
-        type: Object,
-        value: function () {
-          return {};
-        }
+      renderer: {
+        type: String,
+        value: "IMAGE"
       },
-      /**
-       * * `color`: text color
-       *
-       * * `angle`: text angle (in degrees between 0.0 and 360.0)
-       *
-       * * `size`: text size in points
-       *
-       * * `fontFamily`: font name
-       *
-       * * `fontStyle`: `NORMAL` or `ITALIC`
-       *
-       * * `fontWeight`: `NORMAL` or `BOLD`
-       *
-       * * `justification`: `START`, `MIDDLE` or `END`
-       *
-       * * `horizontalAlignment`: `LEFT`, `CENTER` or `RIGHT`
-       *
-       * * `verticalAlignment`: `TOP`, `MIDDLE`, `BOTTOM` or `BASELINE`
-       *
-       * @type {{color: string, angle: number, size: number, fontFamily: string, fontStyle: string, fontWeight: string, justification: string, horizontalAlignment: string, verticalAlignment: string}}
-       */
-      defaultTextProperties: {
-        type: Object,
-        value: function () {
-          return {};
-        }
-      },
-
       /**
        * Resize threshold (percent) to determine when the update is performed on the client or the server.
        */
@@ -268,7 +123,6 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         type: Number,
         value: 10
       },
-
       /**
        * Aspect ratio (w/h) of the viewer if it is unable to determine the height of its parent element.
        */
@@ -276,9 +130,298 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         type: Number,
         value: 1.777777
       },
-
-      fileUrl: {
+      /**
+       * Enables the tap event.
+       */
+      tapEnable: {
         type: Boolean
+      },
+      /**
+       * The level of geometry within the scene to be modified by the tap event: `CELL`, `CELL_SET` or `SCENE_NODE`
+       */
+      tapLevel: {
+        type: String
+      },
+      /**
+       * The depth at which an object is selected: `ALL` or `CLOSEST`
+       */
+      tapDepth: {
+        type: String
+      },
+      /**
+       * Enables the avs-selection-info event.
+       */
+      tapSelectionInfoEnable: {
+        type: Boolean
+      },
+      /**
+       * Enables highlight of selected geometry in the scene.
+       */
+      tapHighlightEnable: {
+        type: Boolean
+      },
+      /**
+       * The color to used to highlight the selected objects in the scene.
+       */
+      tapHighlightColor: {
+        type: String
+      },
+      /**
+       * Enables drawing highlighted objects in front of all objects in the scene. This results in faster rendering in a 2D viewport when using the `THREEJS` renderer.
+       */
+      tapHighlightLayerEnable: {
+        type: Boolean
+      },
+      /**
+       * Enables the processing of tap events on the client. `THREEJS` only.
+       */
+      tapProcessEventOnClient: {
+        type: Boolean
+      },
+      /**
+       * Enables the track event.
+       */
+      trackEnable: {
+        type: Boolean
+      },
+      /**
+       * The level of geometry within the scene to be modified by the track event: `CELL`, `CELL_SET` or `SCENE_NODE`
+       */
+      trackLevel: {
+        type: String
+      },
+      /**
+       * The depth at which an object is selected: `ALL` or `CLOSEST`
+       */
+      trackDepth: {
+        type: String
+      },
+      /**
+       * Enables the avs-selection-info event.
+       */
+      trackSelectionInfoEnable: {
+        type: Boolean
+      },
+      /**
+       * Enables highlight of selected geometry in the scene.
+       */
+      trackHighlightEnable: {
+        type: Boolean
+      },
+      /**
+       * The color to used to highlight the selected objects in the scene.
+       */
+      trackHighlightColor: {
+        type: String
+      },
+      /**
+       * Enables drawing highlighted objects in front of all objects in the scene. This results in faster rendering in a 2D viewport when using the `THREEJS` renderer.
+       */
+      trackHighlightLayerEnable: {
+        type: Boolean
+      },
+      /**
+       * Enables the processing of track events on the client. `THREEJS` only.
+       */
+      trackProcessEventOnClient: {
+        type: Boolean
+      },
+      /**
+       * Enables the hover event.
+       */
+      hoverEnable: {
+        type: Boolean
+      },
+      /**
+       * The level of geometry within the scene to be modified by the hover event: `CELL`, `CELL_SET` or `SCENE_NODE`
+       */
+      hoverLevel: {
+        type: String
+      },
+      /**
+       * The depth at which an object is selected: `ALL` or `CLOSEST`
+       */
+      hoverDepth: {
+        type: String
+      },
+      /**
+       * Enables the avs-selection-info event.
+       */
+      hoverSelectionInfoEnable: {
+        type: Boolean
+      },
+      /**
+       * Enables highlight of selected geometry in the scene.
+       */
+      hoverHighlightEnable: {
+        type: Boolean
+      },
+      /**
+       * The color to used to highlight the selected objects in the scene.
+       */
+      hoverHighlightColor: {
+        type: String
+      },
+      /**
+       * Enables drawing highlighted objects in front of all objects in the scene. This results in faster rendering in a 2D viewport when using the `THREEJS` renderer.
+       */
+      hoverHighlightLayerEnable: {
+        type: Boolean
+      },
+      /**
+       * Enables the processing of hover events on the client. `THREEJS` only.
+       */
+      hoverProcessEventOnClient: {
+        type: Boolean
+      },
+      /**
+       * Enable the transform interactor. Only available when `renderer` is `THREEJS`
+       *
+       * Create an interactor for transforming a particular scene object on the client.
+       * Use the addInteractor() method on the server to select which object to transform.
+      */
+      transformEnable: {
+        type: Boolean
+      },
+      /**
+       * Disables rotation of the scene.
+       */
+      transformRotateDisable: {
+        type: Boolean
+      },
+      /**
+       * Disables zooming of the scene.
+       */
+      transformZoomDisable: {
+        type: Boolean
+      },
+      /**
+       * Disables panning of the scene.
+       */
+      transformPanDisable: {
+        type: Boolean
+      },
+      /**
+       * The twist angle of the object in degrees.
+       */
+      transformTwistAngle: {
+        type: Number
+      },
+      /**
+       * The tilt angle of the object in degrees.
+       */
+      transformTiltAngle: {
+        type: Number
+      },
+      /**
+       * The scale of the object in percent.
+       */
+      transformScale: {
+        type: Number
+      },
+      /**
+       * Enable the pan interactor. Only available when `renderer` is `THREEJS`
+       *
+       * Create an interactor for panning an OpenViz domain (and its axes and charts) on the client.
+       */
+      panEnable: {
+        type: Boolean
+      },
+      /**
+       * The width zoom level in percent of the original scene greater than 100%
+       */
+      panWidthZoomLevel: {
+        type: Number
+      },
+      /**
+       * The height zoom level in percent of the original scene greater than 100%
+       */
+      panHeightZoomLevel: {
+        type: Number
+      },
+      /**
+       * Disables rendering of lines.
+       */
+      lineDisable: {
+        type: Boolean
+      },
+      /**
+       * The color of the line(s).
+       */
+      lineColor: {
+        type: String
+      },
+      /**
+       * The width of the line(s).
+       */
+      lineWidth: {
+        type: Number
+      },
+      /**
+       * The opacity of the line(s)
+       */
+      lineOpacity: {
+        type: Number
+      },
+      /**
+       * The line pattern presented as: `SOLID`, `DASH`, `DOT` or `DASH_DOT`
+       */
+      lineStyle: {
+        type: String
+      },
+      /**
+       * The color of the text.
+       */
+      textColor: {
+        type: String
+      },
+      /**
+       * The angle of the text in degrees.
+       */
+      textAngle: {
+        type: Number
+      },
+      /**
+       * The size of the text in points.
+       */
+      fontSize: {
+        type: Number
+      },
+      /**
+       * The font family name of the text.
+       */
+      fontFamily: {
+        type: String
+      },
+      /**
+       * The style of the font: `NORMAL` or `ITALIC`
+       */
+      fontStyle: {
+        type: String
+      },
+      /**
+       * The weight of the font: `NORMAL` or `BOLD`
+       */
+      fontWeight: {
+        type: String
+      },
+      /**
+       * The justification of text: `START`, `MIDDLE` or `END`
+       */
+      textJustification: {
+        type: String
+      },
+      /**
+       * The horizontal alignment of text: `LEFT`, `CENTER` or `RIGHT`
+       */
+      textHorizontalAlignment: {
+        type: String
+      },
+      /**
+       * The vertical alignment of text: `TOP`, `MIDDLE`, `BOTTOM` or `BASELINE`
+       */
+      textVerticalAlignment: {
+        type: String
       }
     }
   }
@@ -292,21 +435,31 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   }
 
   /**
-   * 
+   * Assemble the model from our properties to send to the server.
    */
-  _assembleRequest() {
-    var request = {};
+  _assembleModel() {
+    if (this.sceneName === undefined) {
+      this._logError( JSON.stringify( {"GoType":1, "error":"\'scene-name\' property must be set to the name of the scene registered in the library map on the server."} ) );
+      return undefined;
+    }
 
-    // Renderer Properties
-    var rendererProperties = Object.assign(this.rendererProperties, {width:this.width, height:this.height});
+    var model = {sceneProperties:{}};
+
+    model.sceneProperties.name = this.sceneName;
+    if (this.sceneUserProperties !== undefined) {
+      model.sceneProperties.userProperties = this.sceneUserProperties;
+    }
+
+    var rendererProperties = {width:this.width, height:this.height, type:this.renderer};
+    model.rendererProperties = rendererProperties;
 
     // Transform Properties
-    if (this.transformProperties !== undefined) {
-      // Transform interactor not yet created, create a matrix using the starting twist angle, tilt angle and scale from transformProperties
+    if (this.transformEnable) {
+      // Transform interactor not yet created, create a matrix using the starting twist angle, tilt angle and scale from properties
       if (this.transformInteractor === undefined) {
-        var twist = this.transformProperties.twistAngle !== undefined ? this.transformProperties.twistAngle * Math.PI / 180 : 0;
-        var tilt = this.transformProperties.tiltAngle !== undefined ? this.transformProperties.tiltAngle * Math.PI / 180 : 0;
-        var scale = this.transformProperties.scale !== undefined ? this.transformProperties.scale : 1;
+        var twist = this.transformTwistAngle !== undefined ? this.transformTwistAngle * Math.PI / 180 : 0;
+        var tilt = this.transformTiltAngle !== undefined ? this.transformTiltAngle * Math.PI / 180 : 0;
+        var scale = this.transformScale !== undefined ? this.transformScale / 100.0 : 1.0;
 
         var sinTW = Math.sin(twist);
         var cosTW = Math.cos(twist);
@@ -317,60 +470,99 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
                        0,              cosTI * scale,         -sinTI * scale,        0,
                        -sinTW * scale, cosTW * sinTI * scale, cosTW * cosTI * scale, 0,
                        0,              0,                     0,                     1 ];
-        rendererProperties = Object.assign(rendererProperties, {transformMatrix:matrix});
+        rendererProperties.transformMatrix = matrix;
       }
       // Send the transform matrix directly from the transform interactor, we may have transformed locally since the last request
       else {
-        rendererProperties = Object.assign(rendererProperties, {transformMatrix:this.transformInteractor.object.matrix.elements});
+        rendererProperties.transformMatrix = this.transformInteractor.object.matrix.elements;
       }
     }
 
     // Pan Properties
-    if (this.panProperties !== undefined) {
+    if (this.panEnable && this.renderer === 'THREEJS') {
       var width = this.width;
-      if (this.panProperties.widthScale !== undefined) {
-        width = Math.max(this.width, Math.round(width * this.panProperties.widthScale));
+      if (this.panWidthZoomLevel !== undefined) {
+        width = Math.max(this.width, Math.round(width * this.panWidthZoomLevel / 100.0));
       }
+      rendererProperties.width = width;
+
       var height = this.height;
-      if (this.panProperties.heightScale !== undefined) {
-        height = Math.max(this.height, Math.round(height * this.panProperties.heightScale));
+      if (this.panHeightZoomLevel !== undefined) {
+        height = Math.max(this.height, Math.round(height * this.panHeightZoomLevel / 100.0));
       }
-      rendererProperties = Object.assign(rendererProperties, {width:width, height:height});
+      rendererProperties.height = height;
     }
 
-    // Scene properties 
-    var sceneProperties = Object.assign(this.sceneProperties, {"userProperties":this.sceneUserProperties});
-    
     // Css Properties
     var cssColor = window.getComputedStyle(this, null).getPropertyValue("color");
-    var cssFontFamily = window.getComputedStyle(this, null).getPropertyValue("font-family");
-    cssFontFamily = cssFontFamily.replace(/['"]+/g, '');
-    var cssProperties = {color:cssColor, fontFamily:cssFontFamily};
-    sceneProperties = Object.assign(sceneProperties, {"cssProperties":cssProperties});
+    var cssFontFamily = window.getComputedStyle(this, null).getPropertyValue("font-family").replace(/['"]+/g, '');
+    model.sceneProperties.cssProperties = {color:cssColor, fontFamily:cssFontFamily};
 
     // Default text properties
-    sceneProperties = Object.assign(sceneProperties, {"defaultTextProperties":this.defaultTextProperties});
+    var textProperties = {};
+    if (this.textColor !== undefined) {
+      textProperties.color = this.textColor;
+    }
+    if (this.textAngle !== undefined) {
+      textProperties.angle = this.textAngle;
+    }
+    if (this.fontSize !== undefined) {
+      textProperties.size = this.fontSize;
+    }
+    if (this.fontFamily !== undefined) {
+      textProperties.fontFamily = this.fontFamily;
+    }
+    if (this.fontStyle !== undefined) {
+      textProperties.fontStyle = this.fontStyle;
+    }
+    if (this.fontWeight !== undefined) {
+      textProperties.fontWeight = this.fontWeight;
+    }
+    if (this.textJustification !== undefined) {
+      textProperties.justification = this.textJustification;
+    }
+    if (this.textHorizontalAlignment !== undefined) {
+      textProperties.horizontalAlignment = this.textHorizontalAlignment;
+    }
+    if (this.textVerticalAlignment !== undefined) {
+      textProperties.verticalAlignment = this.textVerticalAlignment;
+    }
+    if (Object.keys(textProperties).length !== 0) {
+      model.sceneProperties.defaultTextProperties = textProperties;
+    }
 
     // Default line properties
-    sceneProperties = Object.assign(sceneProperties, {"defaultLineProperties":this.defaultLineProperties});
+    var lineProperties = {};
+    if (this.lineColor !== undefined) {
+      lineProperties.color = this.lineColor;
+    }
+    if (this.lineWidth !== undefined) {
+      lineProperties.width = this.lineWidth;
+    }
+    if (this.lineOpacity !== undefined) {
+      lineProperties.opacity = this.lineOpacity;
+    }
+    if (this.lineStyle !== undefined) {
+      lineProperties.style = this.lineStyle;
+    }
+    if (Object.keys(lineProperties).length !== 0) {
+      model.sceneProperties.defaultLineProperties = lineProperties;
+    }
 
-    request = Object.assign(request, {"rendererProperties":rendererProperties});
-    request = Object.assign(request, {"sceneProperties":sceneProperties});
-    
-    // Add dataSource properties from the mixin
-    this._addDataSourceProperties(request);
+    this._addDataSourceProperties(model);
 
-	// Add stream properties from the mixin
-	this._addStreamProperties(rendererProperties);
+    if (this.renderer === 'THREEJS') {
+	  this._addStreamProperties(rendererProperties);
+    }
 
-    return request;
+    return model;
   }
-                
+
   /**
    * 
    */
   _onResize() {
-    if (!this.fileUrl && (this.clientWidth < this.lowResizeWidth ||
+    if (!this.urlLoadJsonFile && (this.clientWidth < this.lowResizeWidth ||
         this.clientWidth > this.highResizeWidth)) {
 
       this.updateViewer();
@@ -379,7 +571,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       this.updateViewerClient();
     }
   }
-        
+
   /**
    * 
    */
@@ -405,7 +597,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     this.dataVizDiv.style.width = this.width + 'px';
     this.dataVizDiv.style.height = this.height + 'px';
 
-    if (this.trackProperties !== undefined) {
+    if (this.trackEnable) {
       this.$$("#rectCanvas").width = this.width;
       this.$$("#rectCanvas").height = this.height;
     }
@@ -422,29 +614,26 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     this.highResizeWidth = (100 + this.resizeThreshold) / 100 * this.width;
 
     if (this.spinner === undefined) {
+      this.spinnerDiv = document.createElement('div');
+      this.spinnerDiv.id = 'spinnerDiv';
+      this.dataVizDiv.appendChild(this.spinnerDiv);
       this.spinner = document.createElement('img');
-      this.spinner.style.position = 'absolute';
-      this.spinner.style.top = '50%';
-      this.spinner.style.left = '50%';
-      this.spinner.style.transform = 'translate(-50%, -50%);';
       this.spinner.id = 'spinner';
-      this.spinner.style.width = '100px';
-      this.spinner.style.height = '100px';
       this.spinner.src = LOGO;
-      this.dataVizDiv.appendChild(this.spinner);
+      this.spinnerDiv.appendChild(this.spinner);
     }
     this.spinner.style.display = 'block';
     if (this.url !== undefined) {
       this.spinner.className = 'spin';
     }
 
-    // Use avs-http-mixin to send the request to the server
-    if (this.fileUrl) {
+    // Use avs-http-mixin to send the model to the server
+    if (this.urlLoadJsonFile) {
       this.chunkFile = 0;
       this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this));
     } else {
-      var request = this._assembleRequest();
-      this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), request);
+      var model = this._assembleModel();
+      this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
     }
   }
 
@@ -462,7 +651,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
    */
   updateViewerClient() {
     this.updateSize();
-    if (this.rendererProperties.type === 'THREEJS') {
+    if (this.renderer === 'THREEJS') {
       this.threeViewer.render(true);
     }
   }
@@ -471,11 +660,11 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
    *
    */
   clear() {
-    if (this.rendererProperties.type === 'THREEJS') {
+    if (this.renderer === 'THREEJS') {
       this.threeViewer.clearGeometry();
       this.threeViewer.render();
     }
-    else if (this.rendererProperties.type === 'SVG') {
+    else if (this.renderer === 'SVG') {
       var el = this.dataVizDiv;
       while (el.firstChild) el.removeChild(el.firstChild);
     }
@@ -529,16 +718,15 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       this.threeViewer.loadGeometryAsEvents(json);
 
       if (json.moreChunks === true) {
-        if (this.fileUrl) {
+        if (this.urlLoadJsonFile) {
           this.chunkFile++;
           this._httpRequest(this.url + '.' + this.chunkFile, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this));
-        } else {
-          this.streamProperties.chunkId = json.chunkId;
-          this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), this._assembleRequest());
         }
-      }
-      else if (!this.fileUrl) {
-        this.streamProperties.chunkId = undefined;
+        else {
+          var model = this._assembleModel();
+          model.rendererProperties.streamProperties.chunkId = json.chunkId;
+          this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
+        }
       }
     }
 
@@ -555,12 +743,17 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 
     var tapEvent = {detail: {x: adjustedCoords.x, y: adjustedCoords.y, sourceEvent: e}};
     this.dispatchEvent(new CustomEvent('avs-tap', tapEvent));
-    
-    var pickProperties = this._createPickProperties(this.tapProperties, 'TAP');
-    pickProperties.x = adjustedCoords.x;
-    pickProperties.y = adjustedCoords.y;
-    
-    this._processPick( pickProperties );
+
+    var pickProperties = {type:"TAP", x:adjustedCoords.x, y:adjustedCoords.y};
+
+	if (this.tapLevel !== undefined) pickProperties.level = this.tapLevel;
+	if (this.tapDepth !== undefined) pickProperties.depth = this.tapDepth;
+	if (this.tapSelectionInfoEnable) pickProperties.selectionInfo = true;
+	if (this.tapHighlightEnable) pickProperties.highlight = true;
+	if (this.tapHighlightColor !== undefined) pickProperties.highlightColor = this.tapHighlightColor;
+	if (this.tapHighlightLayerEnable) pickProperties.highlightLayer = true;
+
+    this._processPick( pickProperties, this.tapProcessEventOnClient );
   }
   
   /**
@@ -568,7 +761,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
    */
   _handleTrack(e) {
 	var adjustedCoords = this._getAdjustedRectangleCoords(e);
-	
+
     var trackEvent = {detail: {state: e.detail.state, left: adjustedCoords.left, right: adjustedCoords.right, top: adjustedCoords.top, bottom: adjustedCoords.bottom, sourceEvent: e}};
     this.dispatchEvent(new CustomEvent('avs-track', trackEvent));
 
@@ -585,13 +778,20 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       case 'end':
         this.rectCtx.clearRect(0,0,this.width,this.height);
 
-        var pickProperties = this._createPickProperties(this.trackProperties, 'TRACK');
+        var pickProperties = {type:"TRACK"};
         pickProperties.left = adjustedCoords.left;
         pickProperties.right = adjustedCoords.right;
         pickProperties.top = adjustedCoords.top;
         pickProperties.bottom = adjustedCoords.bottom;
-        
-        this._processPick( pickProperties );
+
+        if (this.trackLevel !== undefined) pickProperties.level = this.trackLevel;
+        if (this.trackDepth !== undefined) pickProperties.depth = this.trackDepth;
+        if (this.trackSelectionInfoEnable) pickProperties.selectionInfo = true;
+        if (this.trackHighlightEnable) pickProperties.highlight = true;
+        if (this.trackHighlightColor !== undefined) pickProperties.highlightColor = this.trackHighlightColor;
+        if (this.trackHighlightLayerEnable) pickProperties.highlightLayer = true;
+
+        this._processPick( pickProperties, this.trackProcessEventOnClient );
         break;
     }
   }
@@ -604,12 +804,17 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 	  
     var hoverEvent = {detail: {x: adjustedCoords.x, y: adjustedCoords.y, sourceEvent: e.detail.sourceEvent}};
     this.dispatchEvent(new CustomEvent('avs-hover', hoverEvent));
-    
-    var pickProperties = this._createPickProperties(this.hoverProperties, 'HOVER');
-    pickProperties.x = adjustedCoords.x;
-    pickProperties.y = adjustedCoords.y;
-    
-    this._processPick( pickProperties );
+
+    var pickProperties = {type:"HOVER", x:adjustedCoords.x, y:adjustedCoords.y};
+
+	if (this.hoverLevel !== undefined) pickProperties.level = this.hoverLevel;
+	if (this.hoverDepth !== undefined) pickProperties.depth = this.hoverDepth;
+	if (this.hoverSelectionInfoEnable) pickProperties.selectionInfo = true;
+	if (this.hoverHighlightEnable) pickProperties.highlight = true;
+	if (this.hoverHighlightColor !== undefined) pickProperties.highlightColor = this.hoverHighlightColor;
+	if (this.hoverHighlightLayerEnable) pickProperties.highlightLayer = true;
+
+    this._processPick( pickProperties, this.hoverProcessEventOnClient );
   }
 
   _getAdjustedCoords(x, y) {
@@ -639,8 +844,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 	return {left: left, right: right, top: top, bottom: bottom};
   }
 
-  _processPick( pickProperties ) {
-    if (this.rendererProperties.type === 'THREEJS' && pickProperties.processOnServer !== true) {
+  _processPick( pickProperties, processEventOnClient ) {
+    if (this.renderer === 'THREEJS' && processEventOnClient) {
 
       // Client side pick processing
       this.threeViewer.setPickDepth( this._getPickDepth(pickProperties.depth) );
@@ -680,7 +885,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     	this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
       }
       
-      if (pickProperties.updateScene !== false && pickProperties.highlight) {
+      if (pickProperties.highlight) {
         this.threeViewer.highlightColor.set( pickProperties.highlightColor );
         this.threeViewer.highlightObjects( selectionList, pickProperties.highlightLayer );
       }
@@ -688,9 +893,9 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     else {
 
       // Server side pick processing
-      var request = this._assembleRequest();
-      request.rendererProperties = Object.assign(request.rendererProperties, {"pickProperties":pickProperties});
-      this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), request);
+      var model = this._assembleModel();
+      model.rendererProperties.pickProperties = pickProperties;
+      this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
 
     } 
   }
@@ -705,25 +910,6 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     else {
       return PickDepthEnum.Closest;
     } 
-  }
-
-  /**
-   * @param source
-   * @param type
-   */
-  _createPickProperties(source, type) {
-	  var pickProperties = {};
-	  pickProperties.selectionInfo = source.selectionInfo;
-	  pickProperties.highlight = source.highlight;
-	  pickProperties.highlightColor = source.highlightColor;
-	  pickProperties.highlightLayer = source.highlightLayer;
-	  pickProperties.depth = source.depth;
-	  pickProperties.level = source.level;
-	  pickProperties.processOnServer = source.processOnServer;
-	  pickProperties.updateScene = source.updateScene;
-	  pickProperties.type = type;
-	  
-	  return pickProperties;
   }
 
   /**
@@ -748,28 +934,28 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   // Add interactors after canvas has been initialized and sized
   _initInteractors() {
     // Setup client-side interactors for ThreeJS
-    if (this.rendererProperties.type === 'THREEJS') {
-      if (this.transformProperties !== undefined) {
+    if (this.renderer === 'THREEJS') {
+      if (this.transformEnable) {
         this.transformInteractor = new TransformInteractor( this.threeViewer.domElement );
         this.threeViewer.addInteractor( this.transformInteractor );
 
-        if (this.transformProperties.enableRotate === false) {
+        if (this.transformRotateDisable) {
           this.transformInteractor.enableRotate = false;
         }
-        if (this.transformProperties.enableZoom === false) {
+        if (this.transformZoomDisable) {
           this.transformInteractor.enableZoom = false;
         }
-        if (this.transformProperties.enablePan === false) {
+        if (this.transformPanDisable) {
           this.transformInteractor.enablePan = false;
         }
       }
 
-      if (this.panProperties !== undefined) {
+      if (this.panEnable) {
         this.panInteractor = new PanInteractor( this.threeViewer.domElement );
         this.threeViewer.addInteractor( this.panInteractor );
 
-		this.panInteractor.widthScale = this.panProperties.widthScale;
-		this.panInteractor.heightScale = this.panProperties.heightScale;
+		this.panInteractor.widthScale = (this.panWidthZoomLevel > 100) ? (this.panWidthZoomLevel / 100) : 1;
+		this.panInteractor.heightScale = (this.panHeightZoomLevel > 100) ? (this.panHeightZoomLevel / 100) : 1;
       }
     }
   }
@@ -779,7 +965,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     this.dataVizDiv.setAttribute('id', 'dataVizDiv');
     this.$.container.appendChild(this.dataVizDiv);
 
-    if (this.rendererProperties.type === 'THREEJS') {
+    if (this.renderer === 'THREEJS') {
       if (this.threeViewer !== undefined) {  
         this.dataVizDiv.removeChild( this.threeViewer.domElement );
       }
@@ -789,9 +975,9 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 
       // Check if the user has requested a specific renderer
       var rendererId = 'avsDefaultWebGLRenderer';
-      if (this.rendererProperties.webGLRendererId !== undefined) {
-    	  rendererId = this.rendererProperties.webGLRendererId;
-      }
+ //     if (this.rendererProperties.webGLRendererId !== undefined) {
+//    	  rendererId = this.rendererProperties.webGLRendererId;
+//      }
 
       // Search for renderer, if not found create one and save to the DOM
       var renderer = document.getElementById(rendererId);
@@ -806,7 +992,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       }
       this.threeViewer.setWebGLRenderer( renderer.webGLRenderer );
     }
-    else if (this.rendererProperties.type === 'IMAGE' || this.rendererProperties.type === 'IMAGEURL') {
+    else if (this.renderer === 'IMAGE' || this.renderer === 'IMAGEURL') {
       var imageElem = document.createElement("img");
       imageElem.setAttribute("id", "sceneImage");
       // imageElem.setAttribute("usemap", "#sceneImageMap");
@@ -819,12 +1005,12 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     }
 
     // Setup tap interactor
-    if (this.tapProperties !== undefined) {
+    if (this.tapEnable) {
       Gestures.addListener(this, 'tap', this._handleTap.bind(this));
     }
 
     // Setup track interactor
-    if (this.trackProperties !== undefined) {
+    if (this.trackEnable) {
       var canvasElem = document.createElement("canvas");
       canvasElem.setAttribute("id", "rectCanvas");
       this.dataVizDiv.appendChild(canvasElem);
@@ -835,7 +1021,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     }
 
     // Setup hover interactor
-    if (this.hoverProperties !== undefined) {
+    if (this.hoverEnable) {
       this.addEventListener('mousemove', this._handleMouseMove);
       this.addEventListener('mouseout', this._handleMouseMove);
     }

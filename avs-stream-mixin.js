@@ -21,39 +21,42 @@
 import {dedupingMixin} from '@polymer/polymer/lib/utils/mixin.js';
 
 /**
- * Mixin to add stream-properties functionality.
+ * Mixin to add stream properties functionality.
  */
 export const AvsStreamMixin = dedupingMixin((superClass) => class extends superClass {
+
   static get properties() {
     return {
       /**
-       * * `type`: `CHUNK` or `OBOE_STREAM`
-       *
-       * * `chunkSizeFirstUpdate`: Number of objects in the first chunk when type is `CHUNK`
-       *
-       * * `chunkSize`: Number of objects in remaining chunks when type is `CHUNK`
-       *
-       * @type {{type: string, chunkSizeFirstUpdate: number, chunkSize: number}}
+       * Enables streaming of objects from the server.
        */
-      streamProperties: {
-        type: Object
+      streamEnable: {
+        type: Boolean
+      },
+      /**
+       * The number of objects streamed for the first chunk.
+       */
+      streamChunkSizeFirst: {
+        type: Number
+      },
+      /**
+       * The number of objects streamed per chunk.
+       */
+      streamChunkSize: {
+        type: Number
       }
     }
   }
 
   /**
-   * Add stream-properties to request structure.
-   * @param request Request structure to add to.
+   * Add stream properties to renderer properties.
+   * @param rendererProperties Property structure to add to.
    */
-  _addStreamProperties(request) {
-    var scope = this;
-
-    if (request === undefined) {
-      request = {};
-    }
-
-    if (this.streamProperties !== undefined) {
-      request = Object.assign(request, {"streamProperties":this.streamProperties});
+  _addStreamProperties(rendererProperties) {
+    if (this.streamEnable) {
+      rendererProperties.streamProperties = {};
+      if (this.streamChunkSizeFirst !== undefined) rendererProperties.streamProperties.streamChunkSizeFirst = this.streamChunkSizeFirst;
+      if (this.streamChunkSize !== undefined) rendererProperties.streamProperties.streamChunkSize = this.streamChunkSize;
     }
   }
 });

@@ -26,17 +26,6 @@ import {VERSION_MAJOR, VERSION_MINOR, VERSION_CHANGE} from './constants.js';
  */
 export const AvsHttpMixin = dedupingMixin((superClass) => class extends superClass {
 
-  static get properties() {
-    return {
-      /**
-       * URL to an instance of AVS/Go server or file to get.
-       */
-      url: {
-        type: String
-      }
-    }
-  }
-
   /**
    * Generate a HTTP request.
    * @param url URL to an instance of AVS/Go server or file to get.

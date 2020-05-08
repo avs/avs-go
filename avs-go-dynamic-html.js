@@ -32,6 +32,7 @@ import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
  * @polymer
  */
 class AvsGoDynamicHtml extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
+
   static get template() {
     return html`
       <template is="dom-repeat" items="{{linkCss}}">
@@ -51,7 +52,13 @@ class AvsGoDynamicHtml extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) 
   static get properties() {
     return {
       /**
-       * An array of strings specifying CSS files to link into the template.
+       * The URL to an instance of AVS/Go server application.
+       */
+      url: {
+        type: String
+      },
+      /**
+       * An array of strings specifying CSS files for use in the dynamic html.
        */
       linkCss: {
         type: Array,
@@ -60,42 +67,39 @@ class AvsGoDynamicHtml extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) 
         }
       },
       /**
-       * * `libraryKey`: Name of the dynamic HTML key on the server to run.
-       *
-       * @type {{libraryKey: string}}
+       * The name of the dynamic html registered in the library map on the server.
        */
-      dynamicHtmlProperties: {
-        type: Object,
-        value: function () {
-          return {};
-        }
+      dynamicHtmlName: {
+        type: String
       },
       /**
        * User properties passed directly to the server.
        */
       dynamicHtmlUserProperties: {
-        type: Object,
-        value: function () {
-          return {};
-        }
+        type: Object
       }
     }
   }
 
   /**
-   * Assemble the JSON request from our properties to send to the server.
+   * Assemble the model from our properties to send to the server.
    */
-  _assembleRequest() {
-    var scope = this;
-    var request = {};
+  _assembleModel() {
+    if (this.dynamicHtmlName === undefined) {
+      this._logError( JSON.stringify( {"GoType":1, "error":"\'dynamic-html-name\' property must be set to the name of the dynamic html registered in the library map on the server."} ) );
+      return undefined;
+    }
 
-    var dynamicHtmlProperties = Object.assign(this.dynamicHtmlProperties, {"userProperties":this.dynamicHtmlUserProperties});
-    request = Object.assign(request, {"dynamicHtmlProperties":dynamicHtmlProperties});
+    var model = {dynamicHtmlProperties:{}};
+
+    model.dynamicHtmlProperties.name = this.dynamicHtmlName;
+    if (this.dynamicHtmlUserProperties !== undefined) {
+      model.dynamicHtmlProperties.userProperties = this.dynamicHtmlUserProperties;
+    }
     
-    // Add DataSource Properties
-    this._addDataSourceProperties(request);
+    this._addDataSourceProperties(model);
 
-    return request;
+    return model;
   }
 
   /**
@@ -124,7 +128,7 @@ class AvsGoDynamicHtml extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) 
     // Make sure all CSS and layout has been processed 
     afterNextRender(this, function() {
       if (this.__initialized != true) {
-        this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), this._assembleRequest());
+        this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), this._assembleModel());
         this.__initialized = true;
       }
     }); 
