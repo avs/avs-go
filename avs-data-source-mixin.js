@@ -37,7 +37,8 @@ export const AvsDataSourceMixin = dedupingMixin((superClass) => class extends su
        * User properties for the data source passed directly to the server.
        */
       dataSourceUserProperties: {
-        type: Object
+        type: Object,
+        value: {}
       }
     }
   }

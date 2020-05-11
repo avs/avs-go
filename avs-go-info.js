@@ -49,7 +49,8 @@ class AvsGoInfo extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
        * User properties passed directly to the server.
        */
       infoUserProperties: {
-        type: Object
+        type: Object,
+        value: {}
       }
     }
   }

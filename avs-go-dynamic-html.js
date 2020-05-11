@@ -76,7 +76,8 @@ class AvsGoDynamicHtml extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) 
        * User properties passed directly to the server.
        */
       dynamicHtmlUserProperties: {
-        type: Object
+        type: Object,
+        value: {}
       }
     }
   }

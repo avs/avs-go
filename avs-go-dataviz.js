@@ -107,7 +107,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
        * User properties for the scene passed directly to the server.
        */
       sceneUserProperties: {
-        type: Object
+        type: Object,
+        value: {}
       },
       /**
        * The type of renderer to be used to display a scene: `IMAGE`, `IMAGEURL`, `SVG` or `THREEJS`
@@ -633,7 +634,9 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this));
     } else {
       var model = this._assembleModel();
-      this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
+      if (model !== undefined) {
+        this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
+      }
     }
   }
 
@@ -701,6 +704,11 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 	  this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
 	}
 
+    if (json.sceneInfo !== undefined) {
+      var sceneEvent = {detail: json.sceneInfo};
+      this.dispatchEvent(new CustomEvent('avs-scene-info', sceneEvent));
+    }
+
 	if (json.image !== undefined) {
 	
 	  this.$$("#sceneImage").src = json.image;
@@ -724,8 +732,10 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         }
         else {
           var model = this._assembleModel();
-          model.rendererProperties.streamProperties.chunkId = json.chunkId;
-          this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
+          if (model !== undefined) {
+            model.rendererProperties.streamProperties.chunkId = json.chunkId;
+            this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
+          }
         }
       }
     }
@@ -894,8 +904,10 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 
       // Server side pick processing
       var model = this._assembleModel();
-      model.rendererProperties.pickProperties = pickProperties;
-      this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
+      if (model !== undefined) {
+        model.rendererProperties.pickProperties = pickProperties;
+        this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
+      }
 
     } 
   }
