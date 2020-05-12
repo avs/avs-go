@@ -70,9 +70,9 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
           transform:translate(-50%,-50%);
         }
         .spin {
-          -webkit-animation:spin 4s linear infinite;
-           -moz-animation:spin 4s linear infinite;
-           animation:spin 4s linear infinite;
+          -webkit-animation:spin 1s ease-in-out infinite;
+           -moz-animation:spin 1s ease-in-out infinite;
+           animation:spin 1s ease-in-out infinite;
         }
         @-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
         @-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
@@ -738,6 +738,9 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
           }
         }
       }
+    }
+    else if (this.urlLoadJsonFile) {
+      this.threeViewer.loadGeometryAsJson(json);
     }
 
     if (this.spinner !== undefined) {
