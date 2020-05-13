@@ -23,13 +23,16 @@ import {VERSION_MAJOR, VERSION_MINOR, VERSION_CHANGE} from './constants.js';
 
 /**
  * Mixin to provide client-server communication using `XMLHttpRequest`
+ *
+ * @polymer
+ * @mixinFunction
  */
 export const AvsHttpMixin = dedupingMixin((superClass) => class extends superClass {
 
   /**
    * Generate a HTTP request.
    * @param url URL to an instance of AVS/Go server or file to get.
-   * @param model Model content to POST to the server (or leave out to generate a GET request).
+   * @param model Model content to POST to the server (or undefined to generate a GET request).
    */
   _httpRequest(url, onLoad, onProgress, onError, model) {
 

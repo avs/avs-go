@@ -23,11 +23,18 @@ import {AvsHttpMixin} from './avs-http-mixin.js';
 import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
 
 /**
- * `avs-go-info` is a Polymer 3.0 element which uses `AvsHttpMixin` to acquire
- * data in a particular format from the specified URL.
+ * `avs-go-info` is a Polymer 3.0 element which requests JSON data by instancing
+ * the `infoName` class on the AVS/Go server application running at `url`.
+ * After setting both these properties call the `updateInfo()` method to send the request.
+ * Attach a listener for the `avs-go-info-response` event to receive the JSON response.
+ *
+ * Special case: use an `infoName` of `GetServerInfo` to request a listing of
+ * data sources, scenes, info and dynamic HTML available at `url`.
  *
  * @customElement
  * @polymer
+ * @appliesMixin AvsHttpMixin
+ * @appliesMixin AvsDataSourceMixin
  */
 class AvsGoInfo extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
 
@@ -57,7 +64,7 @@ class AvsGoInfo extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
 
     
   /**
-   * 
+   * Send the request to the server.
    */
   updateInfo() {
     // Use avs-http-mixin to send the model to the server
@@ -89,7 +96,8 @@ class AvsGoInfo extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
   }
 
   /**
-   *
+   * HTTP error handler.
+   * @param event
    */
   _handleHttpError(event) {
 
@@ -103,6 +111,11 @@ class AvsGoInfo extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
 	if (json.info !== undefined) {
 	  var infoJSON = JSON.parse(decodeURIComponent(json.info.replace(/\+/g, '%20')));
 	  var infoEvent = {detail: infoJSON};
+
+      /**
+       * JSON response from server.
+       * @event avs-go-info-response
+       */
 	  this.dispatchEvent(new CustomEvent('avs-go-info-response', infoEvent));
 	}
   }

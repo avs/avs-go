@@ -32,11 +32,20 @@ import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
 import {LOGO} from './logo.js';
 
 /**
- * `avs-go-dataviz` is a Polymer 3.0 element which uses `AvsHttpMixin` to acquire
- * a scene from the specified URL as either an image, SVG or three.js.
+ * `avs-go-dataviz` is a Polymer 3.0 element which requests a data visualization
+ * from either the `sceneName` class on the AVS/Go server application running at `url`,
+ * or from a JSON file at `url` when `urlLoadJsonFile` is set.
+ *
+ * The request occurs:
+ * * On connection of this element to a document.
+ * * When this element is resized outside of the `resizeThresold` percentage.
+ * * An explicit call to `updateViewer()`
  *
  * @customElement
  * @polymer
+ * @appliesMixin AvsDataSourceMixin
+ * @appliesMixin AvsStreamMixin
+ * @appliesMixin AvsHttpMixin
  */
 class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinBehaviors([IronResizableBehavior, GestureEventListeners], PolymerElement)))) {
 
@@ -70,9 +79,9 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
           transform:translate(-50%,-50%);
         }
         .spin {
-          -webkit-animation:spin 1s ease-in-out infinite;
-           -moz-animation:spin 1s ease-in-out infinite;
-           animation:spin 1s ease-in-out infinite;
+          -webkit-animation:spin 1.25s ease-in-out infinite;
+           -moz-animation:spin 1.25s ease-in-out infinite;
+           animation:spin 1.25s ease-in-out infinite;
         }
         @-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
         @-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
@@ -132,7 +141,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         value: 1.777777
       },
       /**
-       * Enables the tap event.
+       * Enables the `avs-tap` event.
        */
       tapEnable: {
         type: Boolean
@@ -150,7 +159,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         type: String
       },
       /**
-       * Enables the avs-selection-info event.
+       * Enables the `avs-selection-info` event from tapping.
        */
       tapSelectionInfoEnable: {
         type: Boolean
@@ -180,7 +189,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         type: Boolean
       },
       /**
-       * Enables the track event.
+       * Enables the `avs-track` event.
        */
       trackEnable: {
         type: Boolean
@@ -198,7 +207,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         type: String
       },
       /**
-       * Enables the avs-selection-info event.
+       * Enables the `avs-selection-info` event from tracking.
        */
       trackSelectionInfoEnable: {
         type: Boolean
@@ -228,7 +237,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         type: Boolean
       },
       /**
-       * Enables the hover event.
+       * Enables the `avs-hover` event.
        */
       hoverEnable: {
         type: Boolean
@@ -246,7 +255,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         type: String
       },
       /**
-       * Enables the avs-selection-info event.
+       * Enables the `avs-selection-info` event from hover.
        */
       hoverSelectionInfoEnable: {
         type: Boolean
@@ -569,14 +578,14 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       this.updateViewer();
     }
     else {
-      this.updateViewerClient();
+      this._updateViewerClient();
     }
   }
 
   /**
    * 
    */
-  updateSize() {
+  _updateSize() {
     // Get the width provided by our container
     this.width = this.clientWidth;
     if (this.width <= 0) {
@@ -605,11 +614,10 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   } 
 
   /**
-   * 
+   * Send the request to the server.
    */
   updateViewer() {
-    this.updateStyles();
-    this.updateSize();
+    this._updateSize();
 
     this.lowResizeWidth = (100 - this.resizeThreshold) / 100 * this.width;
     this.highResizeWidth = (100 + this.resizeThreshold) / 100 * this.width;
@@ -641,7 +649,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   }
 
   /**
-   *
+   * HTTP error handler.
+   * @param event
    */
   _handleHttpError(event) {
     if (this.spinner !== undefined) {
@@ -652,8 +661,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   /**
    * 
    */
-  updateViewerClient() {
-    this.updateSize();
+  _updateViewerClient() {
+    this._updateSize();
     if (this.renderer === 'THREEJS') {
       this.threeViewer.render(true);
     }
@@ -701,11 +710,19 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   _handleHttpResponse(json) {
 	if (json.selectionInfo !== undefined) {
 	  var infoEvent = {detail: json.selectionInfo};
+      /**
+       * Selection info from the `tap`, `track` or `hover` events.
+       * @event avs-selection-info
+       */
 	  this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
 	}
 
     if (json.sceneInfo !== undefined) {
       var sceneEvent = {detail: json.sceneInfo};
+      /**
+       * Scene info from the server.
+       * @event avs-scene-info
+       */
       this.dispatchEvent(new CustomEvent('avs-scene-info', sceneEvent));
     }
 
@@ -755,6 +772,10 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 	var adjustedCoords = this._getAdjustedCoords(e.detail.x, e.detail.y);
 
     var tapEvent = {detail: {x: adjustedCoords.x, y: adjustedCoords.y, sourceEvent: e}};
+    /**
+     * A tap event occurred.
+     * @event avs-tap
+     */
     this.dispatchEvent(new CustomEvent('avs-tap', tapEvent));
 
     var pickProperties = {type:"TAP", x:adjustedCoords.x, y:adjustedCoords.y};
@@ -776,6 +797,10 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 	var adjustedCoords = this._getAdjustedRectangleCoords(e);
 
     var trackEvent = {detail: {state: e.detail.state, left: adjustedCoords.left, right: adjustedCoords.right, top: adjustedCoords.top, bottom: adjustedCoords.bottom, sourceEvent: e}};
+    /**
+     * A track event occurred.
+     * @event avs-track
+     */
     this.dispatchEvent(new CustomEvent('avs-track', trackEvent));
 
     switch(e.detail.state) {
@@ -816,6 +841,10 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 	var adjustedCoords = this._getAdjustedCoords(e.clientX, e.clientY);
 	  
     var hoverEvent = {detail: {x: adjustedCoords.x, y: adjustedCoords.y, sourceEvent: e.detail.sourceEvent}};
+    /**
+     * A hover event occurred.
+     * @event avs-hover
+     */
     this.dispatchEvent(new CustomEvent('avs-hover', hoverEvent));
 
     var pickProperties = {type:"HOVER", x:adjustedCoords.x, y:adjustedCoords.y};

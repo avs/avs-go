@@ -22,6 +22,9 @@ import {dedupingMixin} from '@polymer/polymer/lib/utils/mixin.js';
 
 /**
  * Mixin to add stream properties functionality.
+ *
+ * @polymer
+ * @mixinFunction
  */
 export const AvsStreamMixin = dedupingMixin((superClass) => class extends superClass {
 

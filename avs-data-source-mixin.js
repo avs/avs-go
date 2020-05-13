@@ -22,6 +22,9 @@ import {dedupingMixin} from '@polymer/polymer/lib/utils/mixin.js';
 
 /**
  * Mixin to add data source properties functionality.
+ *
+ * @polymer
+ * @mixinFunction
  */
 export const AvsDataSourceMixin = dedupingMixin((superClass) => class extends superClass {
 

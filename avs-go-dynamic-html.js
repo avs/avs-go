@@ -25,11 +25,14 @@ import {AvsHttpMixin} from './avs-http-mixin.js';
 import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
 
 /**
- * `avs-go-dynamic-html` is a Polymer 3.0 element which uses `AvsHttpMixin` to acquire
- * HTML from the specified URL.
+ * `avs-go-dynamic-html` is a Polymer 3.0 element which requests HTML by instancing
+ * the `dynamicHtmlName` class on the AVS/Go server application running at `url`.
+ * The HTML response is inserted into this element's shadow DOM.
  *
  * @customElement
  * @polymer
+ * @appliesMixin AvsHttpMixin
+ * @appliesMixin AvsDataSourceMixin
  */
 class AvsGoDynamicHtml extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
 
@@ -104,7 +107,8 @@ class AvsGoDynamicHtml extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) 
   }
 
   /**
-   *
+   * HTTP error handler.
+   * @param event
    */
   _handleHttpError(event) {
 
