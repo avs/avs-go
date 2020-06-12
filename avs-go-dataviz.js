@@ -87,7 +87,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         @-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
         @keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
       </style>
-      <div id="container"></div>
+      <div id="dataVizDiv" hidden="[[hidden]]"></div>
     `;
   }
 
@@ -124,7 +124,20 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
        */
       renderer: {
         type: String,
-        value: "IMAGE"
+        value: "IMAGE",
+        observer: "_rendererChanged"
+      },
+      /**
+       * The name of the theme registered in the library map on the server, or undefined to use CSS, or one of the branded themes: `DEFAULT`, `AVS_LIGHT`, `AVS_DARK` or `AVS_BLACK`
+       */
+      themeName: {
+        type: String
+      },
+      /**
+       * Hide the data visualization.
+       */
+      hidden: {
+        type: Boolean
       },
       /**
        * Resize threshold (percent) to determine when the update is performed on the client or the server.
@@ -144,7 +157,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
        * Enables the `avs-tap` event.
        */
       tapEnable: {
-        type: Boolean
+        type: Boolean,
+        observer: "_tapEnableChanged"
       },
       /**
        * The level of geometry within the scene to be modified by the tap event: `CELL`, `CELL_SET` or `SCENE_NODE`
@@ -192,7 +206,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
        * Enables the `avs-track` event.
        */
       trackEnable: {
-        type: Boolean
+        type: Boolean,
+        observer: "_trackEnableChanged"
       },
       /**
        * The level of geometry within the scene to be modified by the track event: `CELL`, `CELL_SET` or `SCENE_NODE`
@@ -240,7 +255,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
        * Enables the `avs-hover` event.
        */
       hoverEnable: {
-        type: Boolean
+        type: Boolean,
+        observer: "_hoverEnableChanged"
       },
       /**
        * The level of geometry within the scene to be modified by the hover event: `CELL`, `CELL_SET` or `SCENE_NODE`
@@ -291,7 +307,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
        * Use the addInteractor() method on the server to select which object to transform.
       */
       transformEnable: {
-        type: Boolean
+        type: Boolean,
+        observer: "_transformEnableChanged"
       },
       /**
        * Disables rotation of the scene.
@@ -335,7 +352,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
        * Create an interactor for panning an OpenViz domain (and its axes and charts) on the client.
        */
       panEnable: {
-        type: Boolean
+        type: Boolean,
+        observer: "_panEnableChanged"
       },
       /**
        * The width zoom level in percent of the original scene greater than 100%
@@ -348,90 +366,6 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
        */
       panHeightZoomLevel: {
         type: Number
-      },
-      /**
-       * Disables rendering of lines.
-       */
-      lineDisable: {
-        type: Boolean
-      },
-      /**
-       * The color of the line(s).
-       */
-      lineColor: {
-        type: String
-      },
-      /**
-       * The width of the line(s).
-       */
-      lineWidth: {
-        type: Number
-      },
-      /**
-       * The opacity of the line(s)
-       */
-      lineOpacity: {
-        type: Number
-      },
-      /**
-       * The line pattern presented as: `SOLID`, `DASH`, `DOT` or `DASH_DOT`
-       */
-      lineStyle: {
-        type: String
-      },
-      /**
-       * The color of the text.
-       */
-      textColor: {
-        type: String
-      },
-      /**
-       * The angle of the text in degrees.
-       */
-      textAngle: {
-        type: Number
-      },
-      /**
-       * The size of the text in points.
-       */
-      fontSize: {
-        type: Number
-      },
-      /**
-       * The font family name of the text.
-       */
-      fontFamily: {
-        type: String
-      },
-      /**
-       * The style of the font: `NORMAL` or `ITALIC`
-       */
-      fontStyle: {
-        type: String
-      },
-      /**
-       * The weight of the font: `NORMAL` or `BOLD`
-       */
-      fontWeight: {
-        type: String
-      },
-      /**
-       * The justification of text: `START`, `MIDDLE` or `END`
-       */
-      textJustification: {
-        type: String
-      },
-      /**
-       * The horizontal alignment of text: `LEFT`, `CENTER` or `RIGHT`
-       */
-      textHorizontalAlignment: {
-        type: String
-      },
-      /**
-       * The vertical alignment of text: `TOP`, `MIDDLE`, `BOTTOM` or `BASELINE`
-       */
-      textVerticalAlignment: {
-        type: String
       }
     }
   }
@@ -453,13 +387,16 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       return undefined;
     }
 
-    var model = {sceneProperties:{}};
+    var model = {};
 
-    model.sceneProperties.name = this.sceneName;
+    // Scene Properties
+    var sceneProperties = {name:this.sceneName};
     if (this.sceneUserProperties !== undefined) {
-      model.sceneProperties.userProperties = this.sceneUserProperties;
+      sceneProperties.userProperties = this.sceneUserProperties;
     }
+    model.sceneProperties = sceneProperties;
 
+    // Renderer Properties
     var rendererProperties = {width:this.width, height:this.height, type:this.renderer};
     model.rendererProperties = rendererProperties;
 
@@ -503,61 +440,135 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       rendererProperties.height = height;
     }
 
-    // Css Properties
-    var cssColor = window.getComputedStyle(this, null).getPropertyValue("color");
-    var cssFontFamily = window.getComputedStyle(this, null).getPropertyValue("font-family").replace(/['"]+/g, '');
-    model.sceneProperties.cssProperties = {color:cssColor, fontFamily:cssFontFamily};
+    // Base theme to use from themeName property
+    rendererProperties.themeName = this.themeName;
 
-    // Default text properties
-    var textProperties = {};
-    if (this.textColor !== undefined) {
-      textProperties.color = this.textColor;
-    }
-    if (this.textAngle !== undefined) {
-      textProperties.angle = this.textAngle;
-    }
-    if (this.fontSize !== undefined) {
-      textProperties.size = this.fontSize;
-    }
-    if (this.fontFamily !== undefined) {
-      textProperties.fontFamily = this.fontFamily;
-    }
-    if (this.fontStyle !== undefined) {
-      textProperties.fontStyle = this.fontStyle;
-    }
-    if (this.fontWeight !== undefined) {
-      textProperties.fontWeight = this.fontWeight;
-    }
-    if (this.textJustification !== undefined) {
-      textProperties.justification = this.textJustification;
-    }
-    if (this.textHorizontalAlignment !== undefined) {
-      textProperties.horizontalAlignment = this.textHorizontalAlignment;
-    }
-    if (this.textVerticalAlignment !== undefined) {
-      textProperties.verticalAlignment = this.textVerticalAlignment;
-    }
-    if (Object.keys(textProperties).length !== 0) {
-      model.sceneProperties.defaultTextProperties = textProperties;
-    }
+    var style = window.getComputedStyle(this, null);
 
-    // Default line properties
-    var lineProperties = {};
-    if (this.lineColor !== undefined) {
-      lineProperties.color = this.lineColor;
-    }
-    if (this.lineWidth !== undefined) {
-      lineProperties.width = this.lineWidth;
-    }
-    if (this.lineOpacity !== undefined) {
-      lineProperties.opacity = this.lineOpacity;
-    }
-    if (this.lineStyle !== undefined) {
-      lineProperties.style = this.lineStyle;
-    }
-    if (Object.keys(lineProperties).length !== 0) {
-      model.sceneProperties.defaultLineProperties = lineProperties;
-    }
+    // Theme Properties from page CSS
+    var cssBackgroundColor = style.getPropertyValue("background-color").trim();
+    var cssColor = style.getPropertyValue("color").trim();
+    var cssFontFamily = style.getPropertyValue("font-family").trim().replace(/['"]+/g, '');
+    rendererProperties.cssProperties = {
+      sceneBackgroundColor: cssBackgroundColor,
+      sceneLineColor: cssColor,
+      sceneTextColor: cssColor,
+      sceneFontFamily: cssFontFamily,
+      sceneSurfaceColor: cssColor
+    };
+
+    // Theme Properties from custom CSS
+    this._applyCustomCssProperties(rendererProperties.cssProperties, style,
+      {
+        // Scene
+        "sceneBackgroundColor": "--avs-scene-background-color",
+        "sceneHighlightColor": "--avs-scene-highlight-color",
+        "sceneSurfaceColor": "--avs-scene-surface-color",
+        "sceneBorderColor": "--avs-scene-border-color",
+        "sceneLineColor": "--avs-scene-line-color",
+        "sceneLineWidth": "--avs-scene-line-width",
+        "sceneLineOpacity": "--avs-scene-line-opacity",
+        "sceneTextColor": "--avs-scene-text-color",
+        "sceneTextRotation": "--avs-scene-text-rotation",
+        "sceneFontFamily": "--avs-scene-font-family",
+        "sceneFontStyle": "--avs-scene-font-style",
+        "sceneFontWeight": "--avs-scene-font-weight",
+        "sceneFontSize": "--avs-scene-font-size",
+        // Data maps
+        "seriesColorMap": "--avs-series-color-map",
+        "valueColorMap": "--avs-value-color-map",
+        "valueColorMapInterpolation": "--avs-value-color-map-interpolation",
+        "sizeMap": "--avs-size-map",
+        "shapeMap": "--avs-shape-map",
+        // Scene title
+        "sceneTitleTextColor": "--avs-scene-title-text-color",
+        "sceneTitleTextRotation": "--avs-scene-title-text-rotation",
+        "sceneTitleFontFamily": "--avs-scene-title-font-family",
+        "sceneTitleFontStyle": "--avs-scene-title-font-style",
+        "sceneTitleFontWeight": "--avs-scene-title-font-weight",
+        "sceneTitleFontSize": "--avs-scene-title-font-size",
+        // Chart
+        "chartBackgroundColor": "--avs-chart-background-color",
+        "chartHighlightColor": "--avs-chart-highlight-color",
+        "chartSurfaceColor": "--avs-chart-surface-color",
+        "chartBorderColor": "--avs-chart-border-color",
+        "chartLineColor": "--avs-chart-line-color",
+        "chartLineWidth": "--avs-chart-line-width",
+        "chartLinePattern": "--avs-chart-line-pattern",
+        "chartLineOpacity": "--avs-chart-line-opacity",
+        "chartTextColor": "--avs-chart-text-color",
+        "chartTextRotation": "--avs-chart-text-rotation",
+        "chartFontFamily": "--avs-chart-font-family",
+        "chartFontStyle": "--avs-chart-font-style",
+        "chartFontWeight": "--avs-chart-font-weight",
+        "chartFontSize": "--avs-chart-font-size",
+        // Chart title
+        "chartTitleTextColor": "--avs-chart-title-text-color",
+        "chartTitleTextRotation": "--avs-chart-title-text-rotation",
+        "chartTitleFontFamily": "--avs-chart-title-font-family",
+        "chartTitleFontStyle": "--avs-chart-title-font-style",
+        "chartTitleFontWeight": "--avs-chart-title-font-weight",
+        "chartTitleFontSize": "--avs-chart-title-font-size",
+        // Axis
+        "axisLineColor": "--avs-axis-line-color",
+        "axisLineWidth": "--avs-axis-line-width",
+        "axisLineOpacity": "--avs-axis-line-opacity",
+        "axisTextColor": "--avs-axis-text-color",
+        "axisTextRotation": "--avs-axis-text-rotation",
+        "axisFontFamily": "--avs-axis-font-family",
+        "axisFontStyle": "--avs-axis-font-style",
+        "axisFontWeight": "--avs-axis-font-weight",
+        "axisFontSize": "--avs-axis-font-size",
+        // Axis axle
+        "axisAxleColor": "--avs-axis-axle-color",
+        "axisAxleWidth": "--avs-axis-axle-width",
+        "axisAxleOpacity": "--avs-axis-axle-opacity",
+        // Axis tick mark
+        "axisTickMarkColor": "--avs-axis-tick-mark-color",
+        "axisTickMarkWidth": "--avs-axis-tick-mark-width",
+        "axisTickMarkOpacity": "--avs-axis-tick-mark-opacity",
+        // Axis tick line
+        "axisTicklineColor": "--avs-axis-tick-line-color",
+        "axisTicklineWidth": "--avs-axis-tick-line-width",
+        "axisTickLinePattern": "--avs-axis-tick-line-pattern",
+        "axisTicklineOpacity": "--avs-axis-tick-line-opacity",
+        // Axis title
+        "axisTitleTextColor": "--avs-axis-title-text-color",
+        "axisTitleTextRotation": "--avs-axis-title-text-rotation",
+        "axisTitleFontFamily": "--avs-axis-title-font-family",
+        "axisTitleFontStyle": "--avs-axis-title-font-style",
+        "axisTitleFontWeight": "--avs-axis-title-font-weight",
+        "axisTitleFontSize": "--avs-axis-title-font-size",
+        // Axis unit
+        "axisUnitTextColor": "--avs-axis-unit-text-color",
+        "axisUnitTextRotation": "--avs-axis-unit-text-rotation",
+        "axisUnitFontFamily": "--avs-axis-unit-font-family",
+        "axisUnitFontStyle": "--avs-axis-unit-font-style",
+        "axisUnitFontWeight": "--avs-axis-unit-font-weight",
+        "axisUnitFontSize": "--avs-axis-unit-font-size",
+        // Axis labels
+        "axisLabelTextColor": "--avs-axis-label-text-color",
+        "axisLabelTextRotation": "--avs-axis-label-text-rotation",
+        "axisLabelFontFamily": "--avs-axis-label-font-family",
+        "axisLabelFontStyle": "--avs-axis-label-font-style",
+        "axisLabelFontWeight": "--avs-axis-label-font-weight",
+        "axisLabelFontSize": "--avs-axis-label-font-size",
+        // Legend
+        "legendBackgroundColor": "--avs-legend-background-color",
+        "legendTextColor": "--avs-legend-text-color",
+        "legendTextRotation": "--avs-legend-text-rotation",
+        "legendFontFamily": "--avs-legend-font-family",
+        "legendFontStyle": "--avs-legend-font-style",
+        "legendFontWeight": "--avs-legend-font-weight",
+        "legendFontSize": "--avs-legend-font-size",
+        // Legend title
+        "legendTitleTextColor": "--avs-legend-title-text-color",
+        "legendTitleTextRotation": "--avs-legend-title-text-rotation",
+        "legendTitleFontFamily": "--avs-legend-title-font-family",
+        "legendTitleFontStyle": "--avs-legend-title-font-style",
+        "legendTitleFontWeight": "--avs-legend-title-font-weight",
+        "legendTitleFontSize": "--avs-legend-title-font-size"
+      } );
 
     this._addDataSourceProperties(model);
 
@@ -566,6 +577,20 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     }
 
     return model;
+  }
+
+  /**
+   *
+   */
+  _applyCustomCssProperties(cssProperties, style, values) {
+    for (var key in values) {
+      if (values.hasOwnProperty(key)) {
+        var css = style.getPropertyValue(values[key]).trim().replace(/['"]+/g, '');
+        if (css.length > 0) {
+          cssProperties[key] = css;
+        }
+      }
+    }
   }
 
   /**
@@ -604,8 +629,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       }
     }
 
-    this.dataVizDiv.style.width = this.width + 'px';
-    this.dataVizDiv.style.height = this.height + 'px';
+    this.$.dataVizDiv.style.width = this.width + 'px';
+    this.$.dataVizDiv.style.height = this.height + 'px';
 
     if (this.trackEnable) {
       this.$$("#rectCanvas").width = this.width;
@@ -625,7 +650,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     if (this.spinner === undefined) {
       this.spinnerDiv = document.createElement('div');
       this.spinnerDiv.id = 'spinnerDiv';
-      this.dataVizDiv.appendChild(this.spinnerDiv);
+      this.$.dataVizDiv.appendChild(this.spinnerDiv);
       this.spinner = document.createElement('img');
       this.spinner.id = 'spinner';
       this.spinner.src = LOGO;
@@ -677,32 +702,14 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       this.threeViewer.render();
     }
     else if (this.renderer === 'SVG') {
-      var el = this.dataVizDiv;
+      var el = this.svgDiv;
       while (el.firstChild) el.removeChild(el.firstChild);
     }
     else {
-      this.$$("#sceneImage").src = 'data:,';
+      this.sceneImage.src = 'data:,';
     }
   }
 
-  /**
-   *
-   */
-  hide() {
-    if (this.$.container.hasChildNodes()) {
-      this.$.container.removeChild(this.dataVizDiv);
-    }
-  }
-
-  /**
-   *
-   */
-  unhide() {
-    if (!this.$.container.hasChildNodes()) {
-      this.$.container.appendChild(this.dataVizDiv);
-    }
-  }
-  
   /**
    * HTTP response handler.
    * @param json JSON parsed from HTTP response.
@@ -726,15 +733,17 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       this.dispatchEvent(new CustomEvent('avs-scene-info', sceneEvent));
     }
 
+    var loadComplete = true;
+
 	if (json.image !== undefined) {
 	
-	  this.$$("#sceneImage").src = json.image;
+	  this.sceneImage.src = json.image;
 	  if (json.imagemap !== undefined) {
 	//        this.$$("#sceneImageMap").innerHTML = decodeURIComponent(json.imagemap.replace(/\+/g, '%20'));
 	  }
 	}
 	else if (json.svg !== undefined) {
-	  this.dataVizDiv.innerHTML = decodeURIComponent(json.svg.replace(/\+/g, '%20'));
+	  this.svgDiv.innerHTML = decodeURIComponent(json.svg.replace(/\+/g, '%20'));
 	}
     else if (json.threejs !== undefined) {
       this.threeViewer.loadGeometryAsJson(json.threejs);
@@ -754,6 +763,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
             this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
           }
         }
+        loadComplete = false;
       }
     }
     else if (this.urlLoadJsonFile) {
@@ -762,6 +772,14 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 
     if (this.spinner !== undefined) {
       this.spinner.style.display = 'none';
+    }
+
+    if (loadComplete) {
+      /**
+       * Scene load has completed.
+       * @event avs-load-complete
+       */
+      this.dispatchEvent(new CustomEvent('avs-load-complete'));
     }
   }
 
@@ -860,7 +878,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   }
 
   _getAdjustedCoords(x, y) {
-	var rect = this.dataVizDiv.getBoundingClientRect();
+	var rect = this.$.dataVizDiv.getBoundingClientRect();
 	var x = Math.round(x - rect.left);
 	var y = Math.round(y - rect.top);
 	var clampX = Math.max(0, Math.min(x, this.width));
@@ -870,7 +888,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   }
   
   _getAdjustedRectangleCoords(e) {
-	var rect = this.dataVizDiv.getBoundingClientRect();
+	var rect = this.$.dataVizDiv.getBoundingClientRect();
     var x = Math.round(e.detail.x - rect.left);
     var y = Math.round(e.detail.y - rect.top);
     var clampX = Math.max(0, Math.min(x, this.width));
@@ -965,9 +983,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     // Make sure all CSS and layout has been processed 
     afterNextRender(this, function() {
       if (this.initialized !== true) {  
-        this._initViewer();
         this.updateViewer();
-        this._initInteractors();
 
         this.addEventListener('iron-resize', this._onResize);
         this.initialized = true;
@@ -975,9 +991,10 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     }); 
   }
 
-  // Add interactors after canvas has been initialized and sized
-  _initInteractors() {
-    // Setup client-side interactors for ThreeJS
+  /**
+   * Change in 'transform-enable' property.
+   */
+  _transformEnableChanged(newValue, oldValue) {
     if (this.renderer === 'THREEJS') {
       if (this.transformEnable) {
         this.transformInteractor = new TransformInteractor( this.threeViewer.domElement );
@@ -993,7 +1010,14 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
           this.transformInteractor.enablePan = false;
         }
       }
+    }
+  }
 
+  /**
+   * Change in 'pan-enable' property.
+   */
+  _panEnableChanged(newValue, oldValue) {
+    if (this.renderer === 'THREEJS') {
       if (this.panEnable) {
         this.panInteractor = new PanInteractor( this.threeViewer.domElement );
         this.threeViewer.addInteractor( this.panInteractor );
@@ -1004,70 +1028,122 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     }
   }
 
-  _initViewer() {
-    this.dataVizDiv = document.createElement('div');
-    this.dataVizDiv.setAttribute('id', 'dataVizDiv');
-    this.$.container.appendChild(this.dataVizDiv);
+  /**
+   * Change in 'renderer' property.
+   */
+  _rendererChanged(newValue, oldValue) {
+    if (oldValue === 'IMAGE' || oldValue === 'IMAGEURL') {
+      this.sceneImage.src = 'data:,';
+      this.$.dataVizDiv.removeChild(this.sceneImage);
+    }
+    else if (oldValue === 'SVG') {
+      var el = this.svgDiv;
+      while (el.firstChild) el.removeChild(el.firstChild);
+      this.$.dataVizDiv.removeChild(this.svgDiv);
+    }
+    else if (oldValue === 'THREEJS') {
+      this.threeViewer.clearGeometry();
+      this.threeViewer.render();
+      this.$.dataVizDiv.removeChild(this.threeViewer.domElement);
+    }
 
-    if (this.renderer === 'THREEJS') {
-      if (this.threeViewer !== undefined) {  
-        this.dataVizDiv.removeChild( this.threeViewer.domElement );
+    if (newValue === 'IMAGE' || newValue === 'IMAGEURL') {
+      if (this.sceneImage === undefined) {
+        this.sceneImage = document.createElement("img");
+        this.sceneImage.setAttribute("id", "sceneImage");
+        // this.sceneImage.setAttribute("usemap", "#sceneImageMap");
+
+        // var mapElem = document.createElement("map");
+        // mapElem.setAttribute("id", "sceneImageMap");
+        // mapElem.setAttribute("name", "sceneImageMap");
+        // this.$.dataVizDiv.appendChild(mapElem);
       }
-            
-      this.threeViewer = new Viewer();
-      this.dataVizDiv.appendChild( this.threeViewer.domElement );
 
-      // Check if the user has requested a specific renderer
-      var rendererId = 'avsDefaultWebGLRenderer';
- //     if (this.rendererProperties.webGLRendererId !== undefined) {
+      this.$.dataVizDiv.appendChild(this.sceneImage);
+    }
+    else if (newValue === 'SVG') {
+      if (this.svgDiv === undefined) {
+        this.svgDiv = document.createElement("div");
+        this.svgDiv.setAttribute("id", "svgDiv");
+      }
+
+      this.$.dataVizDiv.appendChild(this.svgDiv);
+    }
+    else if (newValue === 'THREEJS') {
+      if (this.threeViewer === undefined) {
+        // Create ThreeJS viewer
+        this.threeViewer = new Viewer();
+
+        // Check if the user has requested a specific renderer
+        var rendererId = 'avsDefaultWebGLRenderer';
+//      if (this.rendererProperties.webGLRendererId !== undefined) {
 //    	  rendererId = this.rendererProperties.webGLRendererId;
 //      }
 
-      // Search for renderer, if not found create one and save to the DOM
-      var renderer = document.getElementById(rendererId);
-      if (renderer === undefined || renderer === null) {
-        renderer = new AvsRenderer();
-        renderer.setAttribute('id', rendererId);
-        document.body.appendChild(renderer);
+        // Search for renderer, if not found create one and save to the DOM
+        var renderer = document.getElementById(rendererId);
+        if (renderer === undefined || renderer === null) {
+          renderer = new AvsRenderer();
+          renderer.setAttribute('id', rendererId);
+          document.body.appendChild(renderer);
 //        console.log("create new webGL renderer = " + rendererId);
-      }
-      else {
+        }
+        else {
 //        console.log("reference existing webGL renderer = " + rendererId);
+        }
+        this.threeViewer.setWebGLRenderer(renderer.webGLRenderer);
       }
-      this.threeViewer.setWebGLRenderer( renderer.webGLRenderer );
-    }
-    else if (this.renderer === 'IMAGE' || this.renderer === 'IMAGEURL') {
-      var imageElem = document.createElement("img");
-      imageElem.setAttribute("id", "sceneImage");
-      // imageElem.setAttribute("usemap", "#sceneImageMap");
-      this.dataVizDiv.appendChild(imageElem);
 
-      // var mapElem = document.createElement("map");
-      // mapElem.setAttribute("id", "sceneImageMap");
-      // mapElem.setAttribute("name", "sceneImageMap");
-      // this.dataVizDiv.appendChild(mapElem);
+      this.$.dataVizDiv.appendChild(this.threeViewer.domElement);
     }
 
-    // Setup tap interactor
-    if (this.tapEnable) {
+    if (this.initialized) {
+      this.updateViewer();
+    }
+  }
+
+  /**
+   * Change in 'tap-enable' property.
+   */
+  _tapEnableChanged(newValue, oldValue) {
+    if (newValue) {
       Gestures.addListener(this, 'tap', this._handleTap.bind(this));
     }
+    else {
+      Gestures.removeListener(this, 'tap', this.tapHandler.bind(this));
+    }
+  }
 
-    // Setup track interactor
-    if (this.trackEnable) {
-      var canvasElem = document.createElement("canvas");
-      canvasElem.setAttribute("id", "rectCanvas");
-      this.dataVizDiv.appendChild(canvasElem);
-
-      this.rectCtx = canvasElem.getContext('2d');
-
+  /**
+   * Change in 'track-enable' property.
+   */
+  _trackEnableChanged(newValue, oldValue) {
+    if (newValue) {
+      if (this.rectCanvas === undefined) {
+        this.rectCanvas = document.createElement("canvas");
+        rectCanvas.setAttribute("id", "rectCanvas");
+        this.rectCtx = rectCanvas.getContext('2d');
+      }
+      this.appendChild(rectCanvas);
       Gestures.addListener(this, 'track', this._handleTrack.bind(this));
     }
+    else {
+      this.removeChild(this.rectCanvas);
+      Gestures.removeListener(this, 'track', this._handleTrack.bind(this));
+    }
+  }
 
-    // Setup hover interactor
-    if (this.hoverEnable) {
+  /**
+   * Change in 'hover-enable' property.
+   */
+  _hoverEnableChanged(newValue, oldValue) {
+    if (newValue) {
       this.addEventListener('mousemove', this._handleMouseMove);
       this.addEventListener('mouseout', this._handleMouseMove);
+    }
+    else {
+      this.removeEventListener('mousemove', this._handleMouseMove);
+      this.removeEventListener('mouseout', this._handleMouseMove);
     }
   }
 }

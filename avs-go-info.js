@@ -29,7 +29,7 @@ import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
  * Attach a listener for the `avs-go-info-response` event to receive the JSON response.
  *
  * Special case: use an `infoName` of `GetServerInfo` to request a listing of
- * data sources, scenes, info and dynamic HTML available at `url`.
+ * data sources, themes, scenes, info and dynamic HTML available at `url`.
  *
  * @customElement
  * @polymer

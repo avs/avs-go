@@ -38,12 +38,13 @@ export const AvsHttpMixin = dedupingMixin((superClass) => class extends superCla
 
     if ( url === undefined ) {
 
-		this._logError( JSON.stringify( {"GoType":1, "error":"\'url\' property must point to an instance of AVS/Go server."} ) );
+		this.dispatchEvent(new CustomEvent('avs-error', {detail: "\'url\' property must point to an instance of AVS/Go server."} ));
 
 		return;
 
     }
 
+	// Cancel previous xhr
 	if ( this.xhr !== undefined ) {
 
 		this.xhr.cancel = true;
@@ -61,23 +62,25 @@ export const AvsHttpMixin = dedupingMixin((superClass) => class extends superCla
 
 			if ( response == undefined || response == null ) {
 
-				console.error("Empty response received in the " + scope.localName + " Web Component");
+				scope.dispatchEvent(new CustomEvent('avs-error', {detail: "Empty response received from AVS/Go server."} ));
 
-			} else if ( response.error !== undefined ) {
+			} else {
 
-				scope._logError( response.error );
+				if ( response.error !== undefined ) {
 
-			}
+					scope._logError( response.error );
 
-			if ( xhr.cancel === undefined && onLoad !== undefined ) {
+				} else if ( xhr.cancel === undefined && onLoad !== undefined ) {
 
-				onLoad( response );
+					onLoad( response );
+
+				}
 
 			}
 
 		} else {
 
-			console.error("An error occurred in the " + scope.localName + " Web Component");
+			scope.dispatchEvent(new CustomEvent('avs-error', {detail: "Network error connecting to AVS/Go server, status code " + xhr.status} ));
 
 			if ( onError !== undefined ) {
 
@@ -90,7 +93,18 @@ export const AvsHttpMixin = dedupingMixin((superClass) => class extends superCla
     };
 
 	xhr.onprogress = onProgress;
-    xhr.onerror = onError;
+
+    xhr.onerror = function( event ) {
+
+		scope.dispatchEvent(new CustomEvent('avs-error', {detail: "Network error connecting to AVS/Go server."} ));
+
+		if ( onError !== undefined ) {
+
+			onError( event );
+
+		}
+
+	};
 
 	if ( model === undefined ) {
 
@@ -121,15 +135,16 @@ export const AvsHttpMixin = dedupingMixin((superClass) => class extends superCla
    * @param error
    */
   _logError(error) {
+      var output;
       if (error == undefined || error == null) {
-          console.error("An unknown error occurred on the AVS/Go server.");
-          return;
+          output = "An unknown error occurred on the AVS/Go server.";
       }
-      var goException = JSON.parse(decodeURIComponent(error.replace(/\+/g, '%20')));
+      else {
+        var goException = JSON.parse(decodeURIComponent(error.replace(/\+/g, '%20')));
 
-      var output = "An error occurred on the AVS/Go server";
+        var output = "An error occurred on the AVS/Go server";
       
-      for (var key in goException) {
+        for (var key in goException) {
           if (goException.hasOwnProperty(key)) {
               if (output != "") {
                 output = output + "\n    ";
@@ -143,8 +158,9 @@ export const AvsHttpMixin = dedupingMixin((superClass) => class extends superCla
                   output = output + goException[key];
               }
           }
+        }
       }
-
+/*
       if (goException.GoType != undefined) {
           if (goException.GoType == 0 || goException.GoType == 3) {
               console.log(output);
@@ -160,5 +176,12 @@ export const AvsHttpMixin = dedupingMixin((superClass) => class extends superCla
         console.log(output);
       }
    }
+*/
 
+      /**
+       * Error message from AVS/Go Web Component or Server.
+       * @event avs-error
+       */
+      this.dispatchEvent(new CustomEvent('avs-error', {detail: output} ));
+  }
 });
