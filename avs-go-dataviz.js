@@ -83,6 +83,10 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
            -moz-animation:spin 2s ease-in-out infinite;
            animation:spin 2s ease-in-out infinite;
         }
+        .spinnerBackground {
+          fill:var(--avs-spinner-background-color, rgb(0,0,0,0));
+          stroke-width:0.0160303
+        }
         @-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
         @-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
         @keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
@@ -651,9 +655,11 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       this.spinnerDiv = document.createElement('div');
       this.spinnerDiv.id = 'spinnerDiv';
       this.$.dataVizDiv.appendChild(this.spinnerDiv);
-      this.spinner = document.createElement('img');
+      this.spinner = document.createElement('div');
       this.spinner.id = 'spinner';
-      this.spinner.src = LOGO;
+      this.spinner.style.width = '46px';
+      this.spinner.style.height = '46px';
+      this.spinner.innerHTML = LOGO;
       this.spinnerDiv.appendChild(this.spinner);
     }
     this.spinner.style.display = 'block';
@@ -770,8 +776,12 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       this.threeViewer.loadGeometryAsJson(json);
     }
 
+    // Hide the spinner and grab the scene background color for next time
     if (this.spinner !== undefined) {
       this.spinner.style.display = 'none';
+      if (json.backgroundColor !== undefined) {
+        this.updateStyles({'--avs-spinner-background-color': json.backgroundColor});
+      }
     }
 
     if (loadComplete) {
