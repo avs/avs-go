@@ -58,6 +58,9 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
           height:100%;
           overflow:hidden;
         }
+        #container {
+          position:relative;
+        }
         #dataVizDiv {
           position:relative;
         }   
@@ -91,7 +94,9 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         @-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
         @keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
       </style>
-      <div id="dataVizDiv" hidden="[[hidden]]"></div>
+      <div id="container">
+        <div id="dataVizDiv" hidden="[[hidden]]"></div>
+      </div>
     `;
   }
 
@@ -177,12 +182,6 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         type: String
       },
       /**
-       * Enables the `avs-selection-info` event from tapping.
-       */
-      tapSelectionInfoEnable: {
-        type: Boolean
-      },
-      /**
        * Enables highlight of selected geometry in the scene.
        */
       tapHighlightEnable: {
@@ -224,12 +223,6 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
        */
       trackDepth: {
         type: String
-      },
-      /**
-       * Enables the `avs-selection-info` event from tracking.
-       */
-      trackSelectionInfoEnable: {
-        type: Boolean
       },
       /**
        * Enables highlight of selected geometry in the scene.
@@ -275,12 +268,6 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         type: String
       },
       /**
-       * Enables the `avs-selection-info` event from hover.
-       */
-      hoverSelectionInfoEnable: {
-        type: Boolean
-      },
-      /**
        * Enables highlight of selected geometry in the scene.
        */
       hoverHighlightEnable: {
@@ -299,16 +286,10 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         type: Boolean
       },
       /**
-       * Enables the processing of hover events on the client. `THREEJS` only.
-       */
-      hoverProcessEventOnClient: {
-        type: Boolean
-      },
-      /**
        * Enable the transform interactor. Only available when `renderer` is `THREEJS`
        *
        * Create an interactor for transforming a particular scene object on the client.
-       * Use the addInteractor() method on the server to select which object to transform.
+       * Use the IGoRenderer.addInteractor() method on the server to select which object to transform.
       */
       transformEnable: {
         type: Boolean,
@@ -318,37 +299,43 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
        * Disables rotation of the scene.
        */
       transformRotateDisable: {
-        type: Boolean
+        type: Boolean,
+        observer: "_transformRotateDisableChanged"
       },
       /**
        * Disables zooming of the scene.
        */
       transformZoomDisable: {
-        type: Boolean
+        type: Boolean,
+        observer: "_transformZoomDisableChanged"
       },
       /**
        * Disables panning of the scene.
        */
       transformPanDisable: {
-        type: Boolean
+        type: Boolean,
+        observer: "_transformPanDisableChanged"
       },
       /**
        * The twist angle of the object in degrees.
        */
       transformTwistAngle: {
-        type: Number
+        type: Number,
+        observer: "_transformValueChanged"
       },
       /**
        * The tilt angle of the object in degrees.
        */
       transformTiltAngle: {
-        type: Number
+        type: Number,
+        observer: "_transformValueChanged"
       },
       /**
        * The scale of the object in percent.
        */
       transformScale: {
-        type: Number
+        type: Number,
+        observer: "_transformValueChanged"
       },
       /**
        * Enable the pan interactor. Only available when `renderer` is `THREEJS`
@@ -405,28 +392,12 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     model.rendererProperties = rendererProperties;
 
     // Transform Properties
-    if (this.transformEnable) {
-      // Transform interactor not yet created, create a matrix using the starting twist angle, tilt angle and scale from properties
-      if (this.transformInteractor === undefined) {
-        var twist = this.transformTwistAngle !== undefined ? this.transformTwistAngle * Math.PI / 180 : 0;
-        var tilt = this.transformTiltAngle !== undefined ? this.transformTiltAngle * Math.PI / 180 : 0;
-        var scale = this.transformScale !== undefined ? this.transformScale / 100.0 : 1.0;
-
-        var sinTW = Math.sin(twist);
-        var cosTW = Math.cos(twist);
-        var sinTI = Math.sin(tilt);
-        var cosTI = Math.cos(tilt);
-
-        var matrix = [ cosTW * scale,  0,                     cosTI * sinTW * scale, 0,
-                       0,              cosTI * scale,         -sinTI * scale,        0,
-                       -sinTW * scale, cosTW * sinTI * scale, cosTW * cosTI * scale, 0,
-                       0,              0,                     0,                     1 ];
-        rendererProperties.transformMatrix = matrix;
-      }
-      // Send the transform matrix directly from the transform interactor, we may have transformed locally since the last request
-      else {
-        rendererProperties.transformMatrix = this.transformInteractor.object.matrix.elements;
-      }
+    if (this.transformInteractor !== undefined) {
+      // Update the local transform matrix from the transform interactor, we may have transformed since the last request
+      this.transformMatrix = this.transformInteractor.object.matrix.elements.slice();
+    }
+    if (this.transformMatrix !== undefined) {
+      rendererProperties.transformMatrix = this.transformMatrix;
     }
 
     // Pan Properties
@@ -454,6 +425,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     var cssColor = style.getPropertyValue("color").trim();
     var cssFontFamily = style.getPropertyValue("font-family").trim().replace(/['"]+/g, '');
     rendererProperties.cssProperties = {
+      sceneBackgroundType: "Solid",
       sceneBackgroundColor: cssBackgroundColor,
       sceneLineColor: cssColor,
       sceneTextColor: cssColor,
@@ -465,7 +437,13 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     this._applyCustomCssProperties(rendererProperties.cssProperties, style,
       {
         // Scene
+        "sceneBackgroundType": "--avs-scene-background-type",
         "sceneBackgroundColor": "--avs-scene-background-color",
+        "sceneBackgroundStartColor": "--avs-scene-background-start-color",
+        "sceneBackgroundEndColor": "--avs-scene-background-end-color",
+        "sceneBackgroundGradientStyle": "--avs-scene-background-gradient-style",
+        "sceneBackgroundGradientInterpolation": "--avs-scene-background-gradient-interpolation",
+        "sceneBackgroundGradientColorRepeat": "--avs-scene-background-gradient-color-repeat",
         "sceneHighlightColor": "--avs-scene-highlight-color",
         "sceneSurfaceColor": "--avs-scene-surface-color",
         "sceneBorderColor": "--avs-scene-border-color",
@@ -492,7 +470,13 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         "sceneTitleFontWeight": "--avs-scene-title-font-weight",
         "sceneTitleFontSize": "--avs-scene-title-font-size",
         // Chart
+        "chartBackgroundType": "--avs-chart-background-type",
         "chartBackgroundColor": "--avs-chart-background-color",
+        "chartBackgroundStartColor": "--avs-chart-background-start-color",
+        "chartBackgroundEndColor": "--avs-chart-background-end-color",
+        "chartBackgroundGradientStyle": "--avs-chart-background-gradient-style",
+        "chartBackgroundGradientInterpolation": "--avs-chart-background-gradient-interpolation",
+        "chartBackgroundGradientColorRepeat": "--avs-chart-background-gradient-color-repeat",
         "chartHighlightColor": "--avs-chart-highlight-color",
         "chartSurfaceColor": "--avs-chart-surface-color",
         "chartBorderColor": "--avs-chart-border-color",
@@ -636,9 +620,9 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     this.$.dataVizDiv.style.width = this.width + 'px';
     this.$.dataVizDiv.style.height = this.height + 'px';
 
-    if (this.trackEnable) {
-      this.$$("#rectCanvas").width = this.width;
-      this.$$("#rectCanvas").height = this.height;
+    if (this.rectCanvas) {
+      this.rectCanvas.width = this.width;
+      this.rectCanvas.height = this.height;
     }
   } 
 
@@ -654,7 +638,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     if (this.spinner === undefined) {
       this.spinnerDiv = document.createElement('div');
       this.spinnerDiv.id = 'spinnerDiv';
-      this.$.dataVizDiv.appendChild(this.spinnerDiv);
+      this.$.container.appendChild(this.spinnerDiv);
       this.spinner = document.createElement('div');
       this.spinner.id = 'spinner';
       this.spinner.style.width = '46px';
@@ -671,7 +655,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     if (this.urlLoadJsonFile) {
       this.chunkFile = 0;
       this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this));
-    } else {
+    }
+    else {
       var model = this._assembleModel();
       if (model !== undefined) {
         this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
@@ -722,12 +707,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
    */
   _handleHttpResponse(json) {
 	if (json.selectionInfo !== undefined) {
-	  var infoEvent = {detail: json.selectionInfo};
-      /**
-       * Selection info from the `tap`, `track` or `hover` events.
-       * @event avs-selection-info
-       */
-	  this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
+      this._dispatchPickEvents(json.selectionInfo);
 	}
 
     if (json.sceneInfo !== undefined) {
@@ -799,18 +779,10 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   _handleTap(e) {
 	var adjustedCoords = this._getAdjustedCoords(e.detail.x, e.detail.y);
 
-    var tapEvent = {detail: {x: adjustedCoords.x, y: adjustedCoords.y, sourceEvent: e}};
-    /**
-     * A tap event occurred.
-     * @event avs-tap
-     */
-    this.dispatchEvent(new CustomEvent('avs-tap', tapEvent));
-
     var pickProperties = {type:"TAP", x:adjustedCoords.x, y:adjustedCoords.y};
 
 	if (this.tapLevel !== undefined) pickProperties.level = this.tapLevel;
 	if (this.tapDepth !== undefined) pickProperties.depth = this.tapDepth;
-	if (this.tapSelectionInfoEnable) pickProperties.selectionInfo = true;
 	if (this.tapHighlightEnable) pickProperties.highlight = true;
 	if (this.tapHighlightColor !== undefined) pickProperties.highlightColor = this.tapHighlightColor;
 	if (this.tapHighlightLayerEnable) pickProperties.highlightLayer = true;
@@ -823,13 +795,6 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
    */
   _handleTrack(e) {
 	var adjustedCoords = this._getAdjustedRectangleCoords(e);
-
-    var trackEvent = {detail: {state: e.detail.state, left: adjustedCoords.left, right: adjustedCoords.right, top: adjustedCoords.top, bottom: adjustedCoords.bottom, sourceEvent: e}};
-    /**
-     * A track event occurred.
-     * @event avs-track
-     */
-    this.dispatchEvent(new CustomEvent('avs-track', trackEvent));
 
     switch(e.detail.state) {
       case 'start':
@@ -852,7 +817,6 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 
         if (this.trackLevel !== undefined) pickProperties.level = this.trackLevel;
         if (this.trackDepth !== undefined) pickProperties.depth = this.trackDepth;
-        if (this.trackSelectionInfoEnable) pickProperties.selectionInfo = true;
         if (this.trackHighlightEnable) pickProperties.highlight = true;
         if (this.trackHighlightColor !== undefined) pickProperties.highlightColor = this.trackHighlightColor;
         if (this.trackHighlightLayerEnable) pickProperties.highlightLayer = true;
@@ -867,24 +831,16 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
    */
   _handleMouseMove(e) {
 	var adjustedCoords = this._getAdjustedCoords(e.clientX, e.clientY);
-	  
-    var hoverEvent = {detail: {x: adjustedCoords.x, y: adjustedCoords.y, sourceEvent: e.detail.sourceEvent}};
-    /**
-     * A hover event occurred.
-     * @event avs-hover
-     */
-    this.dispatchEvent(new CustomEvent('avs-hover', hoverEvent));
 
     var pickProperties = {type:"HOVER", x:adjustedCoords.x, y:adjustedCoords.y};
 
 	if (this.hoverLevel !== undefined) pickProperties.level = this.hoverLevel;
 	if (this.hoverDepth !== undefined) pickProperties.depth = this.hoverDepth;
-	if (this.hoverSelectionInfoEnable) pickProperties.selectionInfo = true;
 	if (this.hoverHighlightEnable) pickProperties.highlight = true;
 	if (this.hoverHighlightColor !== undefined) pickProperties.highlightColor = this.hoverHighlightColor;
 	if (this.hoverHighlightLayerEnable) pickProperties.highlightLayer = true;
 
-    this._processPick( pickProperties, this.hoverProcessEventOnClient );
+    this._processPick( pickProperties, true );
   }
 
   _getAdjustedCoords(x, y) {
@@ -938,22 +894,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         selectionList = this.threeViewer.getPickedSceneNodes();
       }
 
-      if (pickProperties.selectionInfo) {
-        var infoEvent = {detail: {mode: pickProperties.type}};
-        if (pickProperties.type === 'TRACK') {
-          infoEvent.detail.left   = pickProperties.left;
-          infoEvent.detail.top    = pickProperties.top;
-          infoEvent.detail.right  = pickProperties.right;
-          infoEvent.detail.bottom = pickProperties.bottom;
-        }
-        else {
-          infoEvent.detail.x = pickProperties.x;
-          infoEvent.detail.y = pickProperties.y;
-        }
-        infoEvent.detail.selected =  this.threeViewer.getSelectionInfo(selectionList);
-
-    	this.dispatchEvent(new CustomEvent('avs-selection-info', infoEvent));
-      }
+      pickProperties.selected = this.threeViewer.getSelectionInfo(selectionList);
+      this._dispatchPickEvents(pickProperties);
       
       if (pickProperties.highlight) {
         this.threeViewer.highlightColor.set( pickProperties.highlightColor );
@@ -985,6 +927,45 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   }
 
   /**
+   * Dispatch the appropriate tap, track or hover event.
+   */
+  _dispatchPickEvents(pickProperties) {
+
+    var pickEvent = {detail: {selected: pickProperties.selected}};
+    if (pickProperties.type === 'TRACK') {
+      pickEvent.detail.left   = pickProperties.left;
+      pickEvent.detail.top    = pickProperties.top;
+      pickEvent.detail.right  = pickProperties.right;
+      pickEvent.detail.bottom = pickProperties.bottom;
+
+      /**
+       * A track event occurred.
+       * @event avs-track
+       */
+      this.dispatchEvent(new CustomEvent('avs-track', pickEvent));
+    }
+    else {
+      pickEvent.detail.x = pickProperties.x;
+      pickEvent.detail.y = pickProperties.y;
+
+      if (pickProperties.type === 'HOVER') {
+        /**
+         * A hover event occurred.
+         * @event avs-hover
+         */
+        this.dispatchEvent(new CustomEvent('avs-hover', pickEvent));
+      }
+      else {
+        /**
+         * A tap event occurred.
+         * @event avs-tap
+         */
+        this.dispatchEvent(new CustomEvent('avs-tap', pickEvent));
+      }
+    }
+  }
+
+  /**
    * 
    */
   connectedCallback() {
@@ -1005,21 +986,75 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
    * Change in 'transform-enable' property.
    */
   _transformEnableChanged(newValue, oldValue) {
-    if (this.renderer === 'THREEJS') {
-      if (this.transformEnable) {
+    if (newValue && this.threeViewer) {
+      if (this.transformInteractor === undefined) {
         this.transformInteractor = new TransformInteractor( this.threeViewer.domElement );
-        this.threeViewer.addInteractor( this.transformInteractor );
-
-        if (this.transformRotateDisable) {
-          this.transformInteractor.enableRotate = false;
-        }
-        if (this.transformZoomDisable) {
-          this.transformInteractor.enableZoom = false;
-        }
-        if (this.transformPanDisable) {
-          this.transformInteractor.enablePan = false;
-        }
       }
+      this.threeViewer.addInteractor( this.transformInteractor );
+
+      if (this.transformRotateDisable) {
+        this.transformInteractor.enableRotate = false;
+      }
+      if (this.transformZoomDisable) {
+        this.transformInteractor.enableZoom = false;
+      }
+      if (this.transformPanDisable) {
+        this.transformInteractor.enablePan = false;
+      }
+    }
+    else {
+      this.threeViewer.removeInteractor( this.transformInteractor );
+    }
+  }
+
+  /**
+   * Change in 'transform-rotate-disable' property.
+   */
+  _transformRotateDisableChanged(newValue, oldValue) {
+    if (this.transformInteractor) {
+      this.transformInteractor.enableRotate = !newValue;
+    }
+  }
+
+  /**
+   * Change in 'transform-zoom-disable' property.
+   */
+  _transformZoomDisableChanged(newValue, oldValue) {
+    if (this.transformInteractor) {
+      this.transformInteractor.enableZoom = !newValue;
+    }
+  }
+
+  /**
+   * Change in 'transform-pan-disable' property.
+   */
+  _transformPanDisableChanged(newValue, oldValue) {
+    if (this.transformInteractor) {
+      this.transformInteractor.enablePan = !newValue;
+    }
+  }
+
+  /**
+   * Change in 'transform-twist-angle', 'transform-tilt-angle' or 'transform-scale' properties.
+   */
+  _transformValueChanged(newValue, oldValue) {
+    var twist = this.transformTwistAngle !== undefined ? this.transformTwistAngle * Math.PI / 180 : 0;
+    var tilt = this.transformTiltAngle !== undefined ? this.transformTiltAngle * Math.PI / 180 : 0;
+    var scale = this.transformScale !== undefined ? this.transformScale / 100.0 : 1.0;
+
+    var sinTW = Math.sin(twist);
+    var cosTW = Math.cos(twist);
+    var sinTI = Math.sin(tilt);
+    var cosTI = Math.cos(tilt);
+
+    var matrix = [ cosTW * scale,  0,                     cosTI * sinTW * scale, 0,
+                   0,              cosTI * scale,         -sinTI * scale,        0,
+                   -sinTW * scale, cosTW * sinTI * scale, cosTW * cosTI * scale, 0,
+                   0,              0,                     0,                     1 ];
+
+    this.transformMatrix = matrix;
+    if (this.transformInteractor) {    
+      this.transformInteractor.object.matrix.fromArray( matrix );
     }
   }
 
@@ -1120,7 +1155,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       Gestures.addListener(this, 'tap', this._handleTap.bind(this));
     }
     else {
-      Gestures.removeListener(this, 'tap', this.tapHandler.bind(this));
+      Gestures.removeListener(this, 'tap', this._handleTap.bind(this));
     }
   }
 
@@ -1131,14 +1166,14 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     if (newValue) {
       if (this.rectCanvas === undefined) {
         this.rectCanvas = document.createElement("canvas");
-        rectCanvas.setAttribute("id", "rectCanvas");
-        this.rectCtx = rectCanvas.getContext('2d');
+        this.rectCanvas.setAttribute("id", "rectCanvas");
+        this.rectCtx = this.rectCanvas.getContext('2d');
       }
-      this.appendChild(rectCanvas);
+      this.$.container.appendChild(this.rectCanvas);
       Gestures.addListener(this, 'track', this._handleTrack.bind(this));
     }
     else {
-      this.removeChild(this.rectCanvas);
+      this.$.container.removeChild(this.rectCanvas);
       Gestures.removeListener(this, 'track', this._handleTrack.bind(this));
     }
   }
