@@ -573,7 +573,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   _applyCustomCssProperties(cssProperties, style, values) {
     for (var key in values) {
       if (values.hasOwnProperty(key)) {
-        var css = style.getPropertyValue(values[key]).trim().replace(/['"]+/g, '');
+        var css = style.getPropertyValue(values[key]).trim();
         if (css.length > 0) {
           cssProperties[key] = css;
         }
