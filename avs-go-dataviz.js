@@ -756,15 +756,16 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       this.threeViewer.loadGeometryAsJson(json);
     }
 
-    // Hide the spinner and grab the scene background color for next time
-    if (this.spinner !== undefined) {
-      this.spinner.style.display = 'none';
-      if (json.backgroundColor !== undefined) {
-        this.updateStyles({'--avs-spinner-background-color': json.backgroundColor});
-      }
-    }
-
     if (loadComplete) {
+      // Hide the spinner and grab the scene background color for next time
+      // Disable background temporarily
+      if (this.spinner !== undefined) {
+        this.spinner.style.display = 'none';
+/*        if (json.backgroundColor !== undefined) {
+          this.updateStyles({'--avs-spinner-background-color': json.backgroundColor});
+        }*/
+      }
+
       /**
        * Scene load has completed.
        * @event avs-load-complete
@@ -986,24 +987,26 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
    * Change in 'transform-enable' property.
    */
   _transformEnableChanged(newValue, oldValue) {
-    if (newValue && this.threeViewer) {
-      if (this.transformInteractor === undefined) {
-        this.transformInteractor = new TransformInteractor( this.threeViewer.domElement );
-      }
-      this.threeViewer.addInteractor( this.transformInteractor );
+    if (this.threeViewer) {
+      if (newValue) {
+        if (this.transformInteractor === undefined) {
+          this.transformInteractor = new TransformInteractor( this.threeViewer.domElement );
+        }
+        this.threeViewer.addInteractor( this.transformInteractor );
 
-      if (this.transformRotateDisable) {
-        this.transformInteractor.enableRotate = false;
+        if (this.transformRotateDisable) {
+          this.transformInteractor.enableRotate = false;
+        }
+        if (this.transformZoomDisable) {
+          this.transformInteractor.enableZoom = false;
+        }
+        if (this.transformPanDisable) {
+          this.transformInteractor.enablePan = false;
+        }
       }
-      if (this.transformZoomDisable) {
-        this.transformInteractor.enableZoom = false;
+      else {
+        this.threeViewer.removeInteractor( this.transformInteractor );
       }
-      if (this.transformPanDisable) {
-        this.transformInteractor.enablePan = false;
-      }
-    }
-    else {
-      this.threeViewer.removeInteractor( this.transformInteractor );
     }
   }
 
@@ -1062,13 +1065,18 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
    * Change in 'pan-enable' property.
    */
   _panEnableChanged(newValue, oldValue) {
-    if (this.renderer === 'THREEJS') {
-      if (this.panEnable) {
-        this.panInteractor = new PanInteractor( this.threeViewer.domElement );
+    if (this.threeViewer) {
+      if (newValue) {
+        if (this.panInteractor === undefined) {
+          this.panInteractor = new PanInteractor( this.threeViewer.domElement );
+        }
         this.threeViewer.addInteractor( this.panInteractor );
 
-		this.panInteractor.widthScale = (this.panWidthZoomLevel > 100) ? (this.panWidthZoomLevel / 100) : 1;
-		this.panInteractor.heightScale = (this.panHeightZoomLevel > 100) ? (this.panHeightZoomLevel / 100) : 1;
+        this.panInteractor.widthScale = (this.panWidthZoomLevel > 100) ? (this.panWidthZoomLevel / 100) : 1;
+        this.panInteractor.heightScale = (this.panHeightZoomLevel > 100) ? (this.panHeightZoomLevel / 100) : 1;
+      }
+      else {
+        this.threeViewer.removeInteractor( this.panInteractor );
       }
     }
   }
