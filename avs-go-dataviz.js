@@ -400,21 +400,6 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       rendererProperties.transformMatrix = this.transformMatrix;
     }
 
-    // Pan Properties
-    if (this.panEnable && this.renderer === 'THREEJS') {
-      var width = this.width;
-      if (this.panWidthZoomLevel !== undefined) {
-        width = Math.max(this.width, Math.round(width * this.panWidthZoomLevel / 100.0));
-      }
-      rendererProperties.width = width;
-
-      var height = this.height;
-      if (this.panHeightZoomLevel !== undefined) {
-        height = Math.max(this.height, Math.round(height * this.panHeightZoomLevel / 100.0));
-      }
-      rendererProperties.height = height;
-    }
-
     // Base theme to use from themeName property
     rendererProperties.themeName = this.themeName;
 
