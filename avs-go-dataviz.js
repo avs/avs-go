@@ -431,7 +431,6 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         "sceneBackgroundGradientColorRepeat": "--avs-scene-background-gradient-color-repeat",
         "sceneHighlightColor": "--avs-scene-highlight-color",
         "sceneSurfaceColor": "--avs-scene-surface-color",
-        "sceneBorderColor": "--avs-scene-border-color",
         "sceneLineColor": "--avs-scene-line-color",
         "sceneLineWidth": "--avs-scene-line-width",
         "sceneLineOpacity": "--avs-scene-line-opacity",
@@ -441,12 +440,6 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         "sceneFontStyle": "--avs-scene-font-style",
         "sceneFontWeight": "--avs-scene-font-weight",
         "sceneFontSize": "--avs-scene-font-size",
-        // Data maps
-        "seriesColorMap": "--avs-series-color-map",
-        "valueColorMap": "--avs-value-color-map",
-        "valueColorMapInterpolation": "--avs-value-color-map-interpolation",
-        "sizeMap": "--avs-size-map",
-        "shapeMap": "--avs-shape-map",
         // Scene title
         "sceneTitleTextColor": "--avs-scene-title-text-color",
         "sceneTitleTextRotation": "--avs-scene-title-text-rotation",
@@ -464,7 +457,6 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         "chartBackgroundGradientColorRepeat": "--avs-chart-background-gradient-color-repeat",
         "chartHighlightColor": "--avs-chart-highlight-color",
         "chartSurfaceColor": "--avs-chart-surface-color",
-        "chartBorderColor": "--avs-chart-border-color",
         "chartLineColor": "--avs-chart-line-color",
         "chartLineWidth": "--avs-chart-line-width",
         "chartLinePattern": "--avs-chart-line-pattern",
@@ -495,16 +487,13 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         // Axis axle
         "axisAxleColor": "--avs-axis-axle-color",
         "axisAxleWidth": "--avs-axis-axle-width",
-        "axisAxleOpacity": "--avs-axis-axle-opacity",
         // Axis tick mark
         "axisTickMarkColor": "--avs-axis-tick-mark-color",
         "axisTickMarkWidth": "--avs-axis-tick-mark-width",
-        "axisTickMarkOpacity": "--avs-axis-tick-mark-opacity",
         // Axis tick line
         "axisTicklineColor": "--avs-axis-tick-line-color",
         "axisTicklineWidth": "--avs-axis-tick-line-width",
-        "axisTickLinePattern": "--avs-axis-tick-line-pattern",
-        "axisTicklineOpacity": "--avs-axis-tick-line-opacity",
+        "axisTickLineStyle": "--avs-axis-tick-line-style",
         // Axis title
         "axisTitleTextColor": "--avs-axis-title-text-color",
         "axisTitleTextRotation": "--avs-axis-title-text-rotation",
@@ -710,8 +699,22 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 	
 	  this.sceneImage.src = json.image;
 	  if (json.imagemap !== undefined) {
-	//        this.$$("#sceneImageMap").innerHTML = decodeURIComponent(json.imagemap.replace(/\+/g, '%20'));
+	    this.sceneImageMap.innerHTML = decodeURIComponent(json.imagemap.replace(/\+/g, '%20'));
+
+        this.imageMapData = Array.from(this.sceneImageMap.querySelectorAll('area')).map(area => {
+          return {
+            shape: area.getAttribute('shape'),
+            coords: area.getAttribute('coords').split(',').map(Number),
+            seriesIndex: area.getAttribute('series-index'),
+            itemIndex: area.getAttribute('item-index'),
+            componentInfo: area.getAttribute('component-info')
+          };
+        });
 	  }
+      else {
+        this.sceneImageMap.innerHTML = "";
+        this.imageMapData = undefined;
+      }
 	}
 	else if (json.svg !== undefined) {
 	  this.svgDiv.innerHTML = decodeURIComponent(json.svg.replace(/\+/g, '%20'));
@@ -773,7 +776,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 	if (this.tapHighlightColor !== undefined) pickProperties.highlightColor = this.tapHighlightColor;
 	if (this.tapHighlightLayerEnable) pickProperties.highlightLayer = true;
 
-    this._processPick( pickProperties, this.tapProcessEventOnClient );
+    this._processPick( pickProperties, this.tapProcessEventOnClient, e.originalTarget );
   }
   
   /**
@@ -826,7 +829,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 	if (this.hoverHighlightColor !== undefined) pickProperties.highlightColor = this.hoverHighlightColor;
 	if (this.hoverHighlightLayerEnable) pickProperties.highlightLayer = true;
 
-    this._processPick( pickProperties, true );
+    this._processPick( pickProperties, true, e.originalTarget );
   }
 
   _getAdjustedCoords(x, y) {
@@ -856,41 +859,127 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 	return {left: left, right: right, top: top, bottom: bottom};
   }
 
-  _processPick( pickProperties, processEventOnClient ) {
-    if (this.renderer === 'THREEJS' && processEventOnClient) {
+  _processPick( pickProperties, processEventOnClient, originalTarget ) {
+    if (processEventOnClient) {
+      if (this.renderer === 'THREEJS') {
+        // ThreeJS client side pick processing
 
-      // Client side pick processing
-      this.threeViewer.setPickDepth( this._getPickDepth(pickProperties.depth) );
-      if (pickProperties.type === 'TRACK') {
-        this.threeViewer.setPickRectangle( pickProperties.left, pickProperties.top, pickProperties.right, pickProperties.bottom );
-      }
-      else {
-   	    this.threeViewer.setPickRay( pickProperties.x, pickProperties.y );
-      }
-      this.threeViewer.pick();
+        this.threeViewer.setPickDepth( this._getPickDepth(pickProperties.depth) );
+        if (pickProperties.type === 'TRACK') {
+          this.threeViewer.setPickRectangle( pickProperties.left, pickProperties.top, pickProperties.right, pickProperties.bottom );
+        }
+        else {
+     	  this.threeViewer.setPickRay( pickProperties.x, pickProperties.y );
+        }
+        this.threeViewer.pick();
 
-      var selectionList = {};
-      if (pickProperties.level === "CELL") {
-        selectionList = this.threeViewer.getPickedCells();
-      }
-      else if (pickProperties.level === "CELL_SET") {
-        selectionList = this.threeViewer.getPickedCellSets();
-      }
-      else {
-        selectionList = this.threeViewer.getPickedSceneNodes();
-      }
+        var selectionList = {};
+        if (pickProperties.level === "CELL") {
+          selectionList = this.threeViewer.getPickedCells();
+        }
+        else if (pickProperties.level === "CELL_SET") {
+          selectionList = this.threeViewer.getPickedCellSets();
+        }
+        else {
+          selectionList = this.threeViewer.getPickedSceneNodes();
+        }
 
-      pickProperties.selected = this.threeViewer.getSelectionInfo(selectionList);
-      this._dispatchPickEvents(pickProperties);
+        pickProperties.selected = this.threeViewer.getSelectionInfo(selectionList);
+        this._dispatchPickEvents(pickProperties);
       
-      if (pickProperties.highlight) {
-        this.threeViewer.highlightColor.set( pickProperties.highlightColor );
-        this.threeViewer.highlightObjects( selectionList, pickProperties.highlightLayer );
+        if (pickProperties.highlight) {
+          this.threeViewer.highlightColor.set( pickProperties.highlightColor );
+          this.threeViewer.highlightObjects( selectionList, pickProperties.highlightLayer );
+        }
       }
+      else if (this.renderer === 'SVG') {
+        // Client side SVG pick processing
+
+        pickProperties.selected = [];
+
+        if (pickProperties.type !== 'TRACK' && originalTarget.nodeName === "polygon") {
+          var selectedInfo = {};
+
+          var seriesIndex = null;
+          var element = originalTarget.parentElement;
+          while (element !== null && (seriesIndex = element.getAttribute("series-index")) === null) {
+            element = element.parentElement;
+          }
+          if (seriesIndex !== null) {
+            selectedInfo.seriesIndex = parseInt(seriesIndex);
+          }
+
+          var itemIndex = null;
+          element = originalTarget.parentElement;
+          while (element !== null && (itemIndex = element.getAttribute("item-index")) === null) {
+            element = element.parentElement;
+          }
+          if (itemIndex !== null) {
+            selectedInfo.itemIndex = parseInt(itemIndex);
+          }
+
+          var componentInfo = null;
+          element = originalTarget.parentElement;
+          while (element !== null && (componentInfo = element.getAttribute("component-info")) === null) {
+            element = element.parentElement;
+          }
+          if (componentInfo !== null) {
+            selectedInfo.componentInfo = decodeURIComponent(componentInfo);
+          }
+
+          pickProperties.selected.push(selectedInfo);
+        }
+
+        this._dispatchPickEvents(pickProperties);
+      
+        if (pickProperties.highlight) {
+          if (this.highlightSvg === undefined) {
+            this.highlightSvg = [];
+          }
+
+          for (var i = 0; i < this.highlightSvg.length; i++) {
+            this.highlightSvg[i].setAttribute("fill", this.highlightSvg[i].getAttribute("saveFill"));
+          }
+          this.highlightSvg.length = 0;
+
+          if (pickProperties.type !== 'TRACK' && originalTarget.nodeName === "polygon") {
+            this.highlightSvg.push(originalTarget);
+            originalTarget.setAttribute("saveFill", originalTarget.getAttribute("fill"));
+            originalTarget.setAttribute("fill", pickProperties.highlightColor);
+          }
+        }
+      }
+      else {
+        // Client side imagemap pick processing
+
+        pickProperties.selected = [];
+
+        if (pickProperties.type !== 'TRACK' && this.imageMapData !== undefined) {
+          for (var i = 0; i < this.imageMapData.length; i++) {
+            var area = this.imageMapData[i];
+            if (area.shape === "poly" && this._pointInPoly(pickProperties.x, pickProperties.y, area.coords) !== false) {
+
+              var selectedInfo = {};
+              if (area.seriesIndex !== null) {
+                selectedInfo.seriesIndex = parseInt(area.seriesIndex);
+              }
+              if (area.itemIndex !== null) {
+                selectedInfo.itemIndex = parseInt(area.itemIndex);
+              }
+              if (area.componentInfo !== null) {
+                selectedInfo.componentInfo = decodeURIComponent(area.componentInfo);
+              }
+              pickProperties.selected.push(selectedInfo);
+            }
+          }
+        }
+
+        this._dispatchPickEvents(pickProperties);
+     }
     }
     else {
-
       // Server side pick processing
+
       var model = this._assembleModel();
       if (model !== undefined) {
         model.rendererProperties.pickProperties = pickProperties;
@@ -898,6 +987,59 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       }
 
     } 
+  }
+
+  _pointInPoly(x, y, coords) {
+    var dx1 = coords[0] - x;
+    var dy1 = coords[1] - y;
+    var dx2, dy2, f;
+    var k = 0;
+
+    for (var i=2; i < coords.length; i+=2) {
+
+      dy2 = coords[i+1] - y;
+
+      if ((dy1 < 0 && dy2 < 0) || (dy1 > 0 && dy2 > 0)) {
+        dy1 = dy2;
+        dx1 = coords[i] - x;
+        continue;
+      }
+
+      dx2 = coords[i] - x;
+
+      if (dy2 > 0 && dy1 <= 0) {
+        f = (dx1 * dy2) - (dx2 * dy1);
+        if (f > 0) k++;
+        else if (f === 0) return 0;
+      }
+      else if (dy1 > 0 && dy2 <= 0) {
+        f = (dx1 * dy2) - (dx2 * dy1);
+        if (f < 0) k++;
+        else if (f === 0) return 0;
+      }
+      else if (dy2 === 0 && dy1 < 0) {
+        f = (dx1 * dy2) - (dx2 * dy1);
+        if (f === 0) return 0;
+      }
+      else if (dy1 === 0 && dy2 < 0) {
+        f = dx1 * dy2 - dx2 * dy1;
+        if (f === 0) return 0;
+      }
+      else if (dy1 === 0 && dy2 === 0) {
+        if (dx2 <= 0 && dx1 >= 0) {
+          return 0;
+        }
+        else if (dx1 <= 0 && dx2 >= 0) {
+          return 0;
+        }
+      }
+ 
+      dy1 = dy2;
+      dx1 = dx2;
+    }
+
+    if (k % 2 === 0) return false;
+    return true;
   }
 
   /**
@@ -1073,6 +1215,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     if (oldValue === 'IMAGE' || oldValue === 'IMAGEURL') {
       this.sceneImage.src = 'data:,';
       this.$.dataVizDiv.removeChild(this.sceneImage);
+      this.$.dataVizDiv.removeChild(this.sceneImageMap);
     }
     else if (oldValue === 'SVG') {
       var el = this.svgDiv;
@@ -1089,15 +1232,15 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       if (this.sceneImage === undefined) {
         this.sceneImage = document.createElement("img");
         this.sceneImage.setAttribute("id", "sceneImage");
-        // this.sceneImage.setAttribute("usemap", "#sceneImageMap");
+        this.sceneImage.setAttribute("usemap", "#sceneImageMap");
 
-        // var mapElem = document.createElement("map");
-        // mapElem.setAttribute("id", "sceneImageMap");
-        // mapElem.setAttribute("name", "sceneImageMap");
-        // this.$.dataVizDiv.appendChild(mapElem);
+        this.sceneImageMap = document.createElement("map");
+        this.sceneImageMap.setAttribute("id", "sceneImageMap");
+        this.sceneImageMap.setAttribute("name", "sceneImageMap");
       }
 
       this.$.dataVizDiv.appendChild(this.sceneImage);
+      this.$.dataVizDiv.appendChild(this.sceneImageMap);
     }
     else if (newValue === 'SVG') {
       if (this.svgDiv === undefined) {
