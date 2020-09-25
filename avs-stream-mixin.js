@@ -58,8 +58,8 @@ export const AvsStreamMixin = dedupingMixin((superClass) => class extends superC
   _addStreamProperties(rendererProperties) {
     if (this.streamEnable) {
       rendererProperties.streamProperties = {};
-      if (this.streamChunkSizeFirst !== undefined) rendererProperties.streamProperties.streamChunkSizeFirst = this.streamChunkSizeFirst;
-      if (this.streamChunkSize !== undefined) rendererProperties.streamProperties.streamChunkSize = this.streamChunkSize;
+      if (this.streamChunkSizeFirst !== undefined) rendererProperties.streamProperties.chunkSizeFirst = this.streamChunkSizeFirst;
+      if (this.streamChunkSize !== undefined) rendererProperties.streamProperties.chunkSize = this.streamChunkSize;
     }
   }
 });

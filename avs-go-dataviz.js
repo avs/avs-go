@@ -95,7 +95,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         @keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
       </style>
       <div id="container">
-        <div id="dataVizDiv" hidden="[[hidden]]"></div>
+        <div id="dataVizDiv"></div>
       </div>
     `;
   }
@@ -146,7 +146,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
        * Hide the data visualization.
        */
       hidden: {
-        type: Boolean
+        type: Boolean,
+        observer: "_hiddenChanged"
       },
       /**
        * Resize threshold (percent) to determine when the update is performed on the client or the server.
@@ -1108,6 +1109,21 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         this.initialized = true;
       }
     }); 
+  }
+
+  /**
+   * Change in 'hidden' property.
+   */
+  _hiddenChanged(newValue, oldValue) {
+    if (newValue) {
+      this.$.dataVizDiv.style.display = 'none';
+    }
+    else {
+      this.$.dataVizDiv.style.display = '';
+      if (this.threeViewer) {
+        this.threeViewer.render();
+      }
+    }
   }
 
   /**
