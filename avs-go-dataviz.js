@@ -21,8 +21,6 @@
 import {PolymerElement, html} from '@polymer/polymer/polymer-element.js';
 import {mixinBehaviors} from '@polymer/polymer/lib/legacy/class.js';
 import {IronResizableBehavior} from '@polymer/iron-resizable-behavior/iron-resizable-behavior.js';
-import {GestureEventListeners} from '@polymer/polymer/lib/mixins/gesture-event-listeners.js';
-import * as Gestures from '@polymer/polymer/lib/utils/gestures.js';
 import {afterNextRender} from '@polymer/polymer/lib/utils/render-status.js';
 import {AvsRenderer} from './avs-renderer.js';
 import {Viewer, TransformInteractor, PanInteractor, PickDepthEnum} from './avs-three.module.min.js';
@@ -47,7 +45,7 @@ import {LOGO} from './logo.js';
  * @appliesMixin AvsStreamMixin
  * @appliesMixin AvsHttpMixin
  */
-class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinBehaviors([IronResizableBehavior, GestureEventListeners], PolymerElement)))) {
+class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinBehaviors([IronResizableBehavior], PolymerElement)))) {
 
   static get template() {
     return html`
@@ -815,22 +813,72 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         break;
     }
   }
-  
+
+  /**
+   * @param e
+   */
+  _handleMouseDown(e) {
+    this.mouseDownX = e.clientX;
+    this.mouseDownY = e.clientY;
+
+    if (this.tapEnable && e.buttons & 1) {
+      this.tapping = true;
+    }
+
+    if (this.trackEnable && e.buttons & 2) {
+      this.tracking = 1;
+    }
+  }
+
   /**
    * @param e
    */
   _handleMouseMove(e) {
-	var adjustedCoords = this._getAdjustedCoords(e.clientX, e.clientY);
+    if (this.tracking >= 1) {
+      if (this.tracking === 1) {
+        var dx = Math.abs(e.clientX - this.mouseDownX);
+        var dy = Math.abs(e.clientY - this.mouseDownY);
+        if (dx*dx + dy*dy >= 5) {
+          this.tracking = 2;
+          this._handleTrack({detail:{state:"start", x:e.clientX, y:e.clientY, dx:e.clientX-this.mouseDownX, dy:e.clientY-this.mouseDownY}});
+        }
+      }
+      if (this.tracking === 2) {
+        this._handleTrack({detail:{state:"track", x:e.clientX, y:e.clientY, dx:e.clientX-this.mouseDownX, dy:e.clientY-this.mouseDownY}});
+      }
+    }
 
-    var pickProperties = {type:"HOVER", x:adjustedCoords.x, y:adjustedCoords.y};
+    if (this.hoverEnable) {
+      var adjustedCoords = this._getAdjustedCoords(e.clientX, e.clientY);
+      var pickProperties = {type:"HOVER", x:adjustedCoords.x, y:adjustedCoords.y};
 
-	if (this.hoverLevel !== undefined) pickProperties.level = this.hoverLevel;
-	if (this.hoverDepth !== undefined) pickProperties.depth = this.hoverDepth;
-	if (this.hoverHighlightEnable) pickProperties.highlight = true;
-	if (this.hoverHighlightColor !== undefined) pickProperties.highlightColor = this.hoverHighlightColor;
-	if (this.hoverHighlightLayerEnable) pickProperties.highlightLayer = true;
+	  if (this.hoverLevel !== undefined) pickProperties.level = this.hoverLevel;
+	  if (this.hoverDepth !== undefined) pickProperties.depth = this.hoverDepth;
+	  if (this.hoverHighlightEnable) pickProperties.highlight = true;
+	  if (this.hoverHighlightColor !== undefined) pickProperties.highlightColor = this.hoverHighlightColor;
+	  if (this.hoverHighlightLayerEnable) pickProperties.highlightLayer = true;
 
-    this._processPick( pickProperties, true, e.originalTarget );
+      this._processPick( pickProperties, true, e.originalTarget );
+    }
+  }
+
+  /**
+   * @param e
+   */
+  _handleMouseUp(e) {
+    if (this.tapping) {
+      this.tapping = false;
+      var dx = Math.abs(e.clientX - this.mouseDownX);
+      var dy = Math.abs(e.clientY - this.mouseDownY);
+      if (dx*dx + dy*dy < 25) {
+        this._handleTap({detail:{x:e.clientX, y:e.clientY}});
+      }
+    }
+
+    if (this.tracking > 1) {
+      this.tracking = 0;
+      this._handleTrack({detail:{state:"end", x:e.clientX, y:e.clientY, dx:e.clientX-this.mouseDownX, dy:e.clientY-this.mouseDownY}});
+    }
   }
 
   _getAdjustedCoords(x, y) {
@@ -1106,6 +1154,19 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         this.updateViewer();
 
         this.addEventListener('iron-resize', this._onResize);
+
+        this.addEventListener('mousedown', this._handleMouseDown);
+        this.addEventListener('mouseup', this._handleMouseUp);
+        this.addEventListener('mousemove', this._handleMouseMove);
+        this.addEventListener('mouseout', this._handleMouseMove);
+
+        var scope = this;
+        this.addEventListener('contextmenu', function(e) {
+          if (scope.trackEnable) {
+            e.preventDefault();
+          }
+        });
+
         this.initialized = true;
       }
     }); 
@@ -1300,18 +1361,6 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   }
 
   /**
-   * Change in 'tap-enable' property.
-   */
-  _tapEnableChanged(newValue, oldValue) {
-    if (newValue) {
-      Gestures.addListener(this, 'tap', this._handleTap.bind(this));
-    }
-    else {
-      Gestures.removeListener(this, 'tap', this._handleTap.bind(this));
-    }
-  }
-
-  /**
    * Change in 'track-enable' property.
    */
   _trackEnableChanged(newValue, oldValue) {
@@ -1322,25 +1371,9 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         this.rectCtx = this.rectCanvas.getContext('2d');
       }
       this.$.container.appendChild(this.rectCanvas);
-      Gestures.addListener(this, 'track', this._handleTrack.bind(this));
     }
     else {
       this.$.container.removeChild(this.rectCanvas);
-      Gestures.removeListener(this, 'track', this._handleTrack.bind(this));
-    }
-  }
-
-  /**
-   * Change in 'hover-enable' property.
-   */
-  _hoverEnableChanged(newValue, oldValue) {
-    if (newValue) {
-      this.addEventListener('mousemove', this._handleMouseMove);
-      this.addEventListener('mouseout', this._handleMouseMove);
-    }
-    else {
-      this.removeEventListener('mousemove', this._handleMouseMove);
-      this.removeEventListener('mouseout', this._handleMouseMove);
     }
   }
 }
