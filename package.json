@@ -1,6 +1,6 @@
 {
   "name": "avs-go",
-  "version": "0.3.67820",
+  "version": "0.3.67836",
   "description": "AVS Go",
   "keywords": [
     "polymer",
@@ -23,7 +23,7 @@
   "dependencies": {
     "@polymer/iron-resizable-behavior": "^3.0.1",
     "@polymer/polymer": "^3.4.1",
-    "three": "0.120.1"
+    "three": "0.121.1"
   },
   "devDependencies": {
     "@babel/core": "^7.11.6",

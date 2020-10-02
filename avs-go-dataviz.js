@@ -165,8 +165,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
        * Enables the `avs-tap` event.
        */
       tapEnable: {
-        type: Boolean,
-        observer: "_tapEnableChanged"
+        type: Boolean
       },
       /**
        * The level of geometry within the scene to be modified by the tap event: `CELL`, `CELL_SET` or `SCENE_NODE`
@@ -251,8 +250,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
        * Enables the `avs-hover` event.
        */
       hoverEnable: {
-        type: Boolean,
-        observer: "_hoverEnableChanged"
+        type: Boolean
       },
       /**
        * The level of geometry within the scene to be modified by the hover event: `CELL`, `CELL_SET` or `SCENE_NODE`
@@ -946,7 +944,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 
         pickProperties.selected = [];
 
-        if (pickProperties.type !== 'TRACK' && originalTarget.nodeName === "polygon") {
+        if (pickProperties.type !== 'TRACK' && (originalTarget.nodeName === "polygon" || originalTarget.nodeName === "circle")) {
           var selectedInfo = {};
 
           var seriesIndex = null;
@@ -991,7 +989,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
           }
           this.highlightSvg.length = 0;
 
-          if (pickProperties.type !== 'TRACK' && originalTarget.nodeName === "polygon") {
+          if (pickProperties.type !== 'TRACK' && (originalTarget.nodeName === "polygon" || originalTarget.nodeName === "circle")) {
             this.highlightSvg.push(originalTarget);
             originalTarget.setAttribute("saveFill", originalTarget.getAttribute("fill"));
             originalTarget.setAttribute("fill", pickProperties.highlightColor);
