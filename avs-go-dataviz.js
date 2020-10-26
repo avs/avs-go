@@ -815,9 +815,9 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   /**
    * @param e
    */
-  _handleMouseDown(e) {
-    this.mouseDownX = e.clientX;
-    this.mouseDownY = e.clientY;
+  _handlePointerDown(e) {
+    this.pointerDownX = e.clientX;
+    this.pointerDownY = e.clientY;
 
     if (this.tapEnable && e.buttons & 1) {
       this.tapping = true;
@@ -831,18 +831,18 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   /**
    * @param e
    */
-  _handleMouseMove(e) {
+  _handlePointerMove(e) {
     if (this.tracking >= 1) {
       if (this.tracking === 1) {
-        var dx = Math.abs(e.clientX - this.mouseDownX);
-        var dy = Math.abs(e.clientY - this.mouseDownY);
+        var dx = Math.abs(e.clientX - this.pointerDownX);
+        var dy = Math.abs(e.clientY - this.pointerDownY);
         if (dx*dx + dy*dy >= 5) {
           this.tracking = 2;
-          this._handleTrack({detail:{state:"start", x:e.clientX, y:e.clientY, dx:e.clientX-this.mouseDownX, dy:e.clientY-this.mouseDownY}});
+          this._handleTrack({detail:{state:"start", x:e.clientX, y:e.clientY, dx:e.clientX-this.pointerDownX, dy:e.clientY-this.pointerDownY}});
         }
       }
       if (this.tracking === 2) {
-        this._handleTrack({detail:{state:"track", x:e.clientX, y:e.clientY, dx:e.clientX-this.mouseDownX, dy:e.clientY-this.mouseDownY}});
+        this._handleTrack({detail:{state:"track", x:e.clientX, y:e.clientY, dx:e.clientX-this.pointerDownX, dy:e.clientY-this.pointerDownY}});
       }
     }
 
@@ -863,11 +863,11 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   /**
    * @param e
    */
-  _handleMouseUp(e) {
+  _handlePointerUp(e) {
     if (this.tapping) {
       this.tapping = false;
-      var dx = Math.abs(e.clientX - this.mouseDownX);
-      var dy = Math.abs(e.clientY - this.mouseDownY);
+      var dx = Math.abs(e.clientX - this.pointerDownX);
+      var dy = Math.abs(e.clientY - this.pointerDownY);
       if (dx*dx + dy*dy < 25) {
         this._handleTap({detail:{x:e.clientX, y:e.clientY}});
       }
@@ -875,7 +875,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 
     if (this.tracking > 1) {
       this.tracking = 0;
-      this._handleTrack({detail:{state:"end", x:e.clientX, y:e.clientY, dx:e.clientX-this.mouseDownX, dy:e.clientY-this.mouseDownY}});
+      this._handleTrack({detail:{state:"end", x:e.clientX, y:e.clientY, dx:e.clientX-this.pointerDownX, dy:e.clientY-this.pointerDownY}});
     }
   }
 
@@ -1153,10 +1153,10 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 
         this.addEventListener('iron-resize', this._onResize);
 
-        this.addEventListener('mousedown', this._handleMouseDown);
-        this.addEventListener('mouseup', this._handleMouseUp);
-        this.addEventListener('mousemove', this._handleMouseMove);
-        this.addEventListener('mouseout', this._handleMouseMove);
+        this.addEventListener('pointerdown', this._handlePointerDown);
+        this.addEventListener('pointerup', this._handlePointerUp);
+        this.addEventListener('pointermove', this._handlePointerMove);
+        this.addEventListener('pointerout', this._handlePointerMove);
 
         var scope = this;
         this.addEventListener('contextmenu', function(e) {
@@ -1192,7 +1192,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     if (this.threeViewer) {
       if (newValue) {
         if (this.transformInteractor === undefined) {
-          this.transformInteractor = new TransformInteractor( this.threeViewer.domElement );
+          this.transformInteractor = new TransformInteractor( this );
         }
         this.threeViewer.addInteractor( this.transformInteractor );
 
@@ -1270,7 +1270,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     if (this.threeViewer) {
       if (newValue) {
         if (this.panInteractor === undefined) {
-          this.panInteractor = new PanInteractor( this.threeViewer.domElement );
+          this.panInteractor = new PanInteractor( this );
         }
         this.threeViewer.addInteractor( this.panInteractor );
 

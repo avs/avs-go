@@ -1,6 +1,6 @@
 {
   "name": "avs-go",
-  "version": "0.4.67886",
+  "version": "0.4.67907",
   "description": "AVS Go",
   "keywords": [
     "polymer",
@@ -31,7 +31,7 @@
     "@babel/preset-env": "^7.12.1",
     "@polymer/iron-demo-helpers": "^3.1.0",
     "@polymer/test-fixture": "^4.0.2",
-    "@webcomponents/webcomponentsjs": "^2.4.4",
+    "@webcomponents/webcomponentsjs": "^2.5.0",
     "babel-loader": "^8.1.0",
     "chai": "^4.2.0",
     "mocha": "^6.2.3",
