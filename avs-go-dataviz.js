@@ -1240,6 +1240,33 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   }
 
   /**
+   * Reset the transform interactor.
+   */
+  resetTransform() {
+    if (this.transformInteractor) {
+      this.transformInteractor.reset();
+    }
+  }
+
+  /**
+   * Perform a zoom in using the transform interactor.
+   */
+  zoomIn() {
+    if (this.transformInteractor) {
+      this.transformInteractor.zoomIn();
+    }
+  }
+
+  /**
+   * Perform a zoom out using the transform interactor.
+   */
+  zoomOut() {
+    if (this.transformInteractor) {
+      this.transformInteractor.zoomOut();
+    }
+  }
+
+  /**
    * Change in 'transform-twist-angle', 'transform-tilt-angle' or 'transform-scale' properties.
    */
   _transformValueChanged(newValue, oldValue) {
