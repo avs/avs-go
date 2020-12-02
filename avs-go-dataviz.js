@@ -23,7 +23,7 @@ import {mixinBehaviors} from '@polymer/polymer/lib/legacy/class.js';
 import {IronResizableBehavior} from '@polymer/iron-resizable-behavior/iron-resizable-behavior.js';
 import {afterNextRender} from '@polymer/polymer/lib/utils/render-status.js';
 import {AvsRenderer} from './avs-renderer.js';
-import {Viewer, TransformInteractor, PanInteractor, PickDepthEnum} from './avs-three.module.min.js';
+import {Viewer, TransformInteractor, PanInteractor, ZoomRectangleInteractor, PickDepthEnum} from './avs-three.module.min.js';
 import {AvsHttpMixin} from './avs-http-mixin.js';
 import {AvsStreamMixin} from './avs-stream-mixin.js';
 import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
@@ -556,8 +556,11 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
    * 
    */
   _onResize() {
-    if (!this.urlLoadJsonFile && (this.clientWidth < this.lowResizeWidth ||
-        this.clientWidth > this.highResizeWidth)) {
+    if (!this.urlLoadJsonFile &&
+       (this.clientWidth < this.lowResizeWidth ||
+        this.clientWidth > this.highResizeWidth ||
+        this.clientHeight < this.lowResizeHeight ||
+        this.clientHeight > this.highResizeHeight)) {
 
       this.updateViewer();
     }
@@ -605,6 +608,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 
     this.lowResizeWidth = (100 - this.resizeThreshold) / 100 * this.width;
     this.highResizeWidth = (100 + this.resizeThreshold) / 100 * this.width;
+    this.lowResizeHeight = (100 - this.resizeThreshold) / 100 * this.height;
+    this.highResizeHeight = (100 + this.resizeThreshold) / 100 * this.height;
 
     if (this.spinner === undefined) {
       this.spinnerDiv = document.createElement('div');
@@ -1158,6 +1163,10 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         this.addEventListener('pointermove', this._handlePointerMove);
         this.addEventListener('pointerout', this._handlePointerMove);
 
+        if (this.threeViewer) {
+          this.threeViewer.addInteractor( new ZoomRectangleInteractor( this ) );
+        }
+ 
         var scope = this;
         this.addEventListener('contextmenu', function(e) {
           if (scope.trackEnable) {
