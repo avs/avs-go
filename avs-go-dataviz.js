@@ -682,68 +682,71 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
    * @param json JSON parsed from HTTP response.
    */
   _handleHttpResponse(json) {
-	if (json.selectionInfo !== undefined) {
-      this._dispatchPickEvents(json.selectionInfo);
-	}
-
-    if (json.sceneInfo !== undefined) {
-      var sceneEvent = {detail: json.sceneInfo};
-      /**
-       * Scene info from the server.
-       * @event avs-scene-info
-       */
-      this.dispatchEvent(new CustomEvent('avs-scene-info', sceneEvent));
-    }
-
     var loadComplete = true;
 
-	if (json.image !== undefined) {
-	
-	  this.sceneImage.src = json.image;
-	  if (json.imagemap !== undefined) {
-	    this.sceneImageMap.innerHTML = decodeURIComponent(json.imagemap.replace(/\+/g, '%20'));
+    if (json !== undefined) {
 
-        this.imageMapData = Array.from(this.sceneImageMap.querySelectorAll('area')).map(area => {
-          return {
-            shape: area.getAttribute('shape'),
-            coords: area.getAttribute('coords').split(',').map(Number),
-            seriesIndex: area.getAttribute('series-index'),
-            itemIndex: area.getAttribute('item-index'),
-            componentInfo: area.getAttribute('component-info')
-          };
-        });
+      if (json.selectionInfo !== undefined) {
+        this._dispatchPickEvents(json.selectionInfo);
 	  }
-      else {
-        this.sceneImageMap.innerHTML = "";
-        this.imageMapData = undefined;
-      }
-	}
-	else if (json.svg !== undefined) {
-	  this.svgDiv.innerHTML = decodeURIComponent(json.svg.replace(/\+/g, '%20'));
-	}
-    else if (json.threejs !== undefined) {
-      this.threeViewer.loadGeometryAsJson(json.threejs);
-    }
-    else if (json.chunkId !== undefined) {
-      this.threeViewer.loadGeometryAsEvents(json);
 
-      if (json.moreChunks === true) {
-        if (this.urlLoadJsonFile) {
-          this.chunkFile++;
-          this._httpRequest(this.url + '.' + this.chunkFile, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this));
-        }
-        else {
-          var model = this._assembleModel();
-          if (model !== undefined) {
-            model.rendererProperties.streamProperties.chunkId = json.chunkId;
-            this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
-          }
-        }
-        loadComplete = false;
+      if (json.sceneInfo !== undefined) {
+        var sceneEvent = {detail: json.sceneInfo};
+        /**
+         * Scene info from the server.
+         * @event avs-scene-info
+         */
+        this.dispatchEvent(new CustomEvent('avs-scene-info', sceneEvent));
       }
-    }
-    else if (this.urlLoadJsonFile) {
-      this.threeViewer.loadGeometryAsJson(json);
+
+  	if (json.image !== undefined) {
+	
+	    this.sceneImage.src = json.image;
+	    if (json.imagemap !== undefined) {
+	      this.sceneImageMap.innerHTML = decodeURIComponent(json.imagemap.replace(/\+/g, '%20'));
+
+          this.imageMapData = Array.from(this.sceneImageMap.querySelectorAll('area')).map(area => {
+            return {
+              shape: area.getAttribute('shape'),
+              coords: area.getAttribute('coords').split(',').map(Number),
+              seriesIndex: area.getAttribute('series-index'),
+              itemIndex: area.getAttribute('item-index'),
+              componentInfo: area.getAttribute('component-info')
+            };
+          });
+	    }
+        else {
+          this.sceneImageMap.innerHTML = "";
+          this.imageMapData = undefined;
+        }
+	  }
+	  else if (json.svg !== undefined) {
+	    this.svgDiv.innerHTML = decodeURIComponent(json.svg.replace(/\+/g, '%20'));
+	  }
+      else if (json.threejs !== undefined) {
+        this.threeViewer.loadGeometryAsJson(json.threejs);
+      }
+      else if (json.chunkId !== undefined) {
+        this.threeViewer.loadGeometryAsEvents(json);
+
+        if (json.moreChunks === true) {
+          if (this.urlLoadJsonFile) {
+            this.chunkFile++;
+            this._httpRequest(this.url + '.' + this.chunkFile, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this));
+          }
+          else {
+            var model = this._assembleModel();
+            if (model !== undefined) {
+              model.rendererProperties.streamProperties.chunkId = json.chunkId;
+              this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
+            }
+          }
+          loadComplete = false;
+        }
+      }
+      else if (this.urlLoadJsonFile) {
+        this.threeViewer.loadGeometryAsJson(json);
+      }
     }
 
     if (loadComplete) {

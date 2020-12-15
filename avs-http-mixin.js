@@ -64,11 +64,23 @@ export const AvsHttpMixin = dedupingMixin((superClass) => class extends superCla
 
 				scope.dispatchEvent(new CustomEvent('avs-error', {detail: "Empty response received from AVS/Go server."} ));
 
+				if ( onError !== undefined ) {
+
+					onError( event );
+
+				}
+
 			} else {
 
 				if ( response.error !== undefined ) {
 
 					scope._logError( response.error );
+
+					if ( onError !== undefined ) {
+
+						onError( event );
+
+					}
 
 				} else if ( xhr.cancel === undefined && onLoad !== undefined ) {
 
