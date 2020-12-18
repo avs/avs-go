@@ -369,7 +369,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   /**
    * Assemble the model from our properties to send to the server.
    */
-  _assembleModel() {
+  _assembleModel(fullReset) {
     if (this.sceneName === undefined) {
       this._logError( JSON.stringify( {"GoType":1, "error":"\'scene-name\' property must be set to the name of the scene registered in the library map on the server."} ) );
       return undefined;
@@ -395,6 +395,9 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     }
     if (this.transformMatrix !== undefined) {
       rendererProperties.transformMatrix = this.transformMatrix;
+    }
+    if (fullReset !== undefined) {
+      rendererProperties.fullReset = true;
     }
 
     // Base theme to use from themeName property
@@ -603,7 +606,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   /**
    * Send the request to the server.
    */
-  updateViewer() {
+  updateViewer(fullReset) {
     this._updateSize();
 
     this.lowResizeWidth = (100 - this.resizeThreshold) / 100 * this.width;
@@ -633,7 +636,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this));
     }
     else {
-      var model = this._assembleModel();
+      var model = this._assembleModel(fullReset);
       if (model !== undefined) {
         this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
       }
@@ -1157,7 +1160,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     // Make sure all CSS and layout has been processed 
     afterNextRender(this, function() {
       if (this.initialized !== true) {  
-        this.updateViewer();
+        this.updateViewer(true);
 
         this.addEventListener('iron-resize', this._onResize);
 
@@ -1275,6 +1278,15 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   zoomOut() {
     if (this.transformInteractor) {
       this.transformInteractor.zoomOut();
+    }
+  }
+
+  /**
+   * Perform a pan to center the specified coordinate of the transformed object in the center of the scene.
+   */
+  panTo(x, y, z) {
+    if (this.transformInteractor) {
+      this.transformInteractor.panTo(x, y, z);
     }
   }
 
