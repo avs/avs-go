@@ -75,9 +75,12 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         }
         #spinnerDiv {
           position:absolute;
-          left:50%;
-          top:50%;
-          transform:translate(-50%,-50%);
+          left:var(--avs-spinner-left, 50%);
+          top:var(--avs-spinner-top, 50%);
+          transform:var(--avs-spinner-transform, translate(-50%,-50%));
+        }
+        #spinner {
+          display:none;
         }
         .spin {
           -webkit-animation:spin 2s ease-in-out infinite;
@@ -94,6 +97,9 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       </style>
       <div id="container">
         <div id="dataVizDiv"></div>
+        <div id="spinnerDiv">
+          <div id="spinner"></div>
+        </div>
       </div>
     `;
   }
@@ -614,20 +620,29 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     this.lowResizeHeight = (100 - this.resizeThreshold) / 100 * this.height;
     this.highResizeHeight = (100 + this.resizeThreshold) / 100 * this.height;
 
-    if (this.spinner === undefined) {
-      this.spinnerDiv = document.createElement('div');
-      this.spinnerDiv.id = 'spinnerDiv';
-      this.$.container.appendChild(this.spinnerDiv);
-      this.spinner = document.createElement('div');
-      this.spinner.id = 'spinner';
-      this.spinner.style.width = '46px';
-      this.spinner.style.height = '46px';
-      this.spinner.innerHTML = LOGO;
-      this.spinnerDiv.appendChild(this.spinner);
+    var spinner = window.getComputedStyle(this, null).getPropertyValue("--avs-spinner").trim().replace(/['"]+/g, '');
+    if (spinner.length > 0) {
+      fetch(spinner)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(response);
+          }
+          return response.text();
+        })
+        .then((html) => {
+          this.$.spinner.innerHTML = html;  
+        })
+        .catch((error) => {
+          this.$.spinner.innerHTML = '';
+        });
     }
-    this.spinner.style.display = 'block';
+    else {
+      this.$.spinner.innerHTML = LOGO;
+    }
+
+    this.$.spinner.style.display = 'block';
     if (this.url !== undefined) {
-      this.spinner.className = 'spin';
+      this.$.spinner.className = 'spin';
     }
 
     // Use avs-http-mixin to send the model to the server
@@ -648,9 +663,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
    * @param event
    */
   _handleHttpError(event) {
-    if (this.spinner !== undefined) {
-      this.spinner.style.display = 'none';
-    }
+    this.$.spinner.style.display = 'none';
   }
 
   /**
@@ -755,12 +768,10 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     if (loadComplete) {
       // Hide the spinner and grab the scene background color for next time
       // Disable background temporarily
-      if (this.spinner !== undefined) {
-        this.spinner.style.display = 'none';
-/*        if (json.backgroundColor !== undefined) {
-          this.updateStyles({'--avs-spinner-background-color': json.backgroundColor});
-        }*/
-      }
+      this.$.spinner.style.display = 'none';
+/*      if (json.backgroundColor !== undefined) {
+        this.updateStyles({'--avs-spinner-background-color': json.backgroundColor});
+      }*/
 
       /**
        * Scene load has completed.
