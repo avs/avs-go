@@ -168,6 +168,13 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         value: 1.777777
       },
       /**
+       * Number of seconds between pointer moves before an `avs-pointer-timeout` event is dispatched.
+       */
+      pointerTimeout: {
+        type: Number,
+        value: 600
+      },
+      /**
        * Enables the `avs-tap` event.
        */
       tapEnable: {
@@ -880,6 +887,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 
       this._processPick( pickProperties, true, e.originalTarget );
     }
+
+    this._resetTimer();      
   }
 
   /**
@@ -1162,6 +1171,17 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     }
   }
 
+  _resetTimer() {
+    clearTimeout(this.timer);
+    this.timer = setTimeout(function() {
+      /**
+       * A pointer timeout event occurred.
+       * @event avs-pointer-timeout
+       */
+      this.dispatchEvent(new Event('avs-pointer-timeout'));
+    }.bind(this), this.pointerTimeout * 1000);
+  }
+
   /**
    * 
    */
@@ -1190,6 +1210,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
             e.preventDefault();
           }
         });
+
+		this._resetTimer();
 
         this.initialized = true;
       }
