@@ -133,6 +133,12 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         value: {}
       },
       /**
+       * The name of the renderer registered in the library map on the server.
+       */
+      rendererName: {
+        type: String
+      },
+      /**
        * The type of renderer to be used to display a scene: `IMAGE`, `IMAGEURL`, `SVG` or `THREEJS`
        */
       renderer: {
@@ -300,10 +306,17 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
        *
        * Create an interactor for transforming a particular scene object on the client.
        * Use the IGoRenderer.addInteractor() method on the server to select which object to transform.
-      */
+       */
       transformEnable: {
         type: Boolean,
         observer: "_transformEnableChanged"
+      },
+      /*
+       * Transform on the client only, do not update the transform matrix on the server.
+       */
+      transformClientOnly: {
+        type: Boolean,
+        observer: "_transformClientOnlyChanged"
       },
       /**
        * Disables rotation of the scene.
@@ -398,15 +411,16 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     model.sceneProperties = sceneProperties;
 
     // Renderer Properties
-    var rendererProperties = {width:this.width, height:this.height, type:this.renderer};
+    var rendererProperties = {width:this.width, height:this.height, name:this.rendererName, type:this.renderer};
     model.rendererProperties = rendererProperties;
 
     // Transform Properties
     if (this.transformInteractor !== undefined) {
       // Update the local transform matrix from the transform interactor, we may have transformed since the last request
       this.transformMatrix = this.transformInteractor.object.matrix.elements.slice();
+      this.transformClientOnly = this.transformInteractor.clientOnly;
     }
-    if (this.transformMatrix !== undefined) {
+    if (this.transformMatrix !== undefined && !this.transformClientOnly) {
       rendererProperties.transformMatrix = this.transformMatrix;
     }
     if (fullReset !== undefined) {
@@ -1257,6 +1271,15 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       else {
         this.threeViewer.removeInteractor( this.transformInteractor );
       }
+    }
+  }
+
+  /**
+   * Change in the 'transform-client-only' property.
+   */
+  _transformClientOnlyChanged(newValue, oldValue) {
+    if (this.transformInteractor) {
+      this.transformInteractor.clientOnly = newValue;
     }
   }
 
