@@ -161,6 +161,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       },
       /**
        * Resize threshold (percent) to determine when the update is performed on the client or the server.
+       * Default is 10%. Set to zero to disable resize on the server.
        */
       resizeThreshold: {
         type: Number,
@@ -424,7 +425,12 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       rendererProperties.transformMatrix = this.transformMatrix;
     }
     if (fullReset !== undefined) {
-      rendererProperties.fullReset = true;
+      if (this.transformClientOnly && this.transformInteractor !== undefined) {
+        this.transformInteractor.fullReset = fullReset;
+      }
+      else {
+        rendererProperties.fullReset = true;
+      }
     }
 
     // Base theme to use from themeName property
@@ -587,6 +593,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
    */
   _onResize() {
     if (!this.urlLoadJsonFile &&
+        this.resizeThreshold > 0 &&
        (this.clientWidth < this.lowResizeWidth ||
         this.clientWidth > this.highResizeWidth ||
         this.clientHeight < this.lowResizeHeight ||
