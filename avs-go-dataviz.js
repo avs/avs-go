@@ -139,6 +139,13 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         type: String
       },
       /**
+       * User properties for the renderer passed directly to the server.
+       */
+      rendererUserProperties: {
+        type: Object,
+        value: {}
+      },
+      /**
        * The type of renderer to be used to display a scene: `IMAGE`, `IMAGEURL`, `SVG` or `THREEJS`
        */
       renderer: {
@@ -413,6 +420,9 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 
     // Renderer Properties
     var rendererProperties = {width:this.width, height:this.height, name:this.rendererName, type:this.renderer};
+    if (this.rendererUserProperties !== undefined) {
+      rendererProperties.userProperties = this.rendererUserProperties;
+    }
     model.rendererProperties = rendererProperties;
 
     // Transform Properties
