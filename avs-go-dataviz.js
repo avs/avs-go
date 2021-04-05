@@ -544,8 +544,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         "axisTickMarkColor": "--avs-axis-tick-mark-color",
         "axisTickMarkWidth": "--avs-axis-tick-mark-width",
         // Axis tick line
-        "axisTicklineColor": "--avs-axis-tick-line-color",
-        "axisTicklineWidth": "--avs-axis-tick-line-width",
+        "axisTickLineColor": "--avs-axis-tick-line-color",
+        "axisTickLineWidth": "--avs-axis-tick-line-width",
         "axisTickLineStyle": "--avs-axis-tick-line-style",
         // Axis title
         "axisTitleTextColor": "--avs-axis-title-text-color",
