@@ -2,6 +2,7 @@
 
 module.exports = {
 	entry: [
+		"@babel/polyfill",
 		"./node_modules/@webcomponents/webcomponentsjs/custom-elements-es5-adapter.js",
 		"./node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js",
 		"./avs-go-dataviz.js",

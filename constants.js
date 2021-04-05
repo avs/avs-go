@@ -20,4 +20,4 @@
 
 export var VERSION_MAJOR = 0;
 export var VERSION_MINOR = 6;
-export var VERSION_CHANGE = '$Change: 68462 $';
+export var VERSION_CHANGE = '$Change: 68530 $';

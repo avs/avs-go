@@ -319,7 +319,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         type: Boolean,
         observer: "_transformEnableChanged"
       },
-      /*
+      /**
        * Transform on the client only, do not update the transform matrix on the server.
        */
       transformClientOnly: {
@@ -327,21 +327,21 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         observer: "_transformClientOnlyChanged"
       },
       /**
-       * Disables rotation of the scene.
+       * Disables rotation of the object.
        */
       transformRotateDisable: {
         type: Boolean,
         observer: "_transformRotateDisableChanged"
       },
       /**
-       * Disables zooming of the scene.
+       * Disables zooming of the object.
        */
       transformZoomDisable: {
         type: Boolean,
         observer: "_transformZoomDisableChanged"
       },
       /**
-       * Disables panning of the scene.
+       * Disables panning of the object.
        */
       transformPanDisable: {
         type: Boolean,
@@ -367,6 +367,16 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       transformScale: {
         type: Number,
         observer: "_transformValueChanged"
+      },
+      /**
+       * Enable the zoom rectangle interactor. Only available when `renderer` is `THREEJS`
+       *
+       * Create an interactor for scaling an object by drawing a rectangle.
+       * Use the IGoRenderer.addInteractor() method on the server to select which object to transform.
+       */
+      zoomRectangleEnable: {
+        type: Boolean,
+        observer: "_zoomRectangleEnableChanged"
       },
       /**
        * Enable the pan interactor. Only available when `renderer` is `THREEJS`
@@ -753,9 +763,15 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         this.dispatchEvent(new CustomEvent('avs-scene-info', sceneEvent));
       }
 
-  	if (json.image !== undefined) {
-	
-	    this.sceneImage.src = json.image;
+  	  if (json.image !== undefined) {
+
+        if (json.image.startsWith("?app=image")) {
+          this.sceneImage.src = this.url + json.image;
+        }
+        else {	
+	      this.sceneImage.src = json.image;
+        }
+
 	    if (json.imagemap !== undefined) {
 	      this.sceneImageMap.innerHTML = decodeURIComponent(json.imagemap.replace(/\+/g, '%20'));
 
@@ -1230,10 +1246,6 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         this.addEventListener('pointerup', this._handlePointerUp);
         this.addEventListener('pointermove', this._handlePointerMove);
         this.addEventListener('pointerout', this._handlePointerMove);
-
-        if (this.threeViewer) {
-          this.threeViewer.addInteractor( new ZoomRectangleInteractor( this ) );
-        }
  
         var scope = this;
         this.addEventListener('contextmenu', function(e) {
@@ -1384,6 +1396,23 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     this.transformMatrix = matrix;
     if (this.transformInteractor) {    
       this.transformInteractor.object.matrix.fromArray( matrix );
+    }
+  }
+
+  /**
+   * Change in 'zoom-rectangle-enable' property.
+   */
+  _zoomRectangleEnableChanged(newValue, oldValue) {
+    if (this.threeViewer) {
+      if (newValue) {
+        if (this.zoomRectangleInteractor === undefined) {
+          this.zoomRectangleInteractor = new ZoomRectangleInteractor( this );
+        }
+        this.threeViewer.addInteractor( this.zoomRectangleInteractor );
+      }
+      else {
+        this.threeViewer.removeInteractor( this.zoomRectangleInteractor );
+      }
     }
   }
 
