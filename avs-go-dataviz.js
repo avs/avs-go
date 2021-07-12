@@ -107,6 +107,9 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   static get properties() {
     return {
 
+      manualUpdate: {
+        type: Boolean
+      },
       /**
        * The URL to an instance of AVS/Go server application or file.
        */
@@ -657,17 +660,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     }
   } 
 
-  /**
-   * Send the request to the server.
-   */
-  updateViewer(fullReset) {
-    this._updateSize();
-
-    this.lowResizeWidth = (100 - this.resizeThreshold) / 100 * this.width;
-    this.highResizeWidth = (100 + this.resizeThreshold) / 100 * this.width;
-    this.lowResizeHeight = (100 - this.resizeThreshold) / 100 * this.height;
-    this.highResizeHeight = (100 + this.resizeThreshold) / 100 * this.height;
-
+  showSpinner() {
     var spinner = window.getComputedStyle(this, null).getPropertyValue("--avs-spinner").trim().replace(/['"]+/g, '');
     if (spinner.length > 0) {
       fetch(spinner)
@@ -692,6 +685,28 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     if (this.url !== undefined) {
       this.$.spinner.className = 'spin';
     }
+  }
+
+  hideSpinner() {
+    this.$.spinner.style.display = 'none';
+  }
+
+  /**
+   * Send the request to the server.
+   */
+  updateViewer(fullReset) {
+    this._updateSize();
+
+    this.lowResizeWidth = (100 - this.resizeThreshold) / 100 * this.width;
+    this.highResizeWidth = (100 + this.resizeThreshold) / 100 * this.width;
+    this.lowResizeHeight = (100 - this.resizeThreshold) / 100 * this.height;
+    this.highResizeHeight = (100 + this.resizeThreshold) / 100 * this.height;
+
+    if (this.manualUpdate) {
+      return;
+    }
+
+    this.showSpinner();
 
     // Use avs-http-mixin to send the model to the server
     if (this.urlLoadJsonFile) {
@@ -711,7 +726,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
    * @param event
    */
   _handleHttpError(event) {
-    this.$.spinner.style.display = 'none';
+    this.hideSpinner();
   }
 
   /**
@@ -822,7 +837,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     if (loadComplete) {
       // Hide the spinner and grab the scene background color for next time
       // Disable background temporarily
-      this.$.spinner.style.display = 'none';
+      this.hideSpinner();
 /*      if (json.backgroundColor !== undefined) {
         this.updateStyles({'--avs-spinner-background-color': json.backgroundColor});
       }*/
@@ -1237,7 +1252,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 
     // Make sure all CSS and layout has been processed 
     afterNextRender(this, function() {
-      if (this.initialized !== true) {  
+      if (this.initialized !== true) { 
         this.updateViewer(true);
 
         this.addEventListener('iron-resize', this._onResize);
