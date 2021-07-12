@@ -34,10 +34,12 @@ import {LOGO} from './logo.js';
  * from either the `sceneName` class on the AVS/Go server application running at `url`,
  * or from a JSON file at `url` when `urlLoadJsonFile` is set.
  *
- * The request occurs:
- * * On connection of this element to a document.
- * * When this element is resized outside of the `resizeThresold` percentage.
+ * The request occurs upon:
  * * An explicit call to `updateViewer()`
+ * * A change in `renderer`
+ * * Additionally if `manualUpdate` is false:
+ * * * Initialization of this element has completed
+ * * * This element is resized outside of the `resizeThresold` percentage
  *
  * @customElement
  * @polymer
@@ -107,6 +109,9 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   static get properties() {
     return {
 
+      /**
+       * Don't request a new scene upon initialization or resize.
+       */
       manualUpdate: {
         type: Boolean
       },
@@ -616,6 +621,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
    */
   _onResize() {
     if (!this.urlLoadJsonFile &&
+        !this.manualUpdate &&
         this.resizeThreshold > 0 &&
        (this.clientWidth < this.lowResizeWidth ||
         this.clientWidth > this.highResizeWidth ||
@@ -701,10 +707,6 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     this.highResizeWidth = (100 + this.resizeThreshold) / 100 * this.width;
     this.lowResizeHeight = (100 - this.resizeThreshold) / 100 * this.height;
     this.highResizeHeight = (100 + this.resizeThreshold) / 100 * this.height;
-
-    if (this.manualUpdate) {
-      return;
-    }
 
     this.showSpinner();
 
@@ -1253,7 +1255,11 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     // Make sure all CSS and layout has been processed 
     afterNextRender(this, function() {
       if (this.initialized !== true) { 
-        this.updateViewer(true);
+
+		this._updateSize();
+        if (!this.manualUpdate) {
+          this.updateViewer(true);
+        }
 
         this.addEventListener('iron-resize', this._onResize);
 
@@ -1521,7 +1527,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       this.$.dataVizDiv.appendChild(this.threeViewer.domElement);
     }
 
-    if (this.initialized) {
+    if (this.initialized && !this.manualUpdate) {
       this.updateViewer();
     }
   }
