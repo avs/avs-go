@@ -23,7 +23,7 @@ import {mixinBehaviors} from '@polymer/polymer/lib/legacy/class.js';
 import {IronResizableBehavior} from '@polymer/iron-resizable-behavior/iron-resizable-behavior.js';
 import {afterNextRender} from '@polymer/polymer/lib/utils/render-status.js';
 import {AvsRenderer} from './avs-renderer.js';
-import {Viewer, TransformInteractor, PanInteractor, ZoomRectangleInteractor, PickDepthEnum} from './avs-three.module.min.js';
+import {Viewer, TransformInteractor, PanInteractor, ZoomRectangleInteractor, PickDepthEnum, Animator} from './avs-three.module.min.js';
 import {AvsHttpMixin} from './avs-http-mixin.js';
 import {AvsStreamMixin} from './avs-stream-mixin.js';
 import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
@@ -1522,6 +1522,21 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 //        console.log("reference existing webGL renderer = " + rendererId);
         }
         this.threeViewer.setWebGLRenderer(renderer.webGLRenderer);
+
+        var styleMap = {};
+        this._applyCustomCssProperties(styleMap, window.getComputedStyle(this, null),
+          {
+            "scene": "--avs-scene-animations",
+            "sceneTitle": "--avs-scene-title-animations",
+            "chart": "--avs-chart-animations",
+            "chartTitle": "--avs-chart-title-animations",
+            "axis": "--avs-axis-animations",
+            "legend": "--avs-legend-animations",
+            "legendTitle": "--avs-legend-title-animations",
+            "glyph": "--avs-glyph-animations"
+          } );
+		var animator = new Animator(styleMap);
+		this.threeViewer.setAnimator(animator);
       }
 
       this.$.dataVizDiv.appendChild(this.threeViewer.domElement);
