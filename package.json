@@ -23,7 +23,7 @@
   "dependencies": {
     "@polymer/iron-resizable-behavior": "^3.0.1",
     "@polymer/polymer": "^3.4.1",
-    "three": "0.132.2"
+    "three": "0.137.0"
   },
   "devDependencies": {
     "@babel/core": "^7.15.5",
