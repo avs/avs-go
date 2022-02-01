@@ -1317,6 +1317,9 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         if (this.transformPanDisable) {
           this.transformInteractor.enablePan = false;
         }
+        if (this.transformClientOnly) {
+          this.transformInteractor.clientOnly = true;
+        }
       }
       else {
         this.threeViewer.removeInteractor( this.transformInteractor );
@@ -1330,6 +1333,9 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   _transformClientOnlyChanged(newValue, oldValue) {
     if (this.transformInteractor) {
       this.transformInteractor.clientOnly = newValue;
+    }
+    if (this.zoomRectangleInteractor) {
+      this.zoomRectangleInteractor.clientOnly = newValue;
     }
   }
 
@@ -1430,6 +1436,10 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
           this.zoomRectangleInteractor = new ZoomRectangleInteractor( this );
         }
         this.threeViewer.addInteractor( this.zoomRectangleInteractor );
+
+        if (this.transformClientOnly) {
+          this.zoomRectangleInteractor.clientOnly = true;
+        }
       }
       else {
         this.threeViewer.removeInteractor( this.zoomRectangleInteractor );
