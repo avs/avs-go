@@ -688,13 +688,18 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     }
 
     this.$.spinner.style.display = 'block';
-    if (this.url !== undefined) {
-      this.$.spinner.className = 'spin';
-    }
   }
 
   hideSpinner() {
     this.$.spinner.style.display = 'none';
+  }
+
+  startSpinner() {
+    this.$.spinner.className = 'spin';
+  }
+
+  stopSpinner() {
+    this.$.spinner.className = '';
   }
 
   /**
@@ -709,16 +714,19 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     this.highResizeHeight = (100 + this.resizeThreshold) / 100 * this.height;
 
     this.showSpinner();
+    if (this.url !== undefined && this.url !== null) {
+      this.startSpinner();
 
-    // Use avs-http-mixin to send the model to the server
-    if (this.urlLoadJsonFile) {
-      this.chunkFile = 0;
-      this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this));
-    }
-    else {
-      var model = this._assembleModel(fullReset);
-      if (model !== undefined) {
-        this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
+      // Use avs-http-mixin to send the model to the server
+      if (this.urlLoadJsonFile) {
+        this.chunkFile = 0;
+        this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this));
+      }
+      else {
+        var model = this._assembleModel(fullReset);
+        if (model !== undefined) {
+          this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
+        }
       }
     }
   }
@@ -756,6 +764,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     else {
       this.sceneImage.src = 'data:,';
     }
+
+    this.showSpinner();
   }
 
   /**
@@ -840,6 +850,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       // Hide the spinner and grab the scene background color for next time
       // Disable background temporarily
       this.hideSpinner();
+      this.stopSpinner();
 /*      if (json.backgroundColor !== undefined) {
         this.updateStyles({'--avs-spinner-background-color': json.backgroundColor});
       }*/
@@ -912,6 +923,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     this.pointerDownX = e.clientX;
     this.pointerDownY = e.clientY;
 
+    this.pointerDown = true;
+
     if (this.tapEnable && e.buttons & 1) {
       this.tapping = true;
     }
@@ -939,7 +952,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       }
     }
 
-    if (this.hoverEnable) {
+    if (this.hoverEnable && !this.pointerDown) {
       var adjustedCoords = this._getAdjustedCoords(e.clientX, e.clientY);
       var pickProperties = {type:"HOVER", x:adjustedCoords.x, y:adjustedCoords.y};
 
@@ -959,6 +972,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
    * @param e
    */
   _handlePointerUp(e) {
+    this.pointerDown = false;
+
     if (this.tapping) {
       this.tapping = false;
       var dx = Math.abs(e.clientX - this.pointerDownX);
