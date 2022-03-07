@@ -115,6 +115,13 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       manualUpdate: {
         type: Boolean
       },
+      /** 
+       * Highlight canvas elements when using the `THREEJS` renderer.
+       */
+      displayCanvas: {
+        type: Boolean,
+        observer: "_displayCanvasChanged"
+      },
       /**
        * The URL to an instance of AVS/Go server application or file.
        */
@@ -930,8 +937,6 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     this.pointerDownX = e.clientX;
     this.pointerDownY = e.clientY;
 
-    this.pointerDown = true;
-
     if (this.tapEnable && e.buttons & 1) {
       this.tapping = true;
     }
@@ -959,7 +964,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       }
     }
 
-    if (this.hoverEnable && !this.pointerDown) {
+    if (this.hoverEnable) {
       var adjustedCoords = this._getAdjustedCoords(e.clientX, e.clientY);
       var pickProperties = {type:"HOVER", x:adjustedCoords.x, y:adjustedCoords.y};
 
@@ -979,8 +984,6 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
    * @param e
    */
   _handlePointerUp(e) {
-    this.pointerDown = false;
-
     if (this.tapping) {
       this.tapping = false;
       var dx = Math.abs(e.clientX - this.pointerDownX);
@@ -1308,7 +1311,9 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
   _updatePixelRatio(change) {
     const pr = window.devicePixelRatio;
     matchMedia( `(resolution: ${pr}dppx)` ).addEventListener('change', this._updatePixelRatio.bind(this, true), { once: true } );
-    this.updateViewer();
+    if (change) {
+      this.updateViewer();
+    }
   }
 
   /**
@@ -1627,6 +1632,15 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     }
     else {
       this.$.container.removeChild(this.rectCanvas);
+    }
+  }
+
+  /**
+   * Change in 'display-canvas' property.
+   */
+  _displayCanvasChanged(newValue, oldValue) {
+    if (this.threeViewer) {
+      this.threeViewer.displayCanvas = newValue;
     }
   }
 }
