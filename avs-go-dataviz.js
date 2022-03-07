@@ -399,13 +399,15 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
        * The width zoom level in percent of the original scene greater than 100%
        */
       panWidthZoomLevel: {
-        type: Number
+        type: Number,
+        observer: "_panWidthZoomLevelChanged"
       },
       /**
        * The height zoom level in percent of the original scene greater than 100%
        */
       panHeightZoomLevel: {
-        type: Number
+        type: Number,
+        observer: "_panHeightZoomLevelChanged"
       }
     }
   }
@@ -459,6 +461,11 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       else {
         rendererProperties.fullReset = true;
       }
+    }
+
+    // PanInteractor
+    if (this.panEnable) {
+      rendererProperties.panProperties = {widthZoomLevel: this.panInteractor.widthZoomLevel, heightZoomLevel: this.panInteractor.heightZoomLevel};
     }
 
     // Base theme to use from themeName property
@@ -1277,6 +1284,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         }
 
         this.addEventListener('iron-resize', this._onResize);
+        this._updatePixelRatio();
 
         this.addEventListener('pointerdown', this._handlePointerDown);
         this.addEventListener('pointerup', this._handlePointerUp);
@@ -1295,6 +1303,12 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         this.initialized = true;
       }
     }); 
+  }
+
+  _updatePixelRatio(change) {
+    const pr = window.devicePixelRatio;
+    matchMedia( `(resolution: ${pr}dppx)` ).addEventListener('change', this._updatePixelRatio.bind(this, true), { once: true } );
+    this.updateViewer();
   }
 
   /**
@@ -1472,13 +1486,40 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
           this.panInteractor = new PanInteractor( this );
         }
         this.threeViewer.addInteractor( this.panInteractor );
-
-        this.panInteractor.widthScale = (this.panWidthZoomLevel > 100) ? (this.panWidthZoomLevel / 100) : 1;
-        this.panInteractor.heightScale = (this.panHeightZoomLevel > 100) ? (this.panHeightZoomLevel / 100) : 1;
+        this.panInteractor.addEventListener('zoom', this._handlePanZoomChanged.bind(this));
+        if (this.panWidthZoomLevel >= 100) {
+          this.panInteractor.widthZoomLevel = this.panWidthZoomLevel;
+        }
+        if (this.panHeightZoomLevel >= 100) {
+          this.panInteractor.heightZoomLevel = this.panHeightZoomLevel;
+        }
       }
       else {
         this.threeViewer.removeInteractor( this.panInteractor );
+        this.panInteractor.removeEventListener('zoom', this._handlePanZoomChanged.bind(this));
       }
+    }
+  }
+
+  _handlePanZoomChanged(e) {
+    this.updateViewer();
+  }
+
+  /**
+   * Change in 'pan-width-zoom-level' property.
+   */
+  _panWidthZoomLevelChanged(newValue, oldValue) {
+    if (this.panInteractor && newValue >= 100) {
+      this.panInteractor.widthZoomLevel = newValue;
+    }
+  }
+
+  /**
+   * Change in 'pan-height-zoom-level' property.
+   */
+  _panHeightZoomLevelChanged(newValue, oldValue) {
+    if (this.panInteractor && newValue >= 100) {
+      this.panInteractor.heightZoomLevel = newValue;
     }
   }
 
