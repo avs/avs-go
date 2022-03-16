@@ -396,7 +396,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       /**
        * Enable the pan interactor. Only available when `renderer` is `THREEJS`
        *
-       * Create an interactor for panning an OpenViz domain (and its axes and charts) on the client.
+       * Create an interactor for panning and zooming an OpenViz domain (and its axes and charts) on the client.
        */
       panEnable: {
         type: Boolean,
@@ -415,6 +415,15 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       panHeightZoomLevel: {
         type: Number,
         observer: "_panHeightZoomLevelChanged"
+      },
+      /**
+       * The maximum zoom level in percent of the original scene greater than 100%
+       * Default is 1000%
+       */
+      panMaximumZoomLevel: {
+        type: Number,
+        observer: "_panMaximumZoomLevelChanged",
+        value: 1000
       }
     }
   }
@@ -472,7 +481,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 
     // PanInteractor
     if (this.panEnable) {
-      rendererProperties.panProperties = {widthZoomLevel: this.panInteractor.widthZoomLevel, heightZoomLevel: this.panInteractor.heightZoomLevel};
+      rendererProperties.panProperties = {widthZoomLevel: this.panWidthZoomLevel, heightZoomLevel: this.panHeightZoomLevel};
     }
 
     // Base theme to use from themeName property
@@ -1491,31 +1500,43 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
           this.panInteractor = new PanInteractor( this );
         }
         this.threeViewer.addInteractor( this.panInteractor );
-        this.panInteractor.addEventListener('zoom', this._handlePanZoomChanged.bind(this));
-        if (this.panWidthZoomLevel >= 100) {
-          this.panInteractor.widthZoomLevel = this.panWidthZoomLevel;
-        }
-        if (this.panHeightZoomLevel >= 100) {
-          this.panInteractor.heightZoomLevel = this.panHeightZoomLevel;
-        }
+        this.panInteractor.addEventListener('change', this._handlePanChanged.bind(this));
+        this.panInteractor.addEventListener('zoom', this._handlePanZoom.bind(this));
+        this.panInteractor.setWidthZoomLevel(this.panWidthZoomLevel);
+        this.panInteractor.setHeightZoomLevel(this.panHeightZoomLevel);
+        this.panInteractor.setMaximumZoomLevel(this.panMaximumZoomLevel);
+        this.panInteractor.saveState();
       }
       else {
         this.threeViewer.removeInteractor( this.panInteractor );
-        this.panInteractor.removeEventListener('zoom', this._handlePanZoomChanged.bind(this));
+        this.panInteractor.removeEventListener('change', this._handlePanChanged.bind(this));
+        this.panInteractor.removeEventListener('zoom', this._handlePanZoom.bind(this));
       }
     }
   }
 
-  _handlePanZoomChanged(e) {
-    this.updateViewer();
+  _handlePanChanged(e) {
+    /**
+     * A pan info event occurred.
+     * @event avs-pan-info
+     */
+    this.dispatchEvent(new CustomEvent('avs-pan-info', e));
+  }
+
+  _handlePanZoom(e) {
+    if (this.initialized) {
+      this.panWidthZoomLevel = e.detail.widthZoomLevel;
+      this.panHeightZoomLevel = e.detail.heightZoomLevel;
+      this.updateViewer();
+    }
   }
 
   /**
    * Change in 'pan-width-zoom-level' property.
    */
   _panWidthZoomLevelChanged(newValue, oldValue) {
-    if (this.panInteractor && newValue >= 100) {
-      this.panInteractor.widthZoomLevel = newValue;
+    if (this.panInteractor) {
+      this.panInteractor.setWidthZoomLevel(newValue);
     }
   }
 
@@ -1523,8 +1544,26 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
    * Change in 'pan-height-zoom-level' property.
    */
   _panHeightZoomLevelChanged(newValue, oldValue) {
-    if (this.panInteractor && newValue >= 100) {
-      this.panInteractor.heightZoomLevel = newValue;
+    if (this.panInteractor) {
+      this.panInteractor.setHeightZoomLevel(newValue);
+    }
+  }
+
+  /**
+   * Change in 'pan-maximum-zoom-level' property.
+   */
+  _panMaximumZoomLevelChanged(newValue, oldValue) {
+    if (this.panInteractor) {
+      this.panInteractor.setMaximumZoomLevel(newValue);
+    }
+  }
+
+  /**
+   * Reset the pan interactor.
+   */
+  resetPan() {
+    if (this.panInteractor) {
+      this.panInteractor.reset();
     }
   }
 
