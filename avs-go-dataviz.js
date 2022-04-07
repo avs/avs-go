@@ -63,6 +63,12 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         }
         #dataVizDiv {
           position:relative;
+          letter-spacing:normal;
+          word-spacing:normal;
+          line-height:normal;
+          text-indent:0;
+          text-transform:none;
+          direction:ltr;
         }   
         #sceneImage {
           width:100%;
