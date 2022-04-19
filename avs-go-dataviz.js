@@ -952,6 +952,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     this.pointerDownX = e.clientX;
     this.pointerDownY = e.clientY;
 
+    this.pointerDown = true;
+
     if (this.tapEnable && e.buttons & 1) {
       this.tapping = true;
     }
@@ -983,13 +985,19 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       var adjustedCoords = this._getAdjustedCoords(e.clientX, e.clientY);
       var pickProperties = {type:"HOVER", x:adjustedCoords.x, y:adjustedCoords.y};
 
-	  if (this.hoverLevel !== undefined) pickProperties.level = this.hoverLevel;
-	  if (this.hoverDepth !== undefined) pickProperties.depth = this.hoverDepth;
-	  if (this.hoverHighlightEnable) pickProperties.highlight = true;
-	  if (this.hoverHighlightColor !== undefined) pickProperties.highlightColor = this.hoverHighlightColor;
-	  if (this.hoverHighlightLayerEnable) pickProperties.highlightLayer = true;
+      if (this.pointerDown) {
+        pickProperties.selected = {};
+        this._dispatchPickEvents( pickProperties );
+      }
+      else {
+	    if (this.hoverLevel !== undefined) pickProperties.level = this.hoverLevel;
+	    if (this.hoverDepth !== undefined) pickProperties.depth = this.hoverDepth;
+	    if (this.hoverHighlightEnable) pickProperties.highlight = true;
+	    if (this.hoverHighlightColor !== undefined) pickProperties.highlightColor = this.hoverHighlightColor;
+	    if (this.hoverHighlightLayerEnable) pickProperties.highlightLayer = true;
 
-      this._processPick( pickProperties, true, e.originalTarget );
+        this._processPick( pickProperties, true, e.originalTarget );
+      }
     }
 
     this._resetTimer();      
@@ -999,6 +1007,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
    * @param e
    */
   _handlePointerUp(e) {
+    this.pointerDown = false;
+
     if (this.tapping) {
       this.tapping = false;
       var dx = Math.abs(e.clientX - this.pointerDownX);
