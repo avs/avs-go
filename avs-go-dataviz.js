@@ -708,6 +708,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     this.width = this.clientWidth;
     if (this.width <= 0) {
       this.width = 200;  // fallback if clientWidth fails
+      this.$.container.style.width = this.width + "px";
     }
 
     // Get the height provided by our container
@@ -720,6 +721,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       else {
          this.height = 200; // fallback if clientHeight fails
       }
+      this.$.container.style.height = this.height + "px";
     }
 
     if (this.rectCanvas) {
