@@ -18,6 +18,4 @@
  * Advanced Visual Systems Inc. (http://www.avs.com)
  */
 
-export var VERSION_MAJOR = 0;
-export var VERSION_MINOR = 10;
-export var VERSION_CHANGE = '$Change: 69782 $';
+export var VERSION = '0.10.69850';

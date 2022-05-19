@@ -60,15 +60,19 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         }
         #container {
           position:relative;
-        }
-        #dataVizDiv {
-          position:relative;
+          width:100%;
+          height:100%;
           letter-spacing:normal;
           word-spacing:normal;
           line-height:normal;
           text-indent:0;
           text-transform:none;
           direction:ltr;
+        }
+        #dataVizDiv {
+          position:relative;
+          width:100%;
+          height:100%;
         }   
         #sceneImage {
           width:100%;
@@ -80,6 +84,36 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
           position:absolute;
           top:0px;
           left:0px;
+        }
+        #zoomOverlay {
+          position:absolute;
+          opacity:0;
+          transition:opacity ease 0.3s;
+          pointer-events:none;
+          background:var(--avs-zoom-overlay-background, rgba(80,80,80,0.75));
+          color:var(--avs-zoom-overlay-color, #ffffff);
+          border-radius:5px;
+          padding:5px;
+          transform:translate(-50%, -100%);
+          font-size:var(--avs-zoom-overlay-font-size, 10pt);
+          font-family:var(--avs-zoom-overlay-font-family);
+          font-weight:var(--avs-zoom-overlay-font-weight, bold);
+          font-style:var(--avs-zoom-overlay-font-style);
+        }
+        #tooltip {
+          position:absolute;
+          opacity:0;
+          transition:opacity ease 0.3s;
+          pointer-events:none;
+          padding:5px;
+          border-radius:5px;
+          background:var(--avs-tooltip-background, rgb(80,80,80));
+          color:var(--avs-tooltip-color, #ffffff);
+          box-shadow: 0px 5px 5px -3px rgba(0, 0, 0, 0.2), 0px 8px 10px 1px rgba(0, 0, 0, 0.14), 0px 3px 14px 2px rgba(0, 0, 0, 0.12);
+          font-size:var(--avs-tooltip-font-size, 10pt);
+          font-family:var(--avs-tooltip-font-family);
+          font-weight:var(--avs-tooltip-font-weight);
+          font-style:var(--avs-tooltip-font-style);
         }
         #spinnerDiv {
           position:absolute;
@@ -105,9 +139,11 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       </style>
       <div id="container">
         <div id="dataVizDiv"></div>
+        <div id="zoomOverlay"></div>
         <div id="spinnerDiv">
           <div id="spinner"></div>
         </div>
+        <div id="tooltip"></div>
       </div>
     `;
   }
@@ -686,9 +722,6 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       }
     }
 
-    this.$.dataVizDiv.style.width = this.width + 'px';
-    this.$.dataVizDiv.style.height = this.height + 'px';
-
     if (this.rectCanvas) {
       this.rectCanvas.width = this.width;
       this.rectCanvas.height = this.height;
@@ -872,6 +905,27 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       }
       else if (this.urlLoadJsonFile) {
         this.threeViewer.loadGeometryAsJson(json);
+      }
+
+      // Set tooltip and zoom overlay style to reversed theme
+      if (json.backgroundColor !== undefined) {
+        var col = json.backgroundColor.match(/[0-9.]+/gi);
+        var bgCol = window.getComputedStyle(this.parentNode, null).getPropertyValue("background-color").trim().match(/[0-9.]+/gi);
+        // In case json.backgroundColor is transparent, blend with our parent's background color
+        var blendedR = (col[0] * col[3]) + (bgCol[0] * (1 - col[3]));
+        var blendedG = (col[1] * col[3]) + (bgCol[1] * (1 - col[3]));
+        var blendedB = (col[2] * col[3]) + (bgCol[2] * (1 - col[3]));
+        this.$.zoomOverlay.style.color = "var(--avs-zoom-overlay-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
+        this.$.tooltip.style.color = "var(--avs-tooltip-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
+      }
+      if (json.textColor !== undefined) {
+        var col = json.textColor.match(/[0-9.]+/gi);
+        this.$.zoomOverlay.style.background = "var(--avs-zoom-overlay-background, rgba(" + col[0] + "," + col[1] + "," + col[2] + ",0.75))";
+        this.$.tooltip.style.background = "var(--avs-tooltip-background, rgb(" + col[0] + "," + col[1] + "," + col[2] + "))";
+      }
+      if (json.fontFamily !== undefined) {
+        this.$.zoomOverlay.style.fontFamily = "var(--avs-zoom-overlay-font-family, " + json.fontFamily + ")";
+        this.$.tooltip.style.fontFamily = "var(--avs-tooltip-font-family, " + json.fontFamily + ")";
       }
     }
 
@@ -1518,6 +1572,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         this.threeViewer.addInteractor( this.panInteractor );
         this.panInteractor.addEventListener('change', this._handlePanChanged.bind(this));
         this.panInteractor.addEventListener('zoom', this._handlePanZoom.bind(this));
+        this.panInteractor.addEventListener('zoomEnd', this._handlePanZoomEnd.bind(this));
         this.panInteractor.setWidthZoomLevel(this.panWidthZoomLevel);
         this.panInteractor.setHeightZoomLevel(this.panHeightZoomLevel);
         this.panInteractor.setMaximumZoomLevel(this.panMaximumZoomLevel);
@@ -1539,7 +1594,35 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     this.dispatchEvent(new CustomEvent('avs-pan-info', e));
   }
 
+  _zoomOverlayTimeout() {
+    this.$.zoomOverlay.style.opacity = 0;
+    this.pointerDown = false;
+  }
+
   _handlePanZoom(e) {
+    clearTimeout(this.zoomOverlayTimeoutId);
+
+    var width = Math.round(e.detail.widthZoomLevel);
+    var height = Math.round(e.detail.heightZoomLevel);
+    if (width === height) {
+      this.$.zoomOverlay.innerHTML = width + "%";
+    }
+    else {
+      this.$.zoomOverlay.innerHTML = width + "%," + height + "%";
+    }
+
+    var coords = this._getAdjustedCoords(e.detail.clientX, e.detail.clientY);
+    this.$.zoomOverlay.style.left = coords.x + "px";
+    this.$.zoomOverlay.style.top = coords.y + "px";
+    this.$.zoomOverlay.style.opacity = 1;
+
+    this.pointerDown = true;
+    this._dispatchPickEvents( {type:"HOVER",x:0,y:0,selected:{}} );
+
+    this.zoomOverlayTimeoutId = setTimeout(this._zoomOverlayTimeout.bind(this), 1000);
+  }
+
+  _handlePanZoomEnd(e) {
     if (this.initialized) {
       this.panWidthZoomLevel = e.detail.widthZoomLevel;
       this.panHeightZoomLevel = e.detail.heightZoomLevel;
@@ -1697,6 +1780,61 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     if (this.threeViewer) {
       this.threeViewer.displayCanvas = newValue;
     }
+  }
+
+  setTooltipHTML(html) {
+    this.$.tooltip.innerHTML = html;
+  }
+
+  showTooltip(clientX, clientY) {
+    var pos = this._calcTooltipPosition(clientX, clientY);
+    this.$.tooltip.style.left = pos.x + "px";
+    this.$.tooltip.style.top = pos.y + "px";
+    this.$.tooltip.style.opacity = 1;
+  }
+
+  hideTooltip() {
+    this.$.tooltip.style.opacity = 0;
+  }
+
+  _calcTooltipPosition(clientX, clientY) {
+
+    // Calculate the tooltip location based on 4 quadrants of the visible portion 
+    // of the visualization window
+
+    var offset = this._getOffset();
+    var deltaTop = -Math.min(0, offset.top - window.pageYOffset);
+    var deltaLeft = -Math.min(0, offset.left - window.pageXOffset);
+    var deltaBottom = -Math.min(0, window.innerHeight - (this.$.dataVizDiv.offsetHeight + offset.top - window.pageYOffset));
+    var deltaRight = -Math.min(0, window.innerWidth - (this.$.dataVizDiv.offsetWidth + offset.left - window.pageXOffset));
+    var vizHeight = this.$.dataVizDiv.offsetHeight - deltaTop - deltaBottom;
+    var vizWidth = this.$.dataVizDiv.offsetWidth - deltaLeft - deltaRight;
+    var vizHalfX = vizWidth / 2 + deltaLeft;
+    var vizHalfY = vizHeight / 2 + deltaTop;
+
+    var toolPosition = { x: 0, y: 0 };
+    if (clientX < vizHalfX) {
+      var offset = (clientY < vizHalfY) ? 15 : 5;
+      toolPosition.x = clientX + offset + this.$.dataVizDiv.offsetLeft;
+    }
+    else {
+      toolPosition.x = clientX - 10 + this.$.dataVizDiv.offsetLeft - this.$.tooltip.offsetWidth;
+    }
+    if (clientY < vizHalfY) {
+      toolPosition.y = clientY + 5 + this.$.dataVizDiv.offsetTop;
+    }
+    else {
+      toolPosition.y = clientY - 10 + this.$.dataVizDiv.offsetTop - this.$.tooltip.offsetHeight;
+    }
+
+    return toolPosition;
+  }
+
+  _getOffset() {
+    var rect = this.$.dataVizDiv.getBoundingClientRect(),
+        scrollLeft = window.pageXOffset || document.documentElement.scrollLeft,
+        scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    return { top: rect.top + scrollTop, left: rect.left + scrollLeft }
   }
 }
 

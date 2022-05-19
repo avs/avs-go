@@ -19,7 +19,7 @@
  */
 
 import {dedupingMixin} from '@polymer/polymer/lib/utils/mixin.js';
-import {VERSION_MAJOR, VERSION_MINOR, VERSION_CHANGE} from './constants.js';
+import {VERSION} from './constants.js';
 
 /**
  * Mixin to provide client-server communication using `XMLHttpRequest`
@@ -126,11 +126,8 @@ export const AvsHttpMixin = dedupingMixin((superClass) => class extends superCla
 
 	} else {
 
-		// Take the $Change$ RCS keyword from constants.js and parse out the revision number
-		var re = /\$Change: (\d+) \$/;
-		var revision = parseInt(re.exec(VERSION_CHANGE)[1]);
-		var version = [ VERSION_MAJOR, VERSION_MINOR, revision ];
-
+		var verArray = VERSION.split('.');
+		var version = [ parseInt(verArray[0]), parseInt(verArray[1]), parseInt(verArray[2]) ];
 		var body = {source: this.localName, model: model, version: version};
 
 		xhr.open( 'POST', url, true );
