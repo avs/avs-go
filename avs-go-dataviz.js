@@ -1225,15 +1225,20 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         this._dispatchPickEvents(pickProperties);
      }
     }
-    else {
+    else if (!this.urlLoadJsonFile) {
       // Server side pick processing
 
-      var model = this._assembleModel();
-      if (model !== undefined) {
-        model.rendererProperties.pickProperties = pickProperties;
-        this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
-      }
+      this.showSpinner();
+      if (this.url !== undefined && this.url !== null) {
+        this.startSpinner();
 
+        // Use avs-http-mixin to send the model to the server
+        var model = this._assembleModel();
+        if (model !== undefined) {
+          model.rendererProperties.pickProperties = pickProperties;
+          this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
+        }
+      }
     } 
   }
 
