@@ -23,11 +23,12 @@ import {mixinBehaviors} from '@polymer/polymer/lib/legacy/class.js';
 import {IronResizableBehavior} from '@polymer/iron-resizable-behavior/iron-resizable-behavior.js';
 import {afterNextRender} from '@polymer/polymer/lib/utils/render-status.js';
 import {AvsRenderer} from './avs-renderer.js';
-import {Viewer, TransformInteractor, PanInteractor, ZoomRectangleInteractor, PickDepthEnum, Animator} from './avs-three.module.min.js';
+import {Viewer, TransformInteractor, PanInteractor, ZoomRectangleInteractor, PickDepthEnum, Animator} from '../lib/avs-three.module.min.js';
 import {AvsHttpMixin} from './avs-http-mixin.js';
 import {AvsStreamMixin} from './avs-stream-mixin.js';
 import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
 import {LOGO} from './logo.js';
+import {Euler, Vector3, Quaternion} from 'three';
 
 /**
  * `avs-go-dataviz` is a Polymer 3.0 element which requests a data visualization
@@ -662,6 +663,21 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
 
     if (this.renderer === 'THREEJS') {
 	  this._addStreamProperties(rendererProperties);
+
+      var styleMap = {};
+      this._applyCustomCssProperties(styleMap, style,
+        {
+          "scene": "--avs-scene-animations",
+          "sceneTitle": "--avs-scene-title-animations",
+          "chart": "--avs-chart-animations",
+          "chartTitle": "--avs-chart-title-animations",
+          "axis": "--avs-axis-animations",
+          "legend": "--avs-legend-animations",
+          "legendTitle": "--avs-legend-title-animations",
+          "glyph": "--avs-glyph-animations",
+          "transform": "--avs-transform-animation"
+        } );
+      this.animator.setStyleMap(styleMap);
     }
 
     return model;
@@ -710,6 +726,9 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       this.width = 200;  // fallback if clientWidth fails
       this.$.container.style.width = this.width + "px";
     }
+	else {
+      this.$.container.style.width = "100%";
+	}
 
     // Get the height provided by our container
     this.height = this.clientHeight;
@@ -723,6 +742,9 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
       }
       this.$.container.style.height = this.height + "px";
     }
+	else {
+      this.$.container.style.height = "100%";
+	}
 
     if (this.rectCanvas) {
       this.rectCanvas.width = this.width;
@@ -1522,6 +1544,53 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     }
   }
 
+  getTransformComponents() {
+    var pos = new Vector3();
+    var quat = new Quaternion();
+    var scale = new Vector3();
+    var euler = new Euler();
+    var mat;
+    if (this.transformInteractor) {
+      mat = this.transformInteractor.object.matrix;
+    }
+    mat.decompose(pos, quat, scale);
+    euler.setFromQuaternion(quat);
+    return {
+      position: pos.toArray(),
+      rotation: [euler.x * 180 / Math.PI, euler.y * 180 / Math.PI, euler.z * 180 / Math.PI, euler.order],
+      scale: 100 * scale.x
+    };
+  }
+
+  getTransformMatrix() {
+    if (this.transformInteractor) {
+      return this.transformInteractor.object.matrix.elements.slice();
+    }
+  }
+
+  animate() {
+
+    var style = window.getComputedStyle(this, null);
+
+    if (this.renderer === 'THREEJS') {
+      var styleMap = {};
+      this._applyCustomCssProperties(styleMap, style,
+        {
+          "scene": "--avs-scene-animations",
+          "sceneTitle": "--avs-scene-title-animations",
+          "chart": "--avs-chart-animations",
+          "chartTitle": "--avs-chart-title-animations",
+          "axis": "--avs-axis-animations",
+          "legend": "--avs-legend-animations",
+          "legendTitle": "--avs-legend-title-animations",
+          "glyph": "--avs-glyph-animations",
+          "transform": "--avs-transform-animation"
+        } );
+      this.animator.setStyleMap(styleMap);
+	  this.threeViewer.animate();
+    }
+  }
+
   /**
    * Change in 'transform-twist-angle', 'transform-tilt-angle' or 'transform-scale' properties.
    */
@@ -1739,20 +1808,8 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         }
         this.threeViewer.setWebGLRenderer(renderer.webGLRenderer);
 
-        var styleMap = {};
-        this._applyCustomCssProperties(styleMap, window.getComputedStyle(this, null),
-          {
-            "scene": "--avs-scene-animations",
-            "sceneTitle": "--avs-scene-title-animations",
-            "chart": "--avs-chart-animations",
-            "chartTitle": "--avs-chart-title-animations",
-            "axis": "--avs-axis-animations",
-            "legend": "--avs-legend-animations",
-            "legendTitle": "--avs-legend-title-animations",
-            "glyph": "--avs-glyph-animations"
-          } );
-		var animator = new Animator(styleMap);
-		this.threeViewer.setAnimator(animator);
+		this.animator = new Animator();
+		this.threeViewer.setAnimator(this.animator);
       }
 
       this.$.dataVizDiv.appendChild(this.threeViewer.domElement);

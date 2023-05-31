@@ -5,9 +5,9 @@ module.exports = {
 		"@babel/polyfill",
 		"./node_modules/@webcomponents/webcomponentsjs/custom-elements-es5-adapter.js",
 		"./node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js",
-		"./avs-go-dataviz.js",
-		"./avs-go-dynamic-html.js",
-        "./avs-go-info.js"
+		"./src/avs-go-dataviz.js",
+		"./src/avs-go-dynamic-html.js",
+        "./src/avs-go-info.js"
 	],
     output: {
         filename: "avs-go.min.js"
