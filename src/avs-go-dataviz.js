@@ -467,6 +467,20 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         type: Number,
         observer: "_panMaximumZoomLevelChanged",
         value: 1000
+      },
+	  /**
+	   * Show animated glyphs. Only available when `renderer` is `THREEJS`
+	   */
+	  animatedGlyphsVisible: {
+        type: Boolean,
+        observer: "_animatedGlyphsVisibleChanged"		
+      },
+	  /**
+	   * Enable animated glyphs. Only available when `renderer` is `THREEJS`
+	   */
+	  animatedGlyphsEnable: {
+        type: Boolean,
+        observer: "_animatedGlyphsEnableChanged"		
       }
     }
   }
@@ -1568,7 +1582,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
     }
   }
 
-  animate() {
+  runAnimation() {
 
     var style = window.getComputedStyle(this, null);
 
@@ -1587,7 +1601,25 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
           "transform": "--avs-transform-animation"
         } );
       this.animator.setStyleMap(styleMap);
-	  this.threeViewer.animate();
+	  this.threeViewer.runAnimation();
+    }
+  }
+  
+  /**
+   * Change in 'animated-glyphs-visible' property.
+   */
+  _animatedGlyphsVisibleChanged(newValue, oldValue) {
+	if (this.renderer === 'THREEJS') {
+      this.threeViewer.setVisibleAnimatedGlyphs(newValue);
+    }
+  }
+  
+  /**
+   * Change in 'animated-glyphs-enable' property.
+   */
+  _animatedGlyphsEnableChanged(newValue, oldValue) {
+	if (this.renderer === 'THREEJS') {
+      this.threeViewer.setEnableAnimatedGlyphs(newValue);
     }
   }
 
