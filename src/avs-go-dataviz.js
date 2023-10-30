@@ -204,7 +204,7 @@ class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinB
         value: {}
       },
       /**
-       * The type of renderer to be used to display a scene: `IMAGE`, `IMAGEURL`, `SVG` or `THREEJS`
+       * The type of renderer to be used to display a scene: `IMAGE`, `SVG` or `THREEJS`
        */
       renderer: {
         type: String,

@@ -131,7 +131,8 @@ export const AvsHttpMixin = dedupingMixin((superClass) => class extends superCla
 		var body = {source: this.localName, model: model, version: version};
 
 		xhr.open( 'POST', url, true );
-
+		xhr.setRequestHeader( 'Content-type', 'application/json' );
+		
 		xhr.send( JSON.stringify( body ) );
 
 	}
