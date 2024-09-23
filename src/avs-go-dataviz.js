@@ -48,7 +48,7 @@ import {Euler, Vector3, Quaternion} from 'three';
  * @appliesMixin AvsStreamMixin
  * @appliesMixin AvsHttpMixin
  */
-class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinBehaviors([IronResizableBehavior], PolymerElement)))) {
+export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinBehaviors([IronResizableBehavior], PolymerElement)))) {
 
   static get template() {
     return html`

@@ -36,7 +36,7 @@ import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
  * @appliesMixin AvsHttpMixin
  * @appliesMixin AvsDataSourceMixin
  */
-class AvsGoInfo extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
+export class AvsGoInfo extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
 
   static get properties() {
     return {

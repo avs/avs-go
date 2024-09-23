@@ -34,7 +34,7 @@ import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
  * @appliesMixin AvsHttpMixin
  * @appliesMixin AvsDataSourceMixin
  */
-class AvsGoDynamicHtml extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
+export class AvsGoDynamicHtml extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
 
   static get template() {
     return html`
