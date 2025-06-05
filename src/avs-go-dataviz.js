@@ -573,7 +573,6 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         "sceneHighlightColor": "--avs-scene-highlight-color",
         "sceneSurfaceColor": "--avs-scene-surface-color",
 		"scenePointColor": "--avs-scene-point-color",
-		"scenePointSize": "--avs-scene-point-size",
         "sceneLineColor": "--avs-scene-line-color",
         "sceneLineWidth": "--avs-scene-line-width",
         "sceneLineOpacity": "--avs-scene-line-opacity",
@@ -601,7 +600,6 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         "chartHighlightColor": "--avs-chart-highlight-color",
         "chartSurfaceColor": "--avs-chart-surface-color",
 		"chartPointColor": "--avs-chart-point-color",
-		"chartPointSize": "--avs-chart-point-size",
         "chartLineColor": "--avs-chart-line-color",
         "chartLineWidth": "--avs-chart-line-width",
         "chartLinePattern": "--avs-chart-line-pattern",
@@ -674,7 +672,12 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         "legendTitleFontFamily": "--avs-legend-title-font-family",
         "legendTitleFontStyle": "--avs-legend-title-font-style",
         "legendTitleFontWeight": "--avs-legend-title-font-weight",
-        "legendTitleFontSize": "--avs-legend-title-font-size"
+        "legendTitleFontSize": "--avs-legend-title-font-size",
+		// Defaults
+		"defaultPointSize": "--avs-default-point-size",
+		"defaultGlyphSize": "--avs-default-glyph-size",
+		"minGlyphSize": "--avs-min-glyph-size",
+		"maxGlyphSize": "--avs-max-glyph-size"
       } );
 
     this._addDataSourceProperties(model);
@@ -933,7 +936,9 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         if (json.moreChunks === true) {
           if (this.urlLoadJsonFile) {
             this.chunkFile++;
-            this._httpRequest(this.url + '.' + this.chunkFile, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this));
+			const urlBase = this.url.substring(0, this.url.lastIndexOf('.')) || this.url;
+			const ext = this.url.split('.').pop();
+            this._httpRequest(urlBase + '-' + this.chunkFile + '.' + ext, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this));
           }
           else {
             var model = this._assembleModel();
