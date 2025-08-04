@@ -1,0 +1,186 @@
+﻿Diagnose log at 2025-06-10T20:36:21Z
+
+AppPath: C:\Program Files\Git\mingw64\bin\git-credential-manager
+InstallDir: C:\Program Files\Git\mingw64\bin\
+Version: 2.0.935+8b4735fc7b
+
+------------
+Diagnostic: Environment
+Skipped: False
+Success: True
+Exception: None
+Log:
+OSType: Windows
+OSVersion: 10.0 (build 26100)
+Reading environment variables... OK
+ Variables:
+HOMEPATH=\Users\odimond
+DriverData=C:\Windows\System32\Drivers\DriverData
+COMPUTERNAME=OBSIDIAN
+GIT_TRACE2_PARENT_SID=ba2997e8-06b9-45d6-8e59-0da032c7b451
+CommonProgramFiles(x86)=C:\Program Files (x86)\Common Files
+OneDrive=C:\Users\odimond\OneDrive - Advanced Visual Systems Inc
+SESSIONNAME=Console
+TMP=C:\Users\odimond\AppData\Local\Temp
+LC_CTYPE=C.UTF-8
+PATHEXT=.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC;.PY;.PYW
+EFC_11812_1592913036=1
+GIT_EXEC_PATH=C:/Program Files/Git/mingw64/libexec/git-core
+XP_ROOT=C:\Program Files\Advanced Visual Systems\AVS Express\.
+TEMP=C:\Users\odimond\AppData\Local\Temp
+LOCALAPPDATA=C:\Users\odimond\AppData\Local
+MSYSTEM=MINGW64
+TERM=xterm-256color
+__PSLockDownPolicy=0
+COLORTERM=truecolor
+windir=C:\WINDOWS
+USERDNSDOMAIN=avs.com
+USERDOMAIN=AVS
+PROCESSOR_REVISION=9702
+Path=C:/Program Files/Git/mingw64/libexec/git-core;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\bin;C:\Users\odimond\bin;C:\Program Files\Git\cmd;C:\Program Files\Advanced Visual Systems\AVS Express\bin\pc17_64;C:\Program Files\Advanced Visual Systems\AVS Express\runtime\bin\pc17_64;C:\Program Files\Common Files\Oracle\Java\javapath;C:\Program Files\Python311\Scripts\;C:\Program Files\Python311\;C:\Program Files\ImageMagick-7.1.1-Q16-HDRI;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Program Files\Azure Data Studio\bin;C:\Program Files\PuTTY\;C:\Program Files\dotnet\;C:\Program Files\Git\cmd;C:\Program Files\Microsoft SQL Server\130\Tools\Binn\;C:\Program Files (x86)\Eziriz\.NET Reactor;C:\Program Files (x86)\Microsoft SQL Server Migration Assistant for MySQL\bin\;C:\Program Files\WireGuard\;C:\Program Files (x86)\Microsoft SQL Server\160\DTS\Binn\;C:\Program Files\GitHub CLI\;C:\Program Files\nodejs\;C:\Program Files\Perforce\;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Users\odimond\AppData\Local\activestate\cache\bin;C:\Users\odimond\AppData\Local\ActiveState\StateTool\release\bin;C:\Users\odimond\AppData\Local\Microsoft\WindowsApps;C:\Program Files\Azure Data Studio\bin;;C:\Users\odimond\AppData\Roaming\npm;C:\Users\odimond\.dotnet\tools
+PROCESSOR_LEVEL=6
+PROCESSOR_IDENTIFIER=Intel64 Family 6 Model 151 Stepping 2, GenuineIntel
+TMPDIR=C:\Users\odimond\AppData\Local\Temp
+PROMPT=$P$G
+ProgramFiles(x86)=C:\Program Files (x86)
+PUBLIC=C:\Users\Public
+NUMBER_OF_PROCESSORS=24
+CommonProgramFiles=C:\Program Files (x86)\Common Files
+XP_LICENSE_FILE=D:\perforce\express\license_g3.dat
+SHFBROOT=C:\Program Files (x86)\EWSoftware\Sandcastle Help File Builder\
+PLINK_PROTOCOL=ssh
+ProgramData=C:\ProgramData
+ProgramW6432=C:\Program Files
+ProgramFiles=C:\Program Files (x86)
+DOTNET_REACTOR=C:\Program Files (x86)\Eziriz\.NET Reactor
+SystemRoot=C:\WINDOWS
+HOME=C:\Users\odimond
+IFORT_COMPILER24=C:\Program Files (x86)\Intel\oneAPI\compiler\2024.2\
+CommonProgramW6432=C:\Program Files\Common Files
+LOGONSERVER=\\OBSIDIAN
+USERPROFILE=C:\Users\odimond
+USERDOMAIN_ROAMINGPROFILE=AVS
+APPDATA=C:\Users\odimond\AppData\Roaming
+HOMEDRIVE=C:
+OneDriveCommercial=C:\Users\odimond\OneDrive - Advanced Visual Systems Inc
+PSModulePath=C:\Program Files\WindowsPowerShell\Modules;C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules
+EXEPATH=C:\Program Files\Git
+USERNAME=odimond
+PROCESSOR_ARCHITEW6432=AMD64
+PROCESSOR_ARCHITECTURE=x86
+OS=Windows_NT
+ComSpec=C:\WINDOWS\system32\cmd.exe
+SystemDrive=C:
+MACHINE=pc17_64
+ALLUSERSPROFILE=C:\ProgramData
+
+
+------------
+Diagnostic: File system
+Skipped: False
+Success: True
+Exception: None
+Log:
+Temporary directory is 'C:\Users\odimond\AppData\Local\Temp\'...
+Checking basic file I/O...
+Writing to temporary file 'C:\Users\odimond\AppData\Local\Temp\81a44a10bf8c3e05c28ac849'... OK
+Reading from temporary file 'C:\Users\odimond\AppData\Local\Temp\81a44a10bf8c3e05c28ac849'... OK
+Deleting temporary file 'C:\Users\odimond\AppData\Local\Temp\81a44a10bf8c3e05c28ac849'... OK
+Testing IFileSystem instance...
+UserHomePath: C:\Users\odimond
+UserDataDirectoryPath: C:\Users\odimond\.gcm
+GetCurrentDirectory(): D:\perforce\web\wc\client\avs-go
+
+------------
+Diagnostic: Networking
+Skipped: False
+Success: True
+Exception: None
+Log:
+Checking networking and HTTP stack...
+Creating HTTP client... OK
+IsNetworkAvailable: True
+Sending HEAD request to http://example.com... OK
+Sending HEAD request to https://example.com... OK
+Acquiring free TCP port... OK
+Testing local HTTP loopback connections...
+Creating new HTTP listener for http://localhost:52907/... OK
+Waiting for loopback connection... OK
+Writing response... OK
+Waiting for response data... OK
+Loopback connection data OK
+
+------------
+Diagnostic: Git
+Skipped: False
+Success: True
+Exception: None
+Log:
+Getting Git version... OK
+Git version is '2.40.1.windows.1'
+Locating current repository... OK
+Git repository at 'D:/perforce/web/wc/client/avs-go/.git'
+Listing all Git configuration... OK
+Git configuration:
+file:C:/Program Files/Git/etc/gitconfig	diff.astextplain.textconv=astextplain
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.clean=git-lfs clean -- %f
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.smudge=git-lfs smudge -- %f
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.process=git-lfs filter-process
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.required=true
+file:C:/Program Files/Git/etc/gitconfig	http.sslbackend=openssl
+file:C:/Program Files/Git/etc/gitconfig	http.sslcainfo=C:/Program Files/Git/mingw64/etc/ssl/certs/ca-bundle.crt
+file:C:/Program Files/Git/etc/gitconfig	core.autocrlf=true
+file:C:/Program Files/Git/etc/gitconfig	core.fscache=true
+file:C:/Program Files/Git/etc/gitconfig	core.symlinks=false
+file:C:/Program Files/Git/etc/gitconfig	pull.rebase=false
+file:C:/Program Files/Git/etc/gitconfig	credential.helper=manager
+file:C:/Program Files/Git/etc/gitconfig	credential.https://dev.azure.com.usehttppath=true
+file:C:/Program Files/Git/etc/gitconfig	init.defaultbranch=master
+file:C:/Users/odimond/.gitconfig	user.name=Owen Dimond
+file:C:/Users/odimond/.gitconfig	user.email=odimond@avs.com
+file:.git/config	core.repositoryformatversion=0
+file:.git/config	core.filemode=false
+file:.git/config	core.bare=false
+file:.git/config	core.logallrefupdates=true
+file:.git/config	core.ignorecase=true
+file:.git/config	remote.origin.url=https://github.com/avs/avs-go
+file:.git/config	remote.origin.fetch=+refs/heads/*:refs/remotes/origin/*
+file:.git/config	branch.master.remote=origin
+file:.git/config	branch.master.merge=refs/heads/master
+
+
+------------
+Diagnostic: Credential storage
+Skipped: False
+Success: True
+Exception: None
+Log:
+ICredentialStore instance is of type: CredentialStore
+Writing test credential... OK
+Reading test credential... OK
+Deleting test credential... OK
+
+------------
+Diagnostic: Microsoft authentication (AAD/MSA)
+Skipped: False
+Success: True
+Exception: None
+Log:
+Broker not supported.
+Flow type is: Auto
+Gathering MSAL token cache data... OK
+CacheDirectory: C:\Users\odimond\AppData\Local\.IdentityService
+CacheFileName: msal.cache
+CacheFilePath: C:\Users\odimond\AppData\Local\.IdentityService\msal.cache
+Creating cache helper... OK
+Verifying MSAL token cache persistence... OK
+
+------------
+Diagnostic: GitHub API
+Skipped: False
+Success: True
+Exception: None
+Log:
+Using 'https://github.com/' as API target.
+Querying '/meta' endpoint... OK
+

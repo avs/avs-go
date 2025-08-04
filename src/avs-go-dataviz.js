@@ -958,10 +958,15 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
       if (json.backgroundColor !== undefined) {
         var col = json.backgroundColor.match(/[0-9.]+/gi);
         var bgCol = window.getComputedStyle(this.parentNode, null).getPropertyValue("background-color").trim().match(/[0-9.]+/gi);
-        // In case json.backgroundColor is transparent, blend with our parent's background color
-        var blendedR = (col[0] * col[3]) + (bgCol[0] * (1 - col[3]));
-        var blendedG = (col[1] * col[3]) + (bgCol[1] * (1 - col[3]));
-        var blendedB = (col[2] * col[3]) + (bgCol[2] * (1 - col[3]));
+        var blendedR = (col[0] * col[3]);
+        var blendedG = (col[1] * col[3]);
+        var blendedB = (col[2] * col[3]);
+		if (bgCol) {
+          // In case json.backgroundColor is transparent, blend with our parent's background color
+          blendedR += (bgCol[0] * (1 - col[3]));
+          blendedG += (bgCol[1] * (1 - col[3]));
+          blendedB += (bgCol[2] * (1 - col[3]));
+		}
         this.$.zoomOverlay.style.color = "var(--avs-zoom-overlay-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
         this.$.tooltip.style.color = "var(--avs-tooltip-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
       }
