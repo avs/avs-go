@@ -439,11 +439,19 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
       /**
        * Enable the pan interactor. Only available when `renderer` is `THREEJS`
        *
-       * Create an interactor for panning and zooming an OpenViz domain (and its axes and charts) on the client.
+       * Create an interactor for panning an OpenViz domain (axes and charts) on the client.
        */
       panEnable: {
         type: Boolean,
         observer: "_panEnableChanged"
+      },
+      /**
+       * Use mousewheel or pinch zoom to adjust the pan interactor's zoom level.
+       * Otherwise the zoom level must be set using `pan-width-zoom-level` and `pan-height-zoom-level`.
+       */
+      panZoomEnable: {
+        type: Boolean,
+        observer: "_panZoomEnableChanged"
       },
       /**
        * The width zoom level in percent of the original scene greater than 100%
@@ -895,6 +903,32 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
          * @event avs-scene-info
          */
         this.dispatchEvent(new CustomEvent('avs-scene-info', sceneEvent));
+
+        // Set tooltip and zoom overlay style to reversed theme
+        if (json.sceneInfo.backgroundColor !== undefined) {
+          var col = json.sceneInfo.backgroundColor.match(/[0-9.]+/gi);
+          var bgCol = window.getComputedStyle(this.parentNode, null).getPropertyValue("background-color").trim().match(/[0-9.]+/gi);
+          var blendedR = (col[0] * col[3]);
+          var blendedG = (col[1] * col[3]);
+          var blendedB = (col[2] * col[3]);
+		  if (bgCol) {
+            // In case sceneInfo.backgroundColor is transparent, blend with our parent's background color
+            blendedR += (bgCol[0] * (1 - col[3]));
+            blendedG += (bgCol[1] * (1 - col[3]));
+            blendedB += (bgCol[2] * (1 - col[3]));
+		  }
+          this.$.zoomOverlay.style.color = "var(--avs-zoom-overlay-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
+          this.$.tooltip.style.color = "var(--avs-tooltip-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
+        }
+        if (json.sceneInfo.color !== undefined) {
+          var col = json.sceneInfo.color.match(/[0-9.]+/gi);
+          this.$.zoomOverlay.style.background = "var(--avs-zoom-overlay-background, rgba(" + col[0] + "," + col[1] + "," + col[2] + "))";
+          this.$.tooltip.style.background = "var(--avs-tooltip-background, rgb(" + col[0] + "," + col[1] + "," + col[2] + "))";
+        }
+        if (json.sceneInfo.fontFamily !== undefined) {
+          this.$.zoomOverlay.style.fontFamily = "var(--avs-zoom-overlay-font-family, " + json.sceneInfo.fontFamily + ")";
+          this.$.tooltip.style.fontFamily = "var(--avs-tooltip-font-family, " + json.sceneInfo.fontFamily + ")";
+        }
       }
 
   	  if (json.image !== undefined) {
@@ -952,32 +986,6 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
       }
       else if (this.urlLoadJsonFile) {
         this.threeViewer.loadGeometryAsJson(json);
-      }
-
-      // Set tooltip and zoom overlay style to reversed theme
-      if (json.backgroundColor !== undefined) {
-        var col = json.backgroundColor.match(/[0-9.]+/gi);
-        var bgCol = window.getComputedStyle(this.parentNode, null).getPropertyValue("background-color").trim().match(/[0-9.]+/gi);
-        var blendedR = (col[0] * col[3]);
-        var blendedG = (col[1] * col[3]);
-        var blendedB = (col[2] * col[3]);
-		if (bgCol) {
-          // In case json.backgroundColor is transparent, blend with our parent's background color
-          blendedR += (bgCol[0] * (1 - col[3]));
-          blendedG += (bgCol[1] * (1 - col[3]));
-          blendedB += (bgCol[2] * (1 - col[3]));
-		}
-        this.$.zoomOverlay.style.color = "var(--avs-zoom-overlay-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
-        this.$.tooltip.style.color = "var(--avs-tooltip-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
-      }
-      if (json.textColor !== undefined) {
-        var col = json.textColor.match(/[0-9.]+/gi);
-        this.$.zoomOverlay.style.background = "var(--avs-zoom-overlay-background, rgba(" + col[0] + "," + col[1] + "," + col[2] + ",0.75))";
-        this.$.tooltip.style.background = "var(--avs-tooltip-background, rgb(" + col[0] + "," + col[1] + "," + col[2] + "))";
-      }
-      if (json.fontFamily !== undefined) {
-        this.$.zoomOverlay.style.fontFamily = "var(--avs-zoom-overlay-font-family, " + json.fontFamily + ")";
-        this.$.tooltip.style.fontFamily = "var(--avs-tooltip-font-family, " + json.fontFamily + ")";
       }
     }
 
@@ -1692,9 +1700,11 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
           this.panInteractor = new PanInteractor( this );
         }
         this.threeViewer.addInteractor( this.panInteractor );
-        this.panInteractor.addEventListener('change', this._handlePanChanged.bind(this));
-        this.panInteractor.addEventListener('zoom', this._handlePanZoom.bind(this));
-        this.panInteractor.addEventListener('zoomEnd', this._handlePanZoomEnd.bind(this));
+        if (this.panZoomEnable) {
+          this.panInteractor.addEventListener('change', this._handlePanChanged.bind(this));
+          this.panInteractor.addEventListener('zoom', this._handlePanZoom.bind(this));
+          this.panInteractor.addEventListener('zoomEnd', this._handlePanZoomEnd.bind(this));
+        }
         this.panInteractor.setWidthZoomLevel(this.panWidthZoomLevel);
         this.panInteractor.setHeightZoomLevel(this.panHeightZoomLevel);
         this.panInteractor.setMaximumZoomLevel(this.panMaximumZoomLevel);
@@ -1702,8 +1712,29 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
       }
       else {
         this.threeViewer.removeInteractor( this.panInteractor );
-        this.panInteractor.removeEventListener('change', this._handlePanChanged.bind(this));
-        this.panInteractor.removeEventListener('zoom', this._handlePanZoom.bind(this));
+        if (this.panZoomEnable) {
+          this.panInteractor.removeEventListener('change', this._handlePanChanged.bind(this));
+          this.panInteractor.removeEventListener('zoom', this._handlePanZoom.bind(this));
+          this.panInteractor.removeEventListener('zoomEnd', this._handlePanZoomEnd.bind(this));
+        }
+      }
+    }
+  }
+
+  /**
+   * Change in 'pan-zoom-enable' property.
+   */
+  _panZoomEnableChanged(newValue, oldValue) {
+    if (this.threeViewer && this.panInteractor) {
+      if (newValue) {	  
+          this.panInteractor.addEventListener('change', this._handlePanChanged.bind(this));
+          this.panInteractor.addEventListener('zoom', this._handlePanZoom.bind(this));
+          this.panInteractor.addEventListener('zoomEnd', this._handlePanZoomEnd.bind(this));
+      }
+      else {
+          this.panInteractor.removeEventListener('change', this._handlePanChanged.bind(this));
+          this.panInteractor.removeEventListener('zoom', this._handlePanZoom.bind(this));
+          this.panInteractor.removeEventListener('zoomEnd', this._handlePanZoomEnd.bind(this));
       }
     }
   }
