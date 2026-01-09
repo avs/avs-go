@@ -1,0 +1,34 @@
+{
+  "name": "avs-go",
+  "version": "0.12.71603",
+  "description": "AVS Go",
+  "keywords": [
+    "polymer",
+    "polymer 3.0",
+    "image",
+    "svg",
+    "three.js",
+    "3d",
+    "webgl",
+    "custom-element",
+    "web-components"
+  ],
+  "author": "Advanced Visual Systems Inc.",
+  "main": "dist/avs-go.min.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/avs/avs-go.git",
+    "directory": "packages/core"
+  },
+  "scripts": {
+    "build": "webpack --mode production",
+    "dev": "webpack --mode development --watch",
+    "type-check": "echo 'No TypeScript in core package'"
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@polymer/iron-resizable-behavior": "^3.0.1",
+    "@polymer/polymer": "^3.5.2",
+    "three": "0.180.0"
+  }
+}

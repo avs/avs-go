@@ -2,6 +2,10 @@
   "name": "avs-go",
   "version": "0.12.71603",
   "description": "AVS Go",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "keywords": [
     "polymer",
     "polymer 3.0",
@@ -13,21 +17,16 @@
     "custom-element",
     "web-components"
   ],
-  "author": "AVS",
-  "main": "dist/avs-go.min.js",
+  "author": "Advanced Visual Systems Inc.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/avs/avs-go.git"
   },
   "scripts": {
-    "build": "webpack"
+    "build": "npm run build --workspaces",
+    "clean": "rimraf --glob packages/*/dist packages/*/node_modules node_modules"
   },
   "license": "Apache-2.0",
-  "dependencies": {
-    "@polymer/iron-resizable-behavior": "^3.0.1",
-    "@polymer/polymer": "^3.5.2",
-    "three": "0.180.0"
-  },
   "devDependencies": {
     "@babel/core": "^7.28.4",
     "@babel/plugin-transform-classes": "^7.28.4",
@@ -35,6 +34,7 @@
     "@babel/preset-env": "^7.28.3",
     "@webcomponents/webcomponentsjs": "^2.8.0",
     "babel-loader": "^8.4.1",
+    "rimraf": "^6.1.2",
     "webpack": "^5.102.1",
     "webpack-cli": "^4.10.0"
   }
