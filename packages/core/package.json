@@ -1,6 +1,6 @@
 {
-  "name": "avs-go",
-  "version": "0.12.71603",
+  "name": "@avs/go",
+  "version": "0.12.71731",
   "description": "AVS Go",
   "keywords": [
     "polymer",

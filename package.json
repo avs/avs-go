@@ -1,6 +1,6 @@
 {
   "name": "avs-go",
-  "version": "0.12.71603",
+  "version": "0.12.0",
   "description": "AVS Go",
   "private": true,
   "workspaces": [
