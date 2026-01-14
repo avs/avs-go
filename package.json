@@ -34,6 +34,7 @@
     "@babel/preset-env": "^7.28.3",
     "@webcomponents/webcomponentsjs": "^2.8.0",
     "babel-loader": "^8.4.1",
+    "http-server": "^14.1.1",
     "rimraf": "^6.1.2",
     "webpack": "^5.102.1",
     "webpack-cli": "^4.10.0"

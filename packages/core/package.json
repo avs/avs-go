@@ -23,6 +23,7 @@
   "scripts": {
     "build": "webpack --mode production",
     "dev": "webpack --mode development --watch",
+	"start": "http-server -o demo/jsonView.html",
     "type-check": "echo 'No TypeScript in core package'"
   },
   "license": "Apache-2.0",

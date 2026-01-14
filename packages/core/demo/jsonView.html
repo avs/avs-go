@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Read static JSON file with AVS/Go</title>
+    <style>
+        body {
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            background-color: black;
+        }
+		h2 {
+			position: fixed;
+			color: white;
+			font-family: Roboto, Arial, Helvetica, sans-serif;
+			padding-left: 1em;
+		}
+		avs-go-dataviz {
+			position: absolute;
+		}
+    </style>
+</head>
+
+<body>
+    <avs-go-dataviz url='data/hydrogen.json' url-load-json-file renderer="THREEJS" transform-enable></avs-go-dataviz>
+	<h2>Read static ThreeJS JSON file with &lt;avs-go-dataviz&gt; Web Component</h1>
+    <script type="text/javascript" src="../dist/avs-go.min.js"></script>
+</body>
+
+</html>
