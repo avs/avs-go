@@ -1,6 +1,6 @@
 {
   "name": "@avs/go-react",
-  "version": "0.12.71731",
+  "version": "0.12.71739",
   "description": "React wrapper for AVS/Go web components",
   "keywords": [
     "visualization",
@@ -11,13 +11,13 @@
   "author": "Advanced Visual Systems Inc.",
   "license": "Apache-2.0",
   "dependencies": {
-    "@avs/go": "^0.12.0",
+    "@avs/go": "0.12.71739",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/avs/avs-go.git",
+    "url": "git+https://github.com/avs/avs-go.git",
     "directory": "packages/react"
   }
 }

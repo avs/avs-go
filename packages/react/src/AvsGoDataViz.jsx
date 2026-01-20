@@ -22,6 +22,7 @@ import { forwardRef, useRef, useEffect, useImperativeHandle } from 'react';
 import { AvsGoDataViz as AvsGoDataVizPolymer } from '@avs/go/src/avs-go-dataviz';
 
 export const AvsGoDataViz = forwardRef(({
+  style,
   manualUpdate,
   displayCanvas,
   url,
@@ -196,6 +197,7 @@ export const AvsGoDataViz = forwardRef(({
 
   return (
     <avs-go-dataviz
+        style={style}
 	    ref={dataVizRef}
 	    manual-update={manualUpdate}
 	    display-canvas={displayCanvas}

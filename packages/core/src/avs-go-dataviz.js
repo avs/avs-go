@@ -888,15 +888,12 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
    * @param json JSON parsed from HTTP response.
    */
   _handleHttpResponse(json) {
-    var loadComplete = true;
-
-    if (json !== undefined) {
-
-      if (json.selectionInfo !== undefined) {
+    if (json) {
+      if (json.selectionInfo) {
         this._dispatchPickEvents(json.selectionInfo);
 	  }
 
-      if (json.sceneInfo !== undefined) {
+      if (json.sceneInfo) {
         var sceneEvent = {detail: json.sceneInfo};
         /**
          * Scene info from the server.
@@ -905,7 +902,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         this.dispatchEvent(new CustomEvent('avs-scene-info', sceneEvent));
 
         // Set tooltip and zoom overlay style to reversed theme
-        if (json.sceneInfo.backgroundColor !== undefined) {
+        if (json.sceneInfo.backgroundColor) {
           var col = json.sceneInfo.backgroundColor.match(/[0-9.]+/gi);
           var bgCol = window.getComputedStyle(this.parentNode, null).getPropertyValue("background-color").trim().match(/[0-9.]+/gi);
           var blendedR = (col[0] * col[3]);
@@ -920,27 +917,21 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
           this.$.zoomOverlay.style.color = "var(--avs-zoom-overlay-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
           this.$.tooltip.style.color = "var(--avs-tooltip-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
         }
-        if (json.sceneInfo.color !== undefined) {
+        if (json.sceneInfo.color) {
           var col = json.sceneInfo.color.match(/[0-9.]+/gi);
           this.$.zoomOverlay.style.background = "var(--avs-zoom-overlay-background, rgba(" + col[0] + "," + col[1] + "," + col[2] + "))";
           this.$.tooltip.style.background = "var(--avs-tooltip-background, rgb(" + col[0] + "," + col[1] + "," + col[2] + "))";
         }
-        if (json.sceneInfo.fontFamily !== undefined) {
+        if (json.sceneInfo.fontFamily) {
           this.$.zoomOverlay.style.fontFamily = "var(--avs-zoom-overlay-font-family, " + json.sceneInfo.fontFamily + ")";
           this.$.tooltip.style.fontFamily = "var(--avs-tooltip-font-family, " + json.sceneInfo.fontFamily + ")";
         }
       }
 
-  	  if (json.image !== undefined) {
+  	  if (json.image) {
+        this.sceneImage.src = json.image;
 
-        if (json.image.startsWith("?app=image")) {
-          this.sceneImage.src = this.url + json.image;
-        }
-        else {	
-	      this.sceneImage.src = json.image;
-        }
-
-	    if (json.imagemap !== undefined) {
+	    if (json.imagemap) {
 	      this.sceneImageMap.innerHTML = decodeURIComponent(json.imagemap.replace(/\+/g, '%20'));
 
           this.imageMapData = Array.from(this.sceneImageMap.querySelectorAll('area')).map(area => {
@@ -957,15 +948,18 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
           this.sceneImageMap.innerHTML = "";
           this.imageMapData = undefined;
         }
+		
+		this._handleLoadComplete();
 	  }
-	  else if (json.svg !== undefined) {
+	  else if (json.svg) {
 	    this.svgDiv.innerHTML = decodeURIComponent(json.svg.replace(/\+/g, '%20'));
+		this._handleLoadComplete();
 	  }
-      else if (json.threejs !== undefined) {
-        this.threeViewer.loadGeometryAsJson(json.threejs);
+      else if (json.threejs) {
+        this.threeViewer.loadGeometryAsJson(json.threejs, this._handleLoadComplete.bind(this));
       }
-      else if (json.chunkId !== undefined) {
-        this.threeViewer.loadGeometryAsEvents(json);
+      else if (json.chunkId) {
+        this.threeViewer.loadGeometryAsEvents(json, this._handleLoadComplete.bind(this));
 
         if (json.moreChunks === true) {
           if (this.urlLoadJsonFile) {
@@ -976,34 +970,32 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
           }
           else {
             var model = this._assembleModel();
-            if (model !== undefined) {
+            if (model) {
               model.rendererProperties.streamProperties.chunkId = json.chunkId;
               this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
             }
           }
-          loadComplete = false;
         }
       }
       else if (this.urlLoadJsonFile) {
-        this.threeViewer.loadGeometryAsJson(json);
+        this.threeViewer.loadGeometryAsJson(json, this._handleLoadComplete.bind(this));
       }
     }
+  }
 
-    if (loadComplete) {
-      // Hide the spinner and grab the scene background color for next time
-      // Disable background temporarily
-      this.hideSpinner();
-      this.stopSpinner();
-/*      if (json.backgroundColor !== undefined) {
-        this.updateStyles({'--avs-spinner-background-color': json.backgroundColor});
-      }*/
+  /**
+   *
+   */
+  _handleLoadComplete() {
+    // Stop and hide the spinner
+    this.hideSpinner();
+    this.stopSpinner();
 
-      /**
-       * Scene load has completed.
-       * @event avs-load-complete
-       */
-      this.dispatchEvent(new CustomEvent('avs-load-complete'));
-    }
+    /**
+     * Scene load has completed.
+     * @event avs-load-complete
+     */
+    this.dispatchEvent(new CustomEvent('avs-load-complete'));
   }
 
   /**
