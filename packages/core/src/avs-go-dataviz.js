@@ -956,29 +956,34 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
 		this._handleLoadComplete();
 	  }
       else if (json.threejs) {
-        this.threeViewer.loadGeometryAsJson(json.threejs, this._handleLoadComplete.bind(this));
-      }
-      else if (json.chunkId) {
-        this.threeViewer.loadGeometryAsEvents(json, this._handleLoadComplete.bind(this));
+        if (json.threejs.chunkId) {
+          this.threeViewer.loadGeometryAsEvents(json.threejs, this._handleLoadComplete.bind(this));
 
-        if (json.moreChunks === true) {
-          if (this.urlLoadJsonFile) {
-            this.chunkFile++;
-			const urlBase = this.url.substring(0, this.url.lastIndexOf('.')) || this.url;
-			const ext = this.url.split('.').pop();
-            this._httpRequest(urlBase + '-' + this.chunkFile + '.' + ext, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this));
-          }
-          else {
-            var model = this._assembleModel();
-            if (model) {
-              model.rendererProperties.streamProperties.chunkId = json.chunkId;
-              this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
+          if (json.threejs.moreChunks === true) {
+            if (this.urlLoadJsonFile) {
+              // Load the next chunk file
+              this.chunkFile++;
+			  const urlBase = this.url.substring(0, this.url.lastIndexOf('.')) || this.url;
+			  const ext = this.url.split('.').pop();
+              this._httpRequest(urlBase + '-' + this.chunkFile + '.' + ext, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this));
+            }
+            else {
+              // Get the next chunk from the server
+              var model = this._assembleModel();
+              if (model) {
+                model.rendererProperties.streamProperties.chunkId = json.threejs.chunkId;
+                this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
+              }
             }
           }
         }
+        else {
+          this.threeViewer.loadGeometryAsJson(json.threejs, this._handleLoadComplete.bind(this));
+        }
       }
-      else if (this.urlLoadJsonFile) {
-        this.threeViewer.loadGeometryAsJson(json, this._handleLoadComplete.bind(this));
+      else {
+        console.log("ERROR: No image, SVG, or ThreeJS found in response.");
+        this._handleLoadComplete();
       }
     }
   }

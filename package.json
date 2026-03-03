@@ -1,6 +1,6 @@
 {
   "name": "avs-go",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "AVS/Go monorepo",
   "private": true,
   "workspaces": [
