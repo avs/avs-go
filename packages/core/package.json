@@ -30,6 +30,6 @@
   "dependencies": {
     "@polymer/iron-resizable-behavior": "^3.0.1",
     "@polymer/polymer": "^3.5.2",
-    "three": "0.180.0"
+    "three": "0.183.2"
   }
 }
