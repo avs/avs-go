@@ -1579,15 +1579,6 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
 
         this.animationTime = 0;
         this.transformAnimationFrames ??= [];
-        if (this.transformAnimationFrames.length > 0) {
-          this.$.animationDelay.value = 2;
-          this.$.animationDelay.disabled = false;
-          this.$.animationSnapshotLabel.innerHTML = this.transformAnimationFrames.length;
-          this.$.animationPlay.classList.remove("disabled");
-          this.$.animationCopy.classList.remove("disabled");
-          this.$.animationClear.classList.remove("disabled");
-          this.animationTime = this.transformAnimationFrames[this.transformAnimationFrames.length - 1].time / 1000;
-        }
 
 		    this._resetTimer();
 
@@ -1669,16 +1660,78 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
     this.animationTime = 0;
   }
 
-  _handleAnimationCopy() {
+  async _handleAnimationCopy() {
+    // Convert to JSON, compress and base64url encode
     const json = JSON.stringify(this.transformAnimationFrames);
-    const encoded = btoa(json);
+    const compressed = await this._compress(json);
+    const encoded = compressed.toBase64().replace('/', '_').replace('+', '-');
 
     /**
      * A transform animation share event occurred.
      * @event avs-transform-animation-share
      */
-
     this.dispatchEvent(new CustomEvent('avs-transform-animation-share', { detail: encoded }));
+  }
+
+  /**
+   * Convert a string to its UTF-8 bytes and compress it.
+   *
+   * @param {string} str
+   * @returns {Promise<Uint8Array>}
+   */
+  async _compress(str) {
+    // Convert the string to a byte stream.
+    const stream = new Blob([str]).stream();
+
+    // Create a compressed stream.
+    const compressedStream = stream.pipeThrough(
+      new CompressionStream("gzip")
+    );
+
+    // Read all the bytes from this stream.
+    const chunks = [];
+    for await (const chunk of compressedStream) {
+      chunks.push(chunk);
+    }
+    return this._concatUint8Arrays(chunks);
+  }
+
+  /**
+   * Decompress bytes into a UTF-8 string.
+   *
+   * @param {Uint8Array} compressedBytes
+   * @returns {Promise<string>}
+   */
+  async _decompress(compressedBytes) {
+    // Convert the bytes to a stream.
+    const stream = new Blob([compressedBytes]).stream();
+
+    // Create a decompressed stream.
+    const decompressedStream = stream.pipeThrough(
+      new DecompressionStream("gzip")
+    );
+
+    // Read all the bytes from this stream.
+    const chunks = [];
+    for await (const chunk of decompressedStream) {
+      chunks.push(chunk);
+    }
+    const stringBytes = await this._concatUint8Arrays(chunks);
+
+    // Convert the bytes to a string.
+    return new TextDecoder().decode(stringBytes);
+  }
+
+  /**
+   * Combine multiple Uint8Arrays into one.
+   *
+   * @param {ReadonlyArray<Uint8Array>} uint8arrays
+   * @returns {Promise<Uint8Array>}
+   */
+  async _concatUint8Arrays(uint8arrays) {
+    const blob = new Blob(uint8arrays);
+    const buffer = await blob.arrayBuffer();
+    return new Uint8Array(buffer);
   }
 
   _updatePixelRatio(change) {
@@ -1912,10 +1965,35 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
   /**
    * Change in 'transform-animation' property.
    */
-  _transformAnimationValueChanged(newValue, oldValue) {
+  async _transformAnimationValueChanged(newValue, oldValue) {
     if (newValue) {
-      const decoded = atob(newValue);
-      this.transformAnimationFrames = JSON.parse(decoded);
+      // Decode from base64url, decompress and parse JSON
+      const decoded = Uint8Array.fromBase64(newValue.replaceAll('_', '/').replaceAll('-', '+'));
+      const decompressed = await this._decompress(decoded);
+      this.transformAnimationFrames = JSON.parse(decompressed);
+
+      if (!this.transformAnimationFrames) {
+        this.transformAnimationFrame = [];
+      }
+
+      if (this.transformAnimationFrames.length > 0) {
+        this.$.animationDelay.value = 2;
+        this.$.animationDelay.disabled = false;
+        this.$.animationSnapshotLabel.innerHTML = this.transformAnimationFrames.length;
+        this.$.animationPlay.classList.remove("disabled");
+        this.$.animationCopy.classList.remove("disabled");
+        this.$.animationClear.classList.remove("disabled");
+        this.animationTime = this.transformAnimationFrames[this.transformAnimationFrames.length - 1].time / 1000;
+      }
+      else {
+        this.$.animationDelay.value = 0;
+        this.$.animationDelay.disabled = true;
+        this.$.animationSnapshotLabel.innerHTML = "0";
+        this.$.animationPlay.classList.add("disabled");
+        this.$.animationCopy.classList.add("disabled");
+        this.$.animationClear.classList.add("disabled");
+        this.animationTime = 0;
+      }
     }
   }
 
