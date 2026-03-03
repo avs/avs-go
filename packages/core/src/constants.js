@@ -18,4 +18,4 @@
  * Advanced Visual Systems Inc. (http://www.avs.com)
  */
 
-export var VERSION = '0.13.71740';
+export var VERSION = '0.13.71745';

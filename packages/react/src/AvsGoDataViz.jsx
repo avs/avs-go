@@ -73,6 +73,7 @@ export const AvsGoDataViz = forwardRef(({
   transformTwistAngle,
   transformTiltAngle,
   transformScale,
+  transformAnimation,
   zoomRectangleEnable,
   panEnable,
   panZoomEnable,
@@ -81,9 +82,11 @@ export const AvsGoDataViz = forwardRef(({
   panMaximumZoomLevel,
   animatedGlyphsVisible,
   animatedGlyphsEnable,
+  animationControlsEnable,
   onSceneInfo,
   onLoadComplete,
   onPanInfo,
+  onTransformAnimationShare,
   onError
 }, ref) => {
 
@@ -130,6 +133,12 @@ export const AvsGoDataViz = forwardRef(({
       }
     }
 
+    function handleTransformAnimationShare(e) {
+      if (onTransformAnimationShare) {
+        onTransformAnimationShare(e.detail);
+      }
+    }
+
     function handleError(e) {
       if (onError) {
         onError(e.detail);
@@ -142,6 +151,7 @@ export const AvsGoDataViz = forwardRef(({
     dataVizRef.current.addEventListener('avs-scene-info', handleSceneInfo);
     dataVizRef.current.addEventListener('avs-load-complete', handleLoadComplete);
     dataVizRef.current.addEventListener('avs-pan-info', handlePanInfo);
+    dataVizRef.current.addEventListener('avs-transform-animation-share', handleTransformAnimationShare);
     dataVizRef.current.addEventListener('avs-error', handleError);
 
     return () => {
@@ -152,6 +162,7 @@ export const AvsGoDataViz = forwardRef(({
         dataVizRef.current.removeEventListener('avs-scene-info', handleSceneInfo);
         dataVizRef.current.removeEventListener('avs-load-complete', handleLoadComplete);
         dataVizRef.current.removeEventListener('avs-pan-info', handlePanInfo);
+        dataVizRef.current.removeEventListener('avs-transform-animation-share', handleTransformAnimationShare);
         dataVizRef.current.removeEventListener('avs-error', handleError);
       }
     }
@@ -197,63 +208,65 @@ export const AvsGoDataViz = forwardRef(({
 
   return (
     <avs-go-dataviz
-        style={style}
-	    ref={dataVizRef}
-	    manual-update={manualUpdate}
-	    display-canvas={displayCanvas}
-	    url={url}
-	    url-load-json-file={urlLoadJsonFile}
-	    scene-name={sceneName}
-	    scene-user-properties={sceneUserProperties}
-	    data-source-name={dataSourceName}
-	    data-source-user-properties={dataSourceUserProperties}
-	    renderer-name={rendererName}
-	    renderer-user-properties={rendererUserProperties}
-	    renderer={renderer}
-	    stream-enable={streamEnable}
-	    stream-chunk-size-first={streamChunkSizeFirst}
-	    stream-chunk-size={streamChunkSize}
-	    theme-name={themeName}
-	    hidden={hidden}
-	    resize-threshold={resizeThreshold}
-	    aspect-ratio={aspectRatio}
-	    pointer-timeout={pointerTimeout}
-	    tap-enable={tapEnable}
-	    tap-level={tapLevel}
-	    tap-depth={tapDepth}
-	    tap-highlight-enable={tapHighlightEnable}
-	    tap-highlight-color={tapHighlightColor}
-	    tap-highlight-layer-enable={tapHighlightLayerEnable}
-	    tap-process-event-on-client={tapProcessEventOnClient}
-	    track-enable={trackEnable}
-	    track-level={trackLevel}
-	    track-depth={trackDepth}
-	    track-highlight-enable={trackHighlightEnable}
-	    track-highlight-color={trackHighlightColor}
-	    track-highlight-layer-enable={trackHighlightLayerEnable}
-	    track-process-event-on-client={trackProcessEventOnClient}
-	    hover-enable={hoverEnable}
-	    hover-level={hoverLevel}
-	    horer-depth={hoverDepth}
-	    hover-highlight-enable={hoverHighlightEnable}
-	    hover-highlight-color={hoverHighlightColor}
-	    hover-highlight-layer-enable={hoverHighlightLayerEnable}
-	    transform-enable={transformEnable}
-	    transform-client-only={transformClientOnly}
-	    transform-rotate-disable={transformRotateDisable}
-	    transform-zoom-disable={transformZoomDisable}
-	    transform-pan-disable={transformPanDisable}
-	    transform-twist-angle={transformTwistAngle}
-	    transform-tilt-angle={transformTiltAngle}
-	    transform-scale={transformScale}
-	    zoom-reactangle-enable={zoomRectangleEnable}
-	    pan-enable={panEnable}
-	    pan-zoom-enable={panZoomEnable}
-	    pan-width-zoom-level={panWidthZoomLevel}
-	    pan-height-zoom-level={panHeightZoomLevel}
-	    pan-maximum-zoom-level={panMaximumZoomLevel}
-	    animated-glyphs-visible={animatedGlyphsVisible}
-	    animated-glyphs-enable={animatedGlyphsEnable}
+      style={style}
+      ref={dataVizRef}
+      manual-update={manualUpdate}
+      display-canvas={displayCanvas}
+      url={url}
+      url-load-json-file={urlLoadJsonFile}
+      scene-name={sceneName}
+      scene-user-properties={sceneUserProperties}
+      data-source-name={dataSourceName}
+      data-source-user-properties={dataSourceUserProperties}
+      renderer-name={rendererName}
+      renderer-user-properties={rendererUserProperties}
+      renderer={renderer}
+      stream-enable={streamEnable}
+      stream-chunk-size-first={streamChunkSizeFirst}
+      stream-chunk-size={streamChunkSize}
+      theme-name={themeName}
+      hidden={hidden}
+      resize-threshold={resizeThreshold}
+      aspect-ratio={aspectRatio}
+      pointer-timeout={pointerTimeout}
+      tap-enable={tapEnable}
+      tap-level={tapLevel}
+      tap-depth={tapDepth}
+      tap-highlight-enable={tapHighlightEnable}
+      tap-highlight-color={tapHighlightColor}
+      tap-highlight-layer-enable={tapHighlightLayerEnable}
+      tap-process-event-on-client={tapProcessEventOnClient}
+      track-enable={trackEnable}
+      track-level={trackLevel}
+      track-depth={trackDepth}
+      track-highlight-enable={trackHighlightEnable}
+      track-highlight-color={trackHighlightColor}
+      track-highlight-layer-enable={trackHighlightLayerEnable}
+      track-process-event-on-client={trackProcessEventOnClient}
+      hover-enable={hoverEnable}
+      hover-level={hoverLevel}
+      horer-depth={hoverDepth}
+      hover-highlight-enable={hoverHighlightEnable}
+      hover-highlight-color={hoverHighlightColor}
+      hover-highlight-layer-enable={hoverHighlightLayerEnable}
+      transform-enable={transformEnable}
+      transform-client-only={transformClientOnly}
+      transform-rotate-disable={transformRotateDisable}
+      transform-zoom-disable={transformZoomDisable}
+      transform-pan-disable={transformPanDisable}
+      transform-twist-angle={transformTwistAngle}
+      transform-tilt-angle={transformTiltAngle}
+      transform-scale={transformScale}
+      transformAnimation={transformAnimation}
+      zoom-reactangle-enable={zoomRectangleEnable}
+      pan-enable={panEnable}
+      pan-zoom-enable={panZoomEnable}
+      pan-width-zoom-level={panWidthZoomLevel}
+      pan-height-zoom-level={panHeightZoomLevel}
+      pan-maximum-zoom-level={panMaximumZoomLevel}
+      animated-glyphs-visible={animatedGlyphsVisible}
+      animated-glyphs-enable={animatedGlyphsEnable}
+      animation-controls-enable={animationControlsEnable}
 	  >
 	  </avs-go-dataviz>
   );
