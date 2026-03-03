@@ -27,7 +27,7 @@ import {Viewer, TransformInteractor, PanInteractor, ZoomRectangleInteractor, Pic
 import {AvsHttpMixin} from './avs-http-mixin.js';
 import {AvsStreamMixin} from './avs-stream-mixin.js';
 import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
-import {LOGO, CAMERA, PLAY, COPY, RESET, DELETE} from './logo.js';
+import {LOGO, PLAY, CAMERA, TIMELAPSE, HOME, DELETE, COPY, LINK} from './logo.js';
 import {Euler, Vector3, Quaternion} from 'three';
 
 /**
@@ -75,7 +75,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
           width:100%;
           height:100%;
         }
-        #animationControls {
+        #motionCapture {
           display: none;
           position:absolute;
           top: 8px;
@@ -84,26 +84,28 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
           background-color: rgba(128, 128, 128, 0.8);
           font-size: 10pt;
           border-radius: 8px;
-          background:var(--avs-animation-controls-background, rgba(80,80,80,0.75));
-          color:var(--avs-animation-controls-color, #ffffff);
-          font-family:var(--avs-animation-controls-font-family);
+          background:var(--avs-motion-capture-background, rgba(80,80,80,0.75));
+          color:var(--avs-motion-capture-color, #ffffff);
+          font-family:var(--avs-motion-capture-font-family);
           box-shadow: 0px 5px 5px -3px rgba(0, 0, 0, 0.2), 0px 8px 10px 1px rgba(0, 0, 0, 0.14), 0px 3px 14px 2px rgba(0, 0, 0, 0.12);
+          user-select: none;
         }
-        #animationControlsTitle {
-          margin-bottom: 8px;
+        #motionCaptureTitle {
+          margin-bottom: 4px;
           font-weight: 700;
         }
         .btn {
           padding: 4px;
           border-radius: 4px;
-          margin: 4px;
-          background:var(--avs-animation-controls-button-background, white);
-          color:var(--avs-animation-controls-button-color, black);
+          margin: 2px;
+          background:var(--avs-motion-capture-control-background, white);
+          color:var(--avs-motion-capture-control-color, black);
           display: inline-flex;
           align-items: center;
           box-shadow: 0 2px 2px #00000024,0 3px 1px -2px #0000001f,0 1px 5px #0003;
+        }
+        a.btn {
           cursor: pointer;
-          user-select: none;
         }
         .btn.disabled {
           cursor: default;
@@ -112,28 +114,28 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
           background-color: darkgrey;
           color: grey;
         }
-        #animationDelay {
-          width: 30px;
-          height: 29px;
-          background:var(--avs-animation-controls-button-background, white);
-          color:var(--avs-animation-controls-button-color, black);
-          border-width: 0;
-          border-radius: 4px;
-          box-shadow: 0 2px 2px #00000024,0 3px 1px -2px #0000001f,0 1px 5px #0003;
-          margin: 4px;
-        }
-        #animationDelay:disabled {
-          pointer-events: none;
-          box-shadow: none;
-          background-color: darkgrey;
-          color: grey;
-        }
-        #animationSnapshotIcon {
+        #motionCaptureSnapshotIcon, #motionCaptureDelayIcon {
           height: 24px;
         }
-        #animationSnapshotLabel {
+        #motionCaptureSnapshotLabel, #motionCaptureDelayLabel {
           margin-left: 4px;
-          height: 16px;
+          height: 14px;
+        }
+        #motionCaptureDelayWheel {
+          display: flex;
+          flex-direction: column;
+          margin: 0 4px;
+          height: 24px;
+          gap: 2px;
+        }
+        #motionCaptureDelayIncrease, #motionCaptureDelayDecrease {
+          height: 8px;
+          text-align: center;
+          font-weight: 700;
+          cursor: pointer;
+        }
+        #motionCaptureReset, #motionCaptureCopyData {
+          margin-left: 12px;
         }
         #sceneImage {
           width:100%;
@@ -161,7 +163,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
           font-weight:var(--avs-zoom-overlay-font-weight, bold);
           font-style:var(--avs-zoom-overlay-font-style);
         }
-        #tooltip, #animationTooltip {
+        #tooltip, #motionCaptureTooltip, #motionCaptureAlert {
           position:absolute;
           opacity:0;
           transition:opacity ease 0.3s;
@@ -175,6 +177,11 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
           font-family:var(--avs-tooltip-font-family);
           font-weight:var(--avs-tooltip-font-weight);
           font-style:var(--avs-tooltip-font-style);
+        }
+        #motionCaptureAlert {
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%);
         }
         #spinnerDiv {
           position:absolute;
@@ -200,25 +207,30 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
       </style>
       <div id="container">
         <div id="dataVizDiv"></div>
-        <div id="animationControls">
-          <div id="animationControlsTitle">Animation Controls</div>
-          <div style="display: flex; justify-content: center">
-            <input type="number" disabled min="1" max="10" value="0" step="1" id="animationDelay" data-tooltip="Frame delay (seconds)">
-            <a class="btn" id="animationSnapshot" data-tooltip="Take snapshot">
-              <div id="animationSnapshotIcon"></div>
-              <div id="animationSnapshotLabel">0</div>
+        <div id="motionCapture">
+          <div style="display: flex; justify-content: center" id="motionCaptureTitle">Motion Capture</div>
+          <div>
+            <a class="btn disabled" id="motionCapturePlay" data-tooltip="Play motion capture"></a>
+            <a class="btn" id="motionCaptureSnapshot" data-tooltip="Take snapshot">
+              <div id="motionCaptureSnapshotIcon"></div>
+              <div id="motionCaptureSnapshotLabel">0</div>
             </a>
-          </div>
-          <div style="display: flex; justify-content: center">
-            <a class="btn disabled" id="animationPlay" data-tooltip="Play animation"></a>
-            <a class="btn disabled" id="animationCopy" data-tooltip="Copy animation URL to clipboard"></a>
-          </div>
-          <div style="display: flex; justify-content: center">
-            <a class="btn" id="animationReset" data-tooltip="Reset transform"></a>
-            <a class="btn disabled" id="animationClear" data-tooltip="Clear animation"></a>
+            <div class="btn disabled" id="motionCaptureDelay" data-tooltip="Frame delay (seconds)">
+              <div id="motionCaptureDelayIcon"></div>
+              <div id="motionCaptureDelayLabel">0</div>
+              <div id="motionCaptureDelayWheel">
+                <a id="motionCaptureDelayIncrease">+</a>
+                <a id="motionCaptureDelayDecrease">-</a>
+              </div>
+            </div>
+            <a class="btn" id="motionCaptureReset" data-tooltip="Reset transform"></a>
+            <a class="btn disabled" id="motionCaptureClear" data-tooltip="Clear motion capture frame"></a>
+            <a class="btn disabled" id="motionCaptureCopyData" data-tooltip="Copy motion capture data to clipboard"></a>
+            <a class="btn disabled" id="motionCaptureCopyUrl" data-tooltip="Copy motion capture URL to clipboard"></a>
           </div>
         </div>
-        <div id="animationTooltip"></div>
+        <div id="motionCaptureTooltip"></div>
+        <div id="motionCaptureAlert"></div>
         <div id="zoomOverlay"></div>
         <div id="spinnerDiv">
           <div id="spinner"></div>
@@ -506,11 +518,11 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         observer: "_transformValueChanged"
       },
       /**
-       * Transform animation encoded string.
+       * Motion capture data or URL.
        */
-      transformAnimation: {
+      motionCapture: {
         type: String,
-        observer: "_transformAnimationValueChanged"
+        observer: "_motionCaptureValueChanged"
       },
       /**
        * Enable the zoom rectangle interactor. Only available when `renderer` is `THREEJS`
@@ -577,11 +589,11 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         observer: "_animatedGlyphsEnableChanged"
       },
       /**
-       * Enable animation controls overlay. Only available when `renderer` is `THREEJS`
+       * Enable motion capture controls. Only available when `renderer` is `THREEJS`
        */
-      animationControlsEnable: {
+      motionCaptureControlsEnable: {
         type: Boolean,
-        observer: "_animationControlsEnableChanged"
+        observer: "_motionCaptureControlsEnableChanged"
       }
     }
   }
@@ -992,23 +1004,23 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
             blendedG += (bgCol[1] * (1 - col[3]));
             blendedB += (bgCol[2] * (1 - col[3]));
           }
-          this.$.animationControls.style.color = "var(--avs-animation-controls-color, rgb(" + blendedR + ", " + blendedG + ", " + blendedB + "))";
+          this.$.motionCapture.style.color = "var(--avs-motion-capture-color, rgb(" + blendedR + ", " + blendedG + ", " + blendedB + "))";
           this.$.zoomOverlay.style.color = "var(--avs-zoom-overlay-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
           this.$.tooltip.style.color = "var(--avs-tooltip-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
-          this.$.animationTooltip.style.color = "var(--avs-tooltip-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
+          this.$.motionCaptureTooltip.style.color = "var(--avs-tooltip-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
         }
         if (json.sceneInfo.color) {
           var col = json.sceneInfo.color.match(/[0-9.]+/gi);
-          this.$.animationControls.style.background = "var(--avs-animation-controls-background, rgba(" + col[0] + "," + col[1] + "," + col[2] + ",0.75))";
+          this.$.motionCapture.style.background = "var(--avs-motion-capture-background, rgba(" + col[0] + "," + col[1] + "," + col[2] + ",0.75))";
           this.$.zoomOverlay.style.background = "var(--avs-zoom-overlay-background, rgba(" + col[0] + "," + col[1] + "," + col[2] + ",0.75))";
           this.$.tooltip.style.background = "var(--avs-tooltip-background, rgb(" + col[0] + "," + col[1] + "," + col[2] + "))";
-          this.$.animationTooltip.style.background = "var(--avs-tooltip-background, rgb(" + col[0] + "," + col[1] + "," + col[2] + "))";
+          this.$.motionCaptureTooltip.style.background = "var(--avs-tooltip-background, rgb(" + col[0] + "," + col[1] + "," + col[2] + "))";
         }
         if (json.sceneInfo.fontFamily) {
-          this.$.animationControls.style.fontFamily = "var(--avs-animation-controls-font-family, " + json.sceneInfo.fontFamily + ")";
+          this.$.motionCapture.style.fontFamily = "var(--avs-motion-capture-font-family, " + json.sceneInfo.fontFamily + ")";
           this.$.zoomOverlay.style.fontFamily = "var(--avs-zoom-overlay-font-family, " + json.sceneInfo.fontFamily + ")";
           this.$.tooltip.style.fontFamily = "var(--avs-tooltip-font-family, " + json.sceneInfo.fontFamily + ")";
-          this.$.animationTooltip.style.fontFamily = "var(--avs-tooltip-font-family, " + json.sceneInfo.fontFamily + ")";
+          this.$.motionCaptureTooltip.style.fontFamily = "var(--avs-tooltip-font-family, " + json.sceneInfo.fontFamily + ")";
         }
       }
 
@@ -1550,35 +1562,41 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
           }
         });
 
-        this.$.animationSnapshotIcon.innerHTML = CAMERA;
-        this.$.animationPlay.innerHTML = PLAY;
-        this.$.animationCopy.innerHTML = COPY;
-        this.$.animationReset.innerHTML = RESET;
-        this.$.animationClear.innerHTML = DELETE;
+        this.$.motionCapturePlay.innerHTML = PLAY;
+        this.$.motionCaptureSnapshotIcon.innerHTML = CAMERA;
+        this.$.motionCaptureDelayIcon.innerHTML = TIMELAPSE;
+        this.$.motionCaptureReset.innerHTML = HOME;
+        this.$.motionCaptureClear.innerHTML = DELETE;
+        this.$.motionCaptureCopyData.innerHTML = COPY;
+        this.$.motionCaptureCopyUrl.innerHTML = LINK;
 
-        this.$.animationDelay.addEventListener('change', this._handleAnimationDelayChange.bind(this));
-        this.$.animationSnapshot.addEventListener('click', this._handleAnimationSnapshot.bind(this));
-        this.$.animationPlay.addEventListener('click', this.runAnimation.bind(this));
-        this.$.animationCopy.addEventListener('click', this._handleAnimationCopy.bind(this));
-        this.$.animationReset.addEventListener('click', this.resetTransform.bind(this));
-        this.$.animationClear.addEventListener('click', this._handleAnimationClear.bind(this));
+        this.$.motionCapturePlay.addEventListener('click', this.runAnimation.bind(this));
+        this.$.motionCaptureSnapshot.addEventListener('click', this._handleMotionCaptureSnapshot.bind(this));
+        this.$.motionCaptureDelayIncrease.addEventListener('click', this._handleMotionCaptureDelayIncrease.bind(this));
+        this.$.motionCaptureDelayDecrease.addEventListener('click', this._handleMotionCaptureDelayDecrease.bind(this));
+        this.$.motionCaptureReset.addEventListener('click', this.resetTransform.bind(this));
+        this.$.motionCaptureClear.addEventListener('click', this._handleMotionCaptureClear.bind(this));
+        this.$.motionCaptureCopyData.addEventListener('click', this._handleMotionCaptureCopyData.bind(this));
+        this.$.motionCaptureCopyUrl.addEventListener('click', this._handleMotionCaptureCopyUrl.bind(this));
 
-        this.$.animationDelay.addEventListener('pointermove', this._handlePointerEnterAnimationControl.bind(this));
-        this.$.animationSnapshot.addEventListener('pointermove', this._handlePointerEnterAnimationControl.bind(this));
-        this.$.animationPlay.addEventListener('pointermove', this._handlePointerEnterAnimationControl.bind(this));
-        this.$.animationCopy.addEventListener('pointermove', this._handlePointerEnterAnimationControl.bind(this));
-        this.$.animationReset.addEventListener('pointermove', this._handlePointerEnterAnimationControl.bind(this));
-        this.$.animationClear.addEventListener('pointermove', this._handlePointerEnterAnimationControl.bind(this));
+        this.$.motionCapturePlay.addEventListener('pointermove', this._handlePointerEnterMotionCaptureControl.bind(this));
+        this.$.motionCaptureSnapshot.addEventListener('pointermove', this._handlePointerEnterMotionCaptureControl.bind(this));
+        this.$.motionCaptureDelay.addEventListener('pointermove', this._handlePointerEnterMotionCaptureControl.bind(this));
+        this.$.motionCaptureReset.addEventListener('pointermove', this._handlePointerEnterMotionCaptureControl.bind(this));
+        this.$.motionCaptureClear.addEventListener('pointermove', this._handlePointerEnterMotionCaptureControl.bind(this));
+        this.$.motionCaptureCopyData.addEventListener('pointermove', this._handlePointerEnterMotionCaptureControl.bind(this));
+        this.$.motionCaptureCopyUrl.addEventListener('pointermove', this._handlePointerEnterMotionCaptureControl.bind(this));
 
-        this.$.animationDelay.addEventListener('pointerout', this._handlePointerLeaveAnimationControl.bind(this));
-        this.$.animationSnapshot.addEventListener('pointerout', this._handlePointerLeaveAnimationControl.bind(this));
-        this.$.animationPlay.addEventListener('pointerout', this._handlePointerLeaveAnimationControl.bind(this));
-        this.$.animationCopy.addEventListener('pointerout', this._handlePointerLeaveAnimationControl.bind(this));
-        this.$.animationReset.addEventListener('pointerout', this._handlePointerLeaveAnimationControl.bind(this));
-        this.$.animationClear.addEventListener('pointerout', this._handlePointerLeaveAnimationControl.bind(this));
+        this.$.motionCapturePlay.addEventListener('pointerout', this._handlePointerLeaveMotionCaptureControl.bind(this));
+        this.$.motionCaptureSnapshot.addEventListener('pointerout', this._handlePointerLeaveMotionCaptureControl.bind(this));
+        this.$.motionCaptureDelay.addEventListener('pointerout', this._handlePointerLeaveMotionCaptureControl.bind(this));
+        this.$.motionCaptureReset.addEventListener('pointerout', this._handlePointerLeaveMotionCaptureControl.bind(this));
+        this.$.motionCaptureClear.addEventListener('pointerout', this._handlePointerLeaveMotionCaptureControl.bind(this));
+        this.$.motionCaptureCopyData.addEventListener('pointerout', this._handlePointerLeaveMotionCaptureControl.bind(this));
+        this.$.motionCaptureCopyUrl.addEventListener('pointerout', this._handlePointerLeaveMotionCaptureControl.bind(this));
 
-        this.animationTime = 0;
-        this.transformAnimationFrames ??= [];
+        this.motionCaptureTime = 0;
+        this.motionCaptureFrames ??= [];
 
 		    this._resetTimer();
 
@@ -1587,47 +1605,34 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
     }); 
   }
 
-  _handlePointerEnterAnimationControl(e) {
-    if (!this.showAnimationTooltip) {
+  _handlePointerEnterMotionCaptureControl(e) {
+    if (!this.showMotionCaptureTooltip) {
       var adjustedCoords = this._getAdjustedCoords(e.clientX, e.clientY);
       var pos = this._calcTooltipPosition(adjustedCoords.x, adjustedCoords.y);
-      this.$.animationTooltip.style.left = pos.x + "px";
-      this.$.animationTooltip.style.top = pos.y + "px";
-      this.$.animationTooltip.style.opacity = 1;
-      this.$.animationTooltip.innerHTML = e.currentTarget.dataset.tooltip ?? e.currentTarget.id;
-      this.showAnimationTooltip = true;
+      this.$.motionCaptureTooltip.style.left = pos.x + "px";
+      this.$.motionCaptureTooltip.style.top = pos.y + "px";
+      this.$.motionCaptureTooltip.style.opacity = 1;
+      this.$.motionCaptureTooltip.innerHTML = e.currentTarget.dataset.tooltip ?? e.currentTarget.id;
+      this.showMotionCaptureTooltip = true;
     }
   }
 
-  _handlePointerLeaveAnimationControl() {
-    this.$.animationTooltip.style.opacity = 0;
-    this.showAnimationTooltip = false;
+  _handlePointerLeaveMotionCaptureControl() {
+    this.$.motionCaptureTooltip.style.opacity = 0;
+    this.showMotionCaptureTooltip = false;
   }
 
   _round2dp(n) {
     return Math.round((n + Number.EPSILON) * 100) / 100;
   }
 
-  _handleAnimationDelayChange() {
-    let delay = Number(this.$.animationDelay.value);
-    if (delay < 1) {
-      delay = 1;
-      this.$.animationDelay.value = delay;
-    }
-    if (delay > 10) {
-      delay = 10;
-      this.$.animationDelay.value = delay;
-    }
-  }
-
-  _handleAnimationSnapshot() {
+  _handleMotionCaptureSnapshot() {
     const transform = this._getTransformComponents();
-    const delay = Number(this.$.animationDelay.value);
-    if (this.transformAnimationFrames.length > 0) {
-      this.animationTime += delay;
+    if (this.motionCaptureFrames.length > 0) {
+      this.motionCaptureTime += this.motionCaptureDelay;
     }
     const frame = {
-      time: this.animationTime * 1000,
+      time: this.motionCaptureTime * 1000,
       scale: this._round2dp(transform.scale),
       position: [this._round2dp(transform.position[0]),
                  this._round2dp(transform.position[1]),
@@ -1637,40 +1642,65 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
                  this._round2dp(transform.rotation[2]),
                  transform.rotation[3]]
     };
-    this.transformAnimationFrames.push(frame);
+    this.motionCaptureFrames.push(frame);
 
-    if (this.transformAnimationFrames.length == 1) {
-      this.$.animationDelay.value = 2;
-      this.$.animationDelay.disabled = false;
-      this.$.animationPlay.classList.remove("disabled");
-      this.$.animationCopy.classList.remove("disabled");
-      this.$.animationClear.classList.remove("disabled");
+    if (this.motionCaptureFrames.length == 1) {
+      this.$.motionCapturePlay.classList.remove("disabled");
+      this.$.motionCaptureDelay.classList.remove("disabled");
+      this.$.motionCaptureDelayLabel.innerText = "2";
+      this.$.motionCaptureClear.classList.remove("disabled");
+      this.$.motionCaptureCopyData.classList.remove("disabled");
+      this.$.motionCaptureCopyUrl.classList.remove("disabled");
+      this.motionCaptureDelay = 2;
     }
-    this.$.animationSnapshotLabel.innerHTML = this.transformAnimationFrames.length;
+    this.$.motionCaptureSnapshotLabel.innerText = this.motionCaptureFrames.length;
   }
 
-  _handleAnimationClear() {
-    this.transformAnimationFrames.length = 0;
-    this.$.animationDelay.value = 0;
-    this.$.animationDelay.disabled = true;
-    this.$.animationSnapshotLabel.innerHTML = "0";
-    this.$.animationPlay.classList.add("disabled");
-    this.$.animationCopy.classList.add("disabled");
-    this.$.animationClear.classList.add("disabled");
-    this.animationTime = 0;
+  _handleMotionCaptureDelayIncrease() {
+    this.motionCaptureDelay++;
+    if (this.motionCaptureDelay > 9) {
+      this.motionCaptureDelay = 9;
+    }
+    this.$.motionCaptureDelayLabel.innerText = this.motionCaptureDelay;
   }
 
-  async _handleAnimationCopy() {
+  _handleMotionCaptureDelayDecrease() {
+    this.motionCaptureDelay--;
+    if (this.motionCaptureDelay < 1) {
+      this.motionCaptureDelay = 1;
+    }
+    this.$.motionCaptureDelayLabel.innerText = this.motionCaptureDelay;
+  }
+
+  _handleMotionCaptureCopyData() {
+    // Convert to JSON and copy to clipboard
+    const data = JSON.stringify(this.motionCaptureFrames);
+    navigator.clipboard.writeText(data);
+
+    // Show alert
+    this.$.motionCaptureAlert.innerText = "Motion capture data copied to clipboard";
+    this.$.motionCaptureAlert.style.opacity = 1;
+    setTimeout(function () {
+      this.$.motionCaptureAlert.style.opacity = 0;
+    }.bind(this), 2000);
+  }
+
+  async _handleMotionCaptureCopyUrl() {
     // Convert to JSON, compress and base64url encode
-    const json = JSON.stringify(this.transformAnimationFrames);
+    const json = JSON.stringify(this.motionCaptureFrames);
     const compressed = await this._compress(json);
     const encoded = compressed.toBase64().replace('/', '_').replace('+', '-');
 
-    /**
-     * A transform animation share event occurred.
-     * @event avs-transform-animation-share
-     */
-    this.dispatchEvent(new CustomEvent('avs-transform-animation-share', { detail: encoded }));
+    // Create URL and copy to clipboard
+    const url = window.location.origin + window.location.pathname + "?motionCapture=" + encoded;
+    navigator.clipboard.writeText(url);
+
+    // Show alert
+    this.$.motionCaptureAlert.innerText = "Motion capture URL copied to clipboard";
+    this.$.motionCaptureAlert.style.opacity = 1;
+    setTimeout(function () {
+      this.$.motionCaptureAlert.style.opacity = 0;
+    }.bind(this), 2000);
   }
 
   /**
@@ -1734,6 +1764,19 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
     return new Uint8Array(buffer);
   }
 
+  _handleMotionCaptureClear() {
+    this.motionCaptureFrames.length = 0;
+    this.$.motionCapturePlay.classList.add("disabled");
+    this.$.motionCaptureSnapshotLabel.innerText = "0";
+    this.$.motionCaptureDelay.classList.add("disabled");
+    this.$.motionCaptureDelayLabel.innerText = "0";
+    this.$.motionCaptureClear.classList.add("disabled");
+    this.$.motionCaptureCopyData.classList.add("disabled");
+    this.$.motionCaptureCopyUrl.classList.add("disabled");
+    this.motionCaptureDelay = 0;
+    this.motionCaptureTime = 0;
+  }
+
   _updatePixelRatio(change) {
     const pr = window.devicePixelRatio;
     matchMedia( `(resolution: ${pr}dppx)` ).addEventListener('change', this._updatePixelRatio.bind(this, true), { once: true } );
@@ -1743,14 +1786,14 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
   }
 
   /**
-   * Change in 'animation-controls-enable' property.
+   * Change in 'motion-capture-controls-enable' property.
    */
-  _animationControlsEnableChanged(newValue, oldValue) {
+  _motionCaptureControlsEnableChanged(newValue, oldValue) {
     if (newValue) {
-      this.$.animationControls.style.display = "block";
+      this.$.motionCapture.style.display = "block";
     }
     else {
-      this.$.animationControls.style.display = "none";
+      this.$.motionCapture.style.display = "none";
     }
   }
 
@@ -1913,7 +1956,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
           "legendTitle": "--avs-legend-title-animations",
           "glyph": "--avs-glyph-animations"
         });
-      styleMap.transform = this.transformAnimationFrames.length > 0 ? JSON.stringify(this.transformAnimationFrames) : null;
+      styleMap.transform = this.motionCaptureFrames.length > 0 ? JSON.stringify(this.motionCaptureFrames) : null;
 
       this.animator.setStyleMap(styleMap);
 	    this.threeViewer.runAnimation();
@@ -1963,36 +2006,46 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
   }
 
   /**
-   * Change in 'transform-animation' property.
+   * Change in 'motion-capture' property.
    */
-  async _transformAnimationValueChanged(newValue, oldValue) {
+  async _motionCaptureValueChanged(newValue, oldValue) {
     if (newValue) {
-      // Decode from base64url, decompress and parse JSON
-      const decoded = Uint8Array.fromBase64(newValue.replaceAll('_', '/').replaceAll('-', '+'));
-      const decompressed = await this._decompress(decoded);
-      this.transformAnimationFrames = JSON.parse(decompressed);
-
-      if (!this.transformAnimationFrames) {
-        this.transformAnimationFrame = [];
+      // Try parsing JSON first
+      try {
+        this.motionCaptureFrames = JSON.parse(newValue);
+      }
+      catch {
+        // Decode from base64url, decompress and parse JSON
+        const decoded = Uint8Array.fromBase64(newValue.replaceAll('_', '/').replaceAll('-', '+'));
+        const decompressed = await this._decompress(decoded);
+        this.motionCaptureFrames = JSON.parse(decompressed);
       }
 
-      if (this.transformAnimationFrames.length > 0) {
-        this.$.animationDelay.value = 2;
-        this.$.animationDelay.disabled = false;
-        this.$.animationSnapshotLabel.innerHTML = this.transformAnimationFrames.length;
-        this.$.animationPlay.classList.remove("disabled");
-        this.$.animationCopy.classList.remove("disabled");
-        this.$.animationClear.classList.remove("disabled");
-        this.animationTime = this.transformAnimationFrames[this.transformAnimationFrames.length - 1].time / 1000;
+      if (!this.motionCaptureFrames) {
+        this.motionCaptureFrames = [];
+      }
+
+      if (this.motionCaptureFrames.length > 0) {
+        this.$.motionCapturePlay.classList.remove("disabled");
+        this.$.motionCaptureSnapshotLabel.innerText = this.motionCaptureFrames.length;
+        this.$.motionCaptureDelay.classList.remove("disabled");
+        this.$.motionCaptureDelayLabel.innerText = "2";
+        this.$.motionCaptureClear.classList.remove("disabled");
+        this.$.motionCaptureCopyData.classList.remove("disabled");
+        this.$.motionCaptureCopyUrl.classList.remove("disabled");
+        this.motionCaptureDelay = 2;
+        this.motionCaptureTime = this.motionCaptureFrames[this.motionCaptureFrames.length - 1].time / 1000;
       }
       else {
-        this.$.animationDelay.value = 0;
-        this.$.animationDelay.disabled = true;
-        this.$.animationSnapshotLabel.innerHTML = "0";
-        this.$.animationPlay.classList.add("disabled");
-        this.$.animationCopy.classList.add("disabled");
-        this.$.animationClear.classList.add("disabled");
-        this.animationTime = 0;
+        this.$.motionCapturePlay.classList.add("disabled");
+        this.$.motionCaptureSnapshotLabel.innerText = "0";
+        this.$.motionCaptureDelay.classList.add("disabled");
+        this.$.motionCaptureDelayLabel.innerText = "0";
+        this.$.motionCaptureClear.classList.add("disabled");
+        this.$.motionCaptureCopyData.classList.add("disabled");
+        this.$.motionCaptureCopyUrl.classList.add("disabled");
+        this.motionCaptureDelay = 0;
+        this.motionCaptureTime = 0;
       }
     }
   }
