@@ -22,6 +22,7 @@ import { forwardRef, useRef, useEffect, useImperativeHandle } from 'react';
 import { AvsGoDataViz as AvsGoDataVizPolymer } from '@avs/go/src/avs-go-dataviz';
 
 export const AvsGoDataViz = forwardRef(({
+  children,
   style,
   manualUpdate,
   displayCanvas,
@@ -99,49 +100,49 @@ export const AvsGoDataViz = forwardRef(({
 
     function handleTap(e) {
       if (onTap) {
-        onTap(e.detail);
+        onTap(e);
       }
     }
 
     function handleTrack(e) {
       if (onTrack) {
-        onTrack(e.detail);
+        onTrack(e);
       }
     }
 
     function handleHover(e) {
       if (onHover) {
-        onHover(e.detail);
+        onHover(e);
       }
     }
 
     function handleSceneInfo(e) {
       if (onSceneInfo) {
-        onSceneInfo(e.detail);
+        onSceneInfo(e);
       }
     }
 
     function handleLoadComplete(e) {
       if (onLoadComplete) {
-        onLoadComplete();
+        onLoadComplete(e);
       }
     }
 
     function handlePanInfo(e) {
       if (onPanInfo) {
-        onPanInfo(e.detail);
+        onPanInfo(e);
       }
     }
 
     function handleTransformAnimationShare(e) {
       if (onTransformAnimationShare) {
-        onTransformAnimationShare(e.detail);
+        onTransformAnimationShare(e);
       }
     }
 
     function handleError(e) {
       if (onError) {
-        onError(e.detail);
+        onError(e);
       }
     }
 
@@ -267,7 +268,8 @@ export const AvsGoDataViz = forwardRef(({
       animated-glyphs-visible={animatedGlyphsVisible}
       animated-glyphs-enable={animatedGlyphsEnable}
       animation-controls-enable={animationControlsEnable}
-	  >
-	  </avs-go-dataviz>
+    >
+      {children}
+	</avs-go-dataviz>
   );
 });

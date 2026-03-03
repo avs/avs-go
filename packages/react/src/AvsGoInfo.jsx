@@ -40,13 +40,13 @@ export const AvsGoInfo = forwardRef(({
 
     function handleInfo(e) {
       if (onInfo) {
-        onInfo(e.detail);
+        onInfo(e);
       }
     }
 
     function handleError(e) {
       if (onError) {
-        onError(e.detail);
+        onError(e);
       }
     }
 

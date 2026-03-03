@@ -27,7 +27,7 @@ import {Viewer, TransformInteractor, PanInteractor, ZoomRectangleInteractor, Pic
 import {AvsHttpMixin} from './avs-http-mixin.js';
 import {AvsStreamMixin} from './avs-stream-mixin.js';
 import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
-import {LOGO} from './logo.js';
+import {LOGO, CAMERA, PLAY, COPY, RESET, DELETE} from './logo.js';
 import {Euler, Vector3, Quaternion} from 'three';
 
 /**
@@ -82,30 +82,58 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
           left: 8px;
           padding: 8px;
           background-color: rgba(128, 128, 128, 0.8);
-          color: white;
           font-size: 10pt;
           border-radius: 8px;
-        }
-        button {
-          padding: 4px 8px;
-          border-radius: 4px;
-          margin-top: 4px;
-        }
-        button:not([disabled]) {
-          cursor: pointer;
+          background:var(--avs-animation-controls-background, rgba(80,80,80,0.75));
+          color:var(--avs-animation-controls-color, #ffffff);
+          font-family:var(--avs-animation-controls-font-family);
+          box-shadow: 0px 5px 5px -3px rgba(0, 0, 0, 0.2), 0px 8px 10px 1px rgba(0, 0, 0, 0.14), 0px 3px 14px 2px rgba(0, 0, 0, 0.12);
         }
         #animationControlsTitle {
-          font-weight: bold;
           margin-bottom: 8px;
+          font-weight: 700;
         }
-        #animationDelay:not([disabled]) {
+        .btn {
+          padding: 4px;
+          border-radius: 4px;
+          margin: 4px;
+          background:var(--avs-animation-controls-button-background, white);
+          color:var(--avs-animation-controls-button-color, black);
+          display: inline-flex;
+          align-items: center;
+          box-shadow: 0 2px 2px #00000024,0 3px 1px -2px #0000001f,0 1px 5px #0003;
           cursor: pointer;
+          user-select: none;
         }
-        #animationPlay {
-          margin-top: 12px;
+        .btn.disabled {
+          cursor: default;
+          pointer-events: none;
+          box-shadow: none;
+          background-color: darkgrey;
+          color: grey;
         }
-        #animationReset {
-          margin-top: 12px;
+        #animationDelay {
+          width: 30px;
+          height: 29px;
+          background:var(--avs-animation-controls-button-background, white);
+          color:var(--avs-animation-controls-button-color, black);
+          border-width: 0;
+          border-radius: 4px;
+          box-shadow: 0 2px 2px #00000024,0 3px 1px -2px #0000001f,0 1px 5px #0003;
+          margin: 4px;
+        }
+        #animationDelay:disabled {
+          pointer-events: none;
+          box-shadow: none;
+          background-color: darkgrey;
+          color: grey;
+        }
+        #animationSnapshotIcon {
+          height: 24px;
+        }
+        #animationSnapshotLabel {
+          margin-left: 4px;
+          height: 16px;
         }
         #sceneImage {
           width:100%;
@@ -133,7 +161,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
           font-weight:var(--avs-zoom-overlay-font-weight, bold);
           font-style:var(--avs-zoom-overlay-font-style);
         }
-        #tooltip {
+        #tooltip, #animationTooltip {
           position:absolute;
           opacity:0;
           transition:opacity ease 0.3s;
@@ -174,26 +202,23 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         <div id="dataVizDiv"></div>
         <div id="animationControls">
           <div id="animationControlsTitle">Animation Controls</div>
-          <div id="animationDelayLabel">Snapshot Delay (0s)</div>
-          <div>
-            <input type="range" disabled min="0" max="5" value="0" class="slider" id="animationDelay">
+          <div style="display: flex; justify-content: center">
+            <input type="number" disabled min="1" max="10" value="0" step="1" id="animationDelay" data-tooltip="Frame delay (seconds)">
+            <a class="btn" id="animationSnapshot" data-tooltip="Take snapshot">
+              <div id="animationSnapshotIcon"></div>
+              <div id="animationSnapshotLabel">0</div>
+            </a>
           </div>
-          <div>
-            <button type="button" id="animationSnapshot">Take Snapshot (0)</button>
+          <div style="display: flex; justify-content: center">
+            <a class="btn disabled" id="animationPlay" data-tooltip="Play animation"></a>
+            <a class="btn disabled" id="animationCopy" data-tooltip="Copy animation URL to clipboard"></a>
           </div>
-          <div>
-            <button type="button" disabled id="animationPlay">Play Animation</button>
-          </div>
-          <div>
-            <button type="button" disabled id="animationShare">Share Animation</button>
-          </div>
-          <div>
-            <button type="button" id="animationReset">Reset Transform</button>
-          </div>
-          <div>
-            <button type="button" disabled id="animationClear">Clear Animation</button>
+          <div style="display: flex; justify-content: center">
+            <a class="btn" id="animationReset" data-tooltip="Reset transform"></a>
+            <a class="btn disabled" id="animationClear" data-tooltip="Clear animation"></a>
           </div>
         </div>
+        <div id="animationTooltip"></div>
         <div id="zoomOverlay"></div>
         <div id="spinnerDiv">
           <div id="spinner"></div>
@@ -954,30 +979,36 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
          */
         this.dispatchEvent(new CustomEvent('avs-scene-info', sceneEvent));
 
-        // Set tooltip and zoom overlay style to reversed theme
+        // Set animation controls, tooltip and zoom overlay style to reversed theme
         if (json.sceneInfo.backgroundColor) {
           var col = json.sceneInfo.backgroundColor.match(/[0-9.]+/gi);
-          var bgCol = window.getComputedStyle(this.parentNode, null).getPropertyValue("background-color").trim().match(/[0-9.]+/gi);
+          var bgCol = this.getInheritedBackgroundCol(this.parentNode).trim().match(/[0-9.]+/gi);
           var blendedR = (col[0] * col[3]);
           var blendedG = (col[1] * col[3]);
           var blendedB = (col[2] * col[3]);
-		  if (bgCol) {
-            // In case sceneInfo.backgroundColor is transparent, blend with our parent's background color
+		      if (col[3] == 0) {
+            // In case sceneInfo.backgroundColor is transparent, blend with inherited background color
             blendedR += (bgCol[0] * (1 - col[3]));
             blendedG += (bgCol[1] * (1 - col[3]));
             blendedB += (bgCol[2] * (1 - col[3]));
-		  }
+          }
+          this.$.animationControls.style.color = "var(--avs-animation-controls-color, rgb(" + blendedR + ", " + blendedG + ", " + blendedB + "))";
           this.$.zoomOverlay.style.color = "var(--avs-zoom-overlay-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
           this.$.tooltip.style.color = "var(--avs-tooltip-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
+          this.$.animationTooltip.style.color = "var(--avs-tooltip-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
         }
         if (json.sceneInfo.color) {
           var col = json.sceneInfo.color.match(/[0-9.]+/gi);
-          this.$.zoomOverlay.style.background = "var(--avs-zoom-overlay-background, rgba(" + col[0] + "," + col[1] + "," + col[2] + "))";
+          this.$.animationControls.style.background = "var(--avs-animation-controls-background, rgba(" + col[0] + "," + col[1] + "," + col[2] + ",0.75))";
+          this.$.zoomOverlay.style.background = "var(--avs-zoom-overlay-background, rgba(" + col[0] + "," + col[1] + "," + col[2] + ",0.75))";
           this.$.tooltip.style.background = "var(--avs-tooltip-background, rgb(" + col[0] + "," + col[1] + "," + col[2] + "))";
+          this.$.animationTooltip.style.background = "var(--avs-tooltip-background, rgb(" + col[0] + "," + col[1] + "," + col[2] + "))";
         }
         if (json.sceneInfo.fontFamily) {
+          this.$.animationControls.style.fontFamily = "var(--avs-animation-controls-font-family, " + json.sceneInfo.fontFamily + ")";
           this.$.zoomOverlay.style.fontFamily = "var(--avs-zoom-overlay-font-family, " + json.sceneInfo.fontFamily + ")";
           this.$.tooltip.style.fontFamily = "var(--avs-tooltip-font-family, " + json.sceneInfo.fontFamily + ")";
+          this.$.animationTooltip.style.fontFamily = "var(--avs-tooltip-font-family, " + json.sceneInfo.fontFamily + ")";
         }
       }
 
@@ -1039,6 +1070,30 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         this._handleLoadComplete();
       }
     }
+  }
+
+  getInheritedBackgroundCol(el) {
+    var defaultStyle = this.getDefaultBackground();
+
+    var bgCol = window.getComputedStyle(el).backgroundColor;
+    if (bgCol != defaultStyle) {
+      return bgCol;
+    }
+
+    if (!el.parentElement) {
+      return defaultStyle;
+    }
+
+    return this.getInheritedBackgroundCol(el.parentElement);
+  }
+
+  getDefaultBackground() {
+    // have to add to the document in order to use getComputedStyle
+    var div = document.createElement("div");
+    document.head.appendChild(div);
+    var bg = window.getComputedStyle(div).backgroundColor;
+    document.head.removeChild(div);
+    return bg;
   }
 
   /**
@@ -1495,23 +1550,42 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
           }
         });
 
-        this.$.animationDelay.addEventListener('input', this._handleAnimationDelayChange.bind(this));
+        this.$.animationSnapshotIcon.innerHTML = CAMERA;
+        this.$.animationPlay.innerHTML = PLAY;
+        this.$.animationCopy.innerHTML = COPY;
+        this.$.animationReset.innerHTML = RESET;
+        this.$.animationClear.innerHTML = DELETE;
+
+        this.$.animationDelay.addEventListener('change', this._handleAnimationDelayChange.bind(this));
         this.$.animationSnapshot.addEventListener('click', this._handleAnimationSnapshot.bind(this));
         this.$.animationPlay.addEventListener('click', this.runAnimation.bind(this));
-        this.$.animationShare.addEventListener('click', this._handleAnimationShare.bind(this));
+        this.$.animationCopy.addEventListener('click', this._handleAnimationCopy.bind(this));
         this.$.animationReset.addEventListener('click', this.resetTransform.bind(this));
         this.$.animationClear.addEventListener('click', this._handleAnimationClear.bind(this));
+
+        this.$.animationDelay.addEventListener('pointermove', this._handlePointerEnterAnimationControl.bind(this));
+        this.$.animationSnapshot.addEventListener('pointermove', this._handlePointerEnterAnimationControl.bind(this));
+        this.$.animationPlay.addEventListener('pointermove', this._handlePointerEnterAnimationControl.bind(this));
+        this.$.animationCopy.addEventListener('pointermove', this._handlePointerEnterAnimationControl.bind(this));
+        this.$.animationReset.addEventListener('pointermove', this._handlePointerEnterAnimationControl.bind(this));
+        this.$.animationClear.addEventListener('pointermove', this._handlePointerEnterAnimationControl.bind(this));
+
+        this.$.animationDelay.addEventListener('pointerout', this._handlePointerLeaveAnimationControl.bind(this));
+        this.$.animationSnapshot.addEventListener('pointerout', this._handlePointerLeaveAnimationControl.bind(this));
+        this.$.animationPlay.addEventListener('pointerout', this._handlePointerLeaveAnimationControl.bind(this));
+        this.$.animationCopy.addEventListener('pointerout', this._handlePointerLeaveAnimationControl.bind(this));
+        this.$.animationReset.addEventListener('pointerout', this._handlePointerLeaveAnimationControl.bind(this));
+        this.$.animationClear.addEventListener('pointerout', this._handlePointerLeaveAnimationControl.bind(this));
 
         this.animationTime = 0;
         this.transformAnimationFrames ??= [];
         if (this.transformAnimationFrames.length > 0) {
-          this.$.animationDelayLabel.innerHTML = "Snapshot Delay (2s)";
           this.$.animationDelay.value = 2;
           this.$.animationDelay.disabled = false;
-          this.$.animationSnapshot.innerHTML = "Take Snapshot (" + this.transformAnimationFrames.length + ")";
-          this.$.animationPlay.disabled = false;
-          this.$.animationShare.disabled = false;
-          this.$.animationClear.disabled = false;
+          this.$.animationSnapshotLabel.innerHTML = this.transformAnimationFrames.length;
+          this.$.animationPlay.classList.remove("disabled");
+          this.$.animationCopy.classList.remove("disabled");
+          this.$.animationClear.classList.remove("disabled");
           this.animationTime = this.transformAnimationFrames[this.transformAnimationFrames.length - 1].time / 1000;
         }
 
@@ -1522,13 +1596,37 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
     }); 
   }
 
+  _handlePointerEnterAnimationControl(e) {
+    if (!this.showAnimationTooltip) {
+      var adjustedCoords = this._getAdjustedCoords(e.clientX, e.clientY);
+      var pos = this._calcTooltipPosition(adjustedCoords.x, adjustedCoords.y);
+      this.$.animationTooltip.style.left = pos.x + "px";
+      this.$.animationTooltip.style.top = pos.y + "px";
+      this.$.animationTooltip.style.opacity = 1;
+      this.$.animationTooltip.innerHTML = e.currentTarget.dataset.tooltip ?? e.currentTarget.id;
+      this.showAnimationTooltip = true;
+    }
+  }
+
+  _handlePointerLeaveAnimationControl() {
+    this.$.animationTooltip.style.opacity = 0;
+    this.showAnimationTooltip = false;
+  }
+
   _round2dp(n) {
     return Math.round((n + Number.EPSILON) * 100) / 100;
   }
 
   _handleAnimationDelayChange() {
-    const delay = this.$.animationDelay.value;
-    this.$.animationDelayLabel.innerHTML = "Snapshot Delay (" + delay + "s)";
+    let delay = Number(this.$.animationDelay.value);
+    if (delay < 1) {
+      delay = 1;
+      this.$.animationDelay.value = delay;
+    }
+    if (delay > 10) {
+      delay = 10;
+      this.$.animationDelay.value = delay;
+    }
   }
 
   _handleAnimationSnapshot() {
@@ -1551,29 +1649,27 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
     this.transformAnimationFrames.push(frame);
 
     if (this.transformAnimationFrames.length == 1) {
-      this.$.animationDelayLabel.innerHTML = "Snapshot Delay (2s)";
       this.$.animationDelay.value = 2;
       this.$.animationDelay.disabled = false;
-      this.$.animationPlay.disabled = false;
-      this.$.animationShare.disabled = false;
-      this.$.animationClear.disabled = false;
+      this.$.animationPlay.classList.remove("disabled");
+      this.$.animationCopy.classList.remove("disabled");
+      this.$.animationClear.classList.remove("disabled");
     }
-    this.$.animationSnapshot.innerHTML = "Take Snapshot (" + this.transformAnimationFrames.length + ")";
+    this.$.animationSnapshotLabel.innerHTML = this.transformAnimationFrames.length;
   }
 
   _handleAnimationClear() {
     this.transformAnimationFrames.length = 0;
-    this.$.animationDelayLabel.innerHTML = "Snapshot Delay (0s)";
     this.$.animationDelay.value = 0;
     this.$.animationDelay.disabled = true;
-    this.$.animationSnapshot.innerHTML = "Take Snapshot (0)";
-    this.$.animationPlay.disabled = true;
-    this.$.animationShare.disabled = true;
-    this.$.animationClear.disabled = true;
+    this.$.animationSnapshotLabel.innerHTML = "0";
+    this.$.animationPlay.classList.add("disabled");
+    this.$.animationCopy.classList.add("disabled");
+    this.$.animationClear.classList.add("disabled");
     this.animationTime = 0;
   }
 
-  _handleAnimationShare() {
+  _handleAnimationCopy() {
     const json = JSON.stringify(this.transformAnimationFrames);
     const encoded = btoa(json);
 
