@@ -224,7 +224,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
               </div>
             </div>
             <a class="btn" id="motionCaptureReset" data-tooltip="Reset transform"></a>
-            <a class="btn disabled" id="motionCaptureClear" data-tooltip="Clear motion capture frame"></a>
+            <a class="btn disabled" id="motionCaptureClear" data-tooltip="Clear motion capture frames"></a>
             <a class="btn disabled" id="motionCaptureCopyData" data-tooltip="Copy motion capture data to clipboard"></a>
             <a class="btn disabled" id="motionCaptureCopyUrl" data-tooltip="Copy motion capture URL to clipboard"></a>
           </div>
@@ -1689,7 +1689,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
     // Convert to JSON, compress and base64url encode
     const json = JSON.stringify(this.motionCaptureFrames);
     const compressed = await this._compress(json);
-    const encoded = compressed.toBase64().replace('/', '_').replace('+', '-');
+    const encoded = compressed.toBase64().replaceAll('/', '_').replaceAll('+', '-');
 
     // Create URL and copy to clipboard
     const url = window.location.origin + window.location.pathname + "?motionCapture=" + encoded;

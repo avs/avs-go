@@ -74,7 +74,7 @@ export const AvsGoDataViz = forwardRef(({
   transformTwistAngle,
   transformTiltAngle,
   transformScale,
-  transformAnimation,
+  motionCapture,
   zoomRectangleEnable,
   panEnable,
   panZoomEnable,
@@ -83,11 +83,10 @@ export const AvsGoDataViz = forwardRef(({
   panMaximumZoomLevel,
   animatedGlyphsVisible,
   animatedGlyphsEnable,
-  animationControlsEnable,
+  motionCaptureControlsEnable,
   onSceneInfo,
   onLoadComplete,
   onPanInfo,
-  onTransformAnimationShare,
   onError
 }, ref) => {
 
@@ -134,12 +133,6 @@ export const AvsGoDataViz = forwardRef(({
       }
     }
 
-    function handleTransformAnimationShare(e) {
-      if (onTransformAnimationShare) {
-        onTransformAnimationShare(e);
-      }
-    }
-
     function handleError(e) {
       if (onError) {
         onError(e);
@@ -152,7 +145,6 @@ export const AvsGoDataViz = forwardRef(({
     dataVizRef.current.addEventListener('avs-scene-info', handleSceneInfo);
     dataVizRef.current.addEventListener('avs-load-complete', handleLoadComplete);
     dataVizRef.current.addEventListener('avs-pan-info', handlePanInfo);
-    dataVizRef.current.addEventListener('avs-transform-animation-share', handleTransformAnimationShare);
     dataVizRef.current.addEventListener('avs-error', handleError);
 
     return () => {
@@ -163,7 +155,6 @@ export const AvsGoDataViz = forwardRef(({
         dataVizRef.current.removeEventListener('avs-scene-info', handleSceneInfo);
         dataVizRef.current.removeEventListener('avs-load-complete', handleLoadComplete);
         dataVizRef.current.removeEventListener('avs-pan-info', handlePanInfo);
-        dataVizRef.current.removeEventListener('avs-transform-animation-share', handleTransformAnimationShare);
         dataVizRef.current.removeEventListener('avs-error', handleError);
       }
     }
@@ -258,7 +249,7 @@ export const AvsGoDataViz = forwardRef(({
       transform-twist-angle={transformTwistAngle}
       transform-tilt-angle={transformTiltAngle}
       transform-scale={transformScale}
-      transformAnimation={transformAnimation}
+      motion-capture={motionCapture}
       zoom-reactangle-enable={zoomRectangleEnable}
       pan-enable={panEnable}
       pan-zoom-enable={panZoomEnable}
@@ -267,7 +258,7 @@ export const AvsGoDataViz = forwardRef(({
       pan-maximum-zoom-level={panMaximumZoomLevel}
       animated-glyphs-visible={animatedGlyphsVisible}
       animated-glyphs-enable={animatedGlyphsEnable}
-      animation-controls-enable={animationControlsEnable}
+      motion-capture-controls-enable={motionCaptureControlsEnable}
     >
       {children}
 	</avs-go-dataviz>
