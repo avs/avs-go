@@ -610,7 +610,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
    * Assemble the model from our properties to send to the server.
    */
   _assembleModel(fullReset) {
-    if (this.sceneName === undefined) {
+    if (!this.sceneName) {
       this._logError( JSON.stringify( {"GoType":1, "error":"\'scene-name\' property must be set to the name of the scene registered in the library map on the server."} ) );
       return undefined;
     }
@@ -619,29 +619,29 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
 
     // Scene Properties
     var sceneProperties = {name:this.sceneName};
-    if (this.sceneUserProperties !== undefined) {
+    if (this.sceneUserProperties) {
       sceneProperties.userProperties = this.sceneUserProperties;
     }
     model.sceneProperties = sceneProperties;
 
     // Renderer Properties
     var rendererProperties = {width:this.width, height:this.height, name:this.rendererName, type:this.renderer};
-    if (this.rendererUserProperties !== undefined) {
+    if (this.rendererUserProperties) {
       rendererProperties.userProperties = this.rendererUserProperties;
     }
     model.rendererProperties = rendererProperties;
 
     // Transform Properties
-    if (this.transformInteractor !== undefined) {
+    if (this.transformInteractor) {
       // Update the local transform matrix from the transform interactor, we may have transformed since the last request
       this.transformMatrix = this.transformInteractor.object.matrix.elements.slice();
       this.transformClientOnly = this.transformInteractor.clientOnly;
     }
-    if (this.transformMatrix !== undefined && !this.transformClientOnly) {
+    if (this.transformMatrix && !this.transformClientOnly) {
       rendererProperties.transformMatrix = this.transformMatrix;
     }
-    if (fullReset !== undefined) {
-      if (this.transformClientOnly && this.transformInteractor !== undefined) {
+    if (fullReset) {
+      if (this.transformClientOnly && this.transformInteractor) {
         this.transformInteractor.fullReset = fullReset;
       }
       else {
@@ -928,9 +928,9 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this));
       }
       else {
-        var model = this._assembleModel(fullReset);
-        if (model !== undefined) {
-          this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
+        this.model = this._assembleModel(fullReset);
+        if (this.model) {
+          this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), this.model);
         }
       }
     }
@@ -1044,14 +1044,27 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
           this.sceneImageMap.innerHTML = "";
           this.imageMapData = undefined;
         }
-		
+        
+        if (!this.urlLoadJsonFile) {
+          this._dispatchSceneData(json);
+        }
+
 		this._handleLoadComplete();
 	  }
 	  else if (json.svg) {
 	    this.svgDiv.innerHTML = decodeURIComponent(json.svg.replace(/\+/g, '%20'));
+        
+        if (!this.urlLoadJsonFile) {
+          this._dispatchSceneData(json);
+        }
+
 		this._handleLoadComplete();
 	  }
       else if (json.threejs) {
+        if (!this.urlLoadJsonFile) {
+          this._dispatchSceneData(json);
+        }
+
         if (json.threejs.chunkId) {
           this.threeViewer.loadGeometryAsEvents(json.threejs, this._handleLoadComplete.bind(this));
 
@@ -1065,11 +1078,8 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
             }
             else {
               // Get the next chunk from the server
-              var model = this._assembleModel();
-              if (model) {
-                model.rendererProperties.streamProperties.chunkId = json.threejs.chunkId;
-                this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
-              }
+              this.model.rendererProperties.streamProperties.chunkId = json.threejs.chunkId;
+              this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), this.model);
             }
           }
         }
@@ -1121,6 +1131,19 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
      * @event avs-load-complete
      */
     this.dispatchEvent(new CustomEvent('avs-load-complete'));
+  }
+
+  /**
+   * 
+   */
+  _dispatchSceneData(data) {
+    const event = { detail: data };
+
+    /**
+     * Scene data from server.
+     * @event avs-scene-data
+     */
+    this.dispatchEvent(new CustomEvent('avs-scene-data', event));
   }
 
   /**
@@ -1404,14 +1427,14 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
       // Server side pick processing
 
       this.showSpinner();
-      if (this.url !== undefined && this.url !== null) {
+      if (this.url) {
         this.startSpinner();
 
         // Use avs-http-mixin to send the model to the server
-        var model = this._assembleModel();
-        if (model !== undefined) {
-          model.rendererProperties.pickProperties = pickProperties;
-          this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
+        this.model = this._assembleModel();
+        if (this.model) {
+          this.model.rendererProperties.pickProperties = pickProperties;
+          this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), this.model);
         }
       }
     } 

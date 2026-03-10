@@ -1,30 +1,35 @@
 <!doctype html>
-<html>
+<html lang="en">
 
 <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Read static JSON file with AVS/Go</title>
+    <link rel="icon" href="img/avs.png" />
     <style>
         body {
             width: 100vw;
             height: 100vh;
             margin: 0;
             background-color: black;
+            color: white;
+            font-family: Roboto, Arial, Helvetica, sans-serif;
         }
-		h2 {
-			position: fixed;
-			color: white;
-			font-family: Roboto, Arial, Helvetica, sans-serif;
-			padding-left: 1em;
-		}
-		avs-go-dataviz {
-			position: absolute;
-		}
+
+        h2 {
+            position: fixed;
+            padding-left: 1em;
+        }
+
+        avs-go-dataviz {
+            position: absolute;
+        }
     </style>
 </head>
 
 <body>
-    <avs-go-dataviz url='data/hydrogen.json' url-load-json-file renderer="THREEJS" transform-enable></avs-go-dataviz>
-	<h2>Read static ThreeJS JSON file with &lt;avs-go-dataviz&gt; Web Component</h1>
+    <avs-go-dataviz url='data/scene.json' url-load-json-file renderer="THREEJS" transform-enable></avs-go-dataviz>
+	<h2>Read static ThreeJS JSON file with &lt;avs-go-dataviz&gt; Web Component</h2>
     <script type="text/javascript" src="../dist/avs-go.min.js"></script>
 </body>
 

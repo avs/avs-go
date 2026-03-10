@@ -3,14 +3,16 @@ import { AvsGoDataViz } from '@avs/go-react/src/AvsGoDataViz';
 
 function App() {
   return (
-    <div style={{width: '100vw', height: '100vh'}}>
+    <>
 	  <AvsGoDataViz
-	    url='hydrogen.json'
+	    style={{ position: "absolute" }}
+	    url='data/scene.json'
 		urlLoadJsonFile
 		renderer='THREEJS'
 		transformEnable
 	  />
-    </div>
+	  <h2>Read static ThreeJS JSON file with AvsGoDataViz React Component</h2>
+    </>
   )
 }
 
