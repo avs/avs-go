@@ -85,6 +85,7 @@ export const AvsGoDataViz = forwardRef(({
   animatedGlyphsEnable,
   motionCaptureControlsEnable,
   onSceneInfo,
+  onSceneData,
   onLoadComplete,
   onPanInfo,
   onError
@@ -121,6 +122,12 @@ export const AvsGoDataViz = forwardRef(({
       }
     }
 
+    function handleSceneData(e) {
+      if (onSceneData) {
+        onSceneData(e);
+      }
+    }
+
     function handleLoadComplete(e) {
       if (onLoadComplete) {
         onLoadComplete(e);
@@ -143,6 +150,7 @@ export const AvsGoDataViz = forwardRef(({
     dataVizRef.current.addEventListener('avs-track', handleTrack);
     dataVizRef.current.addEventListener('avs-hover', handleHover);
     dataVizRef.current.addEventListener('avs-scene-info', handleSceneInfo);
+    dataVizRef.current.addEventListener('avs-scene-data', handleSceneData);
     dataVizRef.current.addEventListener('avs-load-complete', handleLoadComplete);
     dataVizRef.current.addEventListener('avs-pan-info', handlePanInfo);
     dataVizRef.current.addEventListener('avs-error', handleError);
@@ -153,6 +161,7 @@ export const AvsGoDataViz = forwardRef(({
         dataVizRef.current.removeEventListener('avs-track', handleTrack);
         dataVizRef.current.removeEventListener('avs-hover', handleHover);
         dataVizRef.current.removeEventListener('avs-scene-info', handleSceneInfo);
+        dataVizRef.current.removeEventListener('avs-scene-data', handleSceneData);
         dataVizRef.current.removeEventListener('avs-load-complete', handleLoadComplete);
         dataVizRef.current.removeEventListener('avs-pan-info', handlePanInfo);
         dataVizRef.current.removeEventListener('avs-error', handleError);

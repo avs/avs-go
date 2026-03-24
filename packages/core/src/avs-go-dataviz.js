@@ -688,7 +688,6 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
 		"scenePointColor": "--avs-scene-point-color",
         "sceneLineColor": "--avs-scene-line-color",
         "sceneLineWidth": "--avs-scene-line-width",
-        "sceneLineOpacity": "--avs-scene-line-opacity",
         "sceneTextColor": "--avs-scene-text-color",
         "sceneTextRotation": "--avs-scene-text-rotation",
         "sceneFontFamily": "--avs-scene-font-family",
@@ -716,7 +715,6 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         "chartLineColor": "--avs-chart-line-color",
         "chartLineWidth": "--avs-chart-line-width",
         "chartLinePattern": "--avs-chart-line-pattern",
-        "chartLineOpacity": "--avs-chart-line-opacity",
         "chartTextColor": "--avs-chart-text-color",
         "chartTextRotation": "--avs-chart-text-rotation",
         "chartFontFamily": "--avs-chart-font-family",
@@ -733,7 +731,6 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         // Axis
         "axisLineColor": "--avs-axis-line-color",
         "axisLineWidth": "--avs-axis-line-width",
-        "axisLineOpacity": "--avs-axis-line-opacity",
         "axisTextColor": "--avs-axis-text-color",
         "axisTextRotation": "--avs-axis-text-rotation",
         "axisFontFamily": "--avs-axis-font-family",
@@ -743,13 +740,27 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         // Axis axle
         "axisAxleColor": "--avs-axis-axle-color",
         "axisAxleWidth": "--avs-axis-axle-width",
-        // Axis tick mark
-        "axisTickMarkColor": "--avs-axis-tick-mark-color",
-        "axisTickMarkWidth": "--avs-axis-tick-mark-width",
-        // Axis tick line
-        "axisTickLineColor": "--avs-axis-tick-line-color",
-        "axisTickLineWidth": "--avs-axis-tick-line-width",
-        "axisTickLineStyle": "--avs-axis-tick-line-style",
+        // Axis major tick marks
+        "axisMajorTickMarkColor": "--avs-axis-major-tick-mark-color",
+        "axisMajorTickMarkWidth": "--avs-axis-major-tick-mark-width",
+        // Axis major tick lines
+        "axisMajorTickLineColor": "--avs-axis-major-tick-line-color",
+        "axisMajorTickLineWidth": "--avs-axis-major-tick-line-width",
+        "axisMajorTickLineStyle": "--avs-axis-major-tick-line-style",
+        // Axis major unlabeled tick marks
+        "axisMajorUnlabeledTickMarkColor": "--avs-axis-major-unlabeled-tick-mark-color",
+        "axisMajorUnlabeledTickMarkWidth": "--avs-axis-major-unlabeled-tick-mark-width",
+        // Axis major unlabeled tick lines
+        "axisMajorUnlabeledTickLineColor": "--avs-axis-major-unlabeled-tick-line-color",
+        "axisMajorUnlabeledTickLineWidth": "--avs-axis-major-unlabeled-tick-line-width",
+        "axisMajorUnlabeledTickLineStyle": "--avs-axis-major-unlabeled-tick-line-style",
+        // Axis minor tick marks
+        "axisMinorTickMarkColor": "--avs-axis-minor-tick-mark-color",
+        "axisMinorTickMarkWidth": "--avs-axis-minor-tick-mark-width",
+        // Axis minor tick lines
+        "axisMinorTickLineColor": "--avs-axis-minor-tick-line-color",
+        "axisMinorTickLineWidth": "--avs-axis-minor-tick-line-width",
+        "axisMinorTickLineStyle": "--avs-axis-minor-tick-line-style",
         // Axis title
         "axisTitleTextColor": "--avs-axis-title-text-color",
         "axisTitleTextRotation": "--avs-axis-title-text-rotation",
