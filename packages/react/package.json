@@ -1,6 +1,6 @@
 {
   "name": "@avs/go-react",
-  "version": "0.13.71874",
+  "version": "0.13.71875",
   "description": "React wrapper for AVS/Go web components",
   "keywords": [
     "visualization",
