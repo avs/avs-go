@@ -790,18 +790,14 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         "legendFontStyle": "--avs-legend-font-style",
         "legendFontWeight": "--avs-legend-font-weight",
         "legendFontSize": "--avs-legend-font-size",
+        "legendPointColor": "--avs-legend-point-color",
         // Legend title
         "legendTitleTextColor": "--avs-legend-title-text-color",
         "legendTitleTextRotation": "--avs-legend-title-text-rotation",
         "legendTitleFontFamily": "--avs-legend-title-font-family",
         "legendTitleFontStyle": "--avs-legend-title-font-style",
         "legendTitleFontWeight": "--avs-legend-title-font-weight",
-        "legendTitleFontSize": "--avs-legend-title-font-size",
-		// Defaults
-		"defaultPointSize": "--avs-default-point-size",
-		"defaultGlyphSize": "--avs-default-glyph-size",
-		"minGlyphSize": "--avs-min-glyph-size",
-		"maxGlyphSize": "--avs-max-glyph-size"
+        "legendTitleFontSize": "--avs-legend-title-font-size"
       } );
 
     this._addDataSourceProperties(model);
