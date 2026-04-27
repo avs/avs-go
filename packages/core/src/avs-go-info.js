@@ -18,107 +18,126 @@
  * Advanced Visual Systems Inc. (http://www.avs.com)
  */
 
-import {PolymerElement} from '@polymer/polymer/polymer-element.js';
-import {AvsHttpMixin} from './avs-http-mixin.js';
-import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
+import { LitElement } from 'lit';
+import { VERSION } from './constants.js';
 
 /**
- * `avs-go-info` is a Polymer 3.0 element which requests JSON data by instancing
+ * `avs-go-info` is a Lit element which requests data by instancing
  * the `infoName` class on the AVS/Go server application running at `url`.
  * After setting both these properties call the `updateInfo()` method to send the request.
- * Attach a listener for the `avs-go-info-response` event to receive the JSON response.
+ * Attach a listener for the `avs-go-info-response` event to receive the response.
  *
  * Special case: use an `infoName` of `GetServerInfo` to request a listing of
  * data sources, themes, scenes, info and dynamic HTML available at `url`.
  *
  * @customElement
- * @polymer
- * @appliesMixin AvsHttpMixin
- * @appliesMixin AvsDataSourceMixin
+ * @lit
  */
-export class AvsGoInfo extends AvsDataSourceMixin(AvsHttpMixin(PolymerElement)) {
+export class AvsGoInfo extends LitElement {
+  static properties = {
+    /**
+     * The URL to an instance of AVS/Go server application.
+     */
+    url: {
+      type: String
+    },
 
-  static get properties() {
-    return {
-      /**
-       * The URL to an instance of AVS/Go server application.
-       */
-      url: {
-        type: String
-      },
-      /**
-       * The name of the info registered in the library map on the server.
-       */
-      infoName: {
-        type: String
-      },
-      /**
-       * User properties passed directly to the server.
-       */
-      infoUserProperties: {
-        type: Object,
-        value: {}
-      }
+    /**
+     * Name of the data source registered in the library map on the server.
+     */
+    dataSourceName: {
+      type: String,
+      attribute: 'data-source-name'
+    },
+
+    /**
+     * User properties for the data source passed directly to the server.
+     */
+    dataSourceUserProperties: {
+      type: Object,
+      attribute: 'data-source-user-properties'
+    },
+
+    /**
+     * The name of the info registered in the library map on the server.
+     */
+    infoName: {
+      type: String,
+      attribute: 'info-name'
+    },
+
+    /**
+     * User properties passed directly to the server.
+     */
+    infoUserProperties: {
+      type: Object,
+      attribute: 'info-user-properties'
     }
   }
-
     
   /**
    * Send the request to the server.
    */
   updateInfo() {
-    // Use avs-http-mixin to send the model to the server
-    var model = this._assembleModel();
-    if (model !== undefined) {
-      this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), model);
+    if (!this.url) {
+      console.error("\'url\' property must be set to an instance of AVS/Go server.");
+      return;
     }
-  }
-
-  /**
-   * Assemble the model from our properties to send to the server.
-   */
-  _assembleModel() {
-    if (this.infoName === undefined) {
-      this._logError( JSON.stringify( {"GoType":1, "error":"\'info-name\' property must be set to the name of the info registered in the library map on the server."} ) );
-      return undefined;
+    if (!this.infoName) {
+      console.error("\'info-name\' property must be set to the name of the info registered in the library map on the AVS/Go server.");
+      return;
     }
 
-    var model = {infoProperties:{}};
-
-    model.infoProperties.name = this.infoName;
-    if (this.infoUserProperties !== undefined) {
-      model.infoProperties.userProperties = this.infoUserProperties;
+    // Assemble the model
+    const model = {
+      infoProperties: {
+        name: this.infoName,
+        userProperties: this.infoUserProperties
+      }
+    };
+    if (this.dataSourceName) {
+      model.dataSourceProperties = {
+        name: this.dataSourceName,
+        userProperties: this.dataSourceUserProperties
+      }
     }
-    
-    this._addDataSourceProperties(model);
 
-    return model;
-  }
+    // Assembly the request body
+    const verArray = VERSION.split('.');
+    const version = [parseInt(verArray[0]), parseInt(verArray[1]), parseInt(verArray[2])];
+    const body = {
+      source: this.localName,
+      model: model,
+      version: version
+    };
 
-  /**
-   * HTTP error handler.
-   * @param event
-   */
-  _handleHttpError(event) {
+    // Send the request
+    fetch(this.url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    })
+      .then(response => response.json())
+      .then(response => {
+        if (response.info) {
+          const info = JSON.parse(decodeURIComponent(response.info.replace(/\+/g, '%20')));
 
-  }
-
-  /**
-   * HTTP response handler.
-   * @param json JSON parsed from HTTP response.
-   */
-  _handleHttpResponse(json) {
-	if (json.info !== undefined) {
-	  var infoJSON = JSON.parse(decodeURIComponent(json.info.replace(/\+/g, '%20')));
-	  var infoEvent = {detail: infoJSON};
-
-      /**
-       * JSON response from server.
-       * @event avs-go-info-response
-       */
-	  this.dispatchEvent(new CustomEvent('avs-go-info-response', infoEvent));
-	}
+          /**
+           * Info response from server.
+           * @event avs-go-info-response
+           */
+          this.dispatchEvent(new CustomEvent('avs-go-info-response', { detail: info }));
+        }
+        else {
+          console.error("Empty response from AVS/Go server.");
+        }
+      })
+      .catch(error => {
+        console.error(error);
+      });
   }
 }
 
-window.customElements.define('avs-go-info', AvsGoInfo);
+customElements.define('avs-go-info', AvsGoInfo);
