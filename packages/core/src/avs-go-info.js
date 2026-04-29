@@ -18,8 +18,7 @@
  * Advanced Visual Systems Inc. (http://www.avs.com)
  */
 
-import { LitElement } from 'lit';
-import { VERSION } from './constants.js';
+import { AvsElementBase } from './avs-element-base.js';
 
 /**
  * `avs-go-info` is a Lit element which requests data by instancing
@@ -33,7 +32,7 @@ import { VERSION } from './constants.js';
  * @customElement
  * @lit
  */
-export class AvsGoInfo extends LitElement {
+export class AvsGoInfo extends AvsElementBase {
   static properties = {
     /**
      * The URL to an instance of AVS/Go server application.
@@ -102,25 +101,9 @@ export class AvsGoInfo extends LitElement {
       }
     }
 
-    // Assembly the request body
-    const verArray = VERSION.split('.');
-    const version = [parseInt(verArray[0]), parseInt(verArray[1]), parseInt(verArray[2])];
-    const body = {
-      source: this.localName,
-      model: model,
-      version: version
-    };
-
     // Send the request
-    fetch(this.url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    })
-      .then(response => response.json())
-      .then(response => {
+    this._httpRequest(this.url,
+      (response) => {
         if (response.info) {
           const info = JSON.parse(decodeURIComponent(response.info.replace(/\+/g, '%20')));
 
@@ -128,15 +111,21 @@ export class AvsGoInfo extends LitElement {
            * Info response from server.
            * @event avs-go-info-response
            */
-          this.dispatchEvent(new CustomEvent('avs-go-info-response', { detail: info }));
+          this.dispatchEvent(new CustomEvent('avs-go-info-response', {
+            bubbles: true,
+            composed: true,
+            detail: info
+          }));
         }
         else {
           console.error("Empty response from AVS/Go server.");
         }
-      })
-      .catch(error => {
-        console.error(error);
-      });
+      },
+      (error) => {
+        this._logError(error);
+      },
+      model
+    );
   }
 }
 
