@@ -3,7 +3,7 @@
 
 # AVS/Go
 
-Polymer 3.0 based elements for AVS.
+Lit based custom elements for AVS.
 
 ## Install
 ```

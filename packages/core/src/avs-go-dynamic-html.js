@@ -49,10 +49,10 @@ export class AvsGoDynamicHtml extends AvsElementBase {
     },
 
     /**
-     * User properties for the data source passed directly to the server.
+     * User properties as JSON passed directly to the data source on the server.
      */
     dataSourceUserProperties: {
-      type: Object,
+      type: String,
       attribute: 'data-source-user-properties'
     },
 
@@ -65,10 +65,10 @@ export class AvsGoDynamicHtml extends AvsElementBase {
     },
 
     /**
-     * User properties passed directly to the server.
+     * User properties as JSON passed directly to the dynamic html on the server.
      */
     dynamicHtmlUserProperties: {
-      type: Object,
+      type: String,
       attribute: 'dynamic-html-user-properties'
     },
 
@@ -84,13 +84,13 @@ export class AvsGoDynamicHtml extends AvsElementBase {
   willUpdate(changedProperties) {
     if (!this.url) {
       if (changedProperties.has('url')) {
-        console.error("\'url\' property must be set to an instance of AVS/Go server.");
+        this._dispatchErrorEvent("'url' property must be set to an instance of AVS/Go server.");
       }
       return;
     }
     if (!this.dynamicHtmlName) {
       if (changedProperties.has('dynamicHtmlName')) {
-        console.error("\'dynamic-html-name\' property must be set to the name of the dynamicHtml registered in the library map on the AVS/Go server.");
+        this._dispatchErrorEvent("'dynamic-html-name' property must be set to the name of the dynamicHtml registered in the library map on the AVS/Go server.");
       }
       return;
     }
@@ -98,15 +98,37 @@ export class AvsGoDynamicHtml extends AvsElementBase {
     // Assemble the model
     const model = {
       dynamicHtmlProperties: {
-        name: this.dynamicHtmlName,
-        userProperties: this.dynamicHtmlUserProperties
+        name: this.dynamicHtmlName
       }
     };
+    if (this.dynamicHtmlUserProperties) {
+      let dynamicHtmlUserProperties;
+      try {
+        dynamicHtmlUserProperties = JSON.parse(this.dynamicHtmlUserProperties);
+      }
+      catch (error) {
+        this._dispatchErrorEvent("Can't parse 'dynamic-html-user-properties'. " + error.message);
+        return;
+      }
+      model.dynamicHtmlProperties.userProperties = dynamicHtmlUserProperties;
+    }
+
+    // Data source properties
     if (this.dataSourceName) {
       model.dataSourceProperties = {
-        name: this.dataSourceName,
-        userProperties: this.dataSourceUserProperties
-      };
+        name: this.dataSourceName
+      }
+      if (this.dataSourceUserProperties) {
+        let dataSourceUserProperties;
+        try {
+          dataSourceUserProperties = JSON.parse(this.dataSourceUserProperties);
+        }
+        catch (error) {
+          this._dispatchErrorEvent("Can't parse 'data-source-user-properties'. " + error.message);
+          return;
+        }
+        model.dataSourceProperties.userProperties = dataSourceUserProperties;
+      }
     }
 
     // Send the request
@@ -117,12 +139,10 @@ export class AvsGoDynamicHtml extends AvsElementBase {
           this._html = DOMPurify.sanitize(html);
         }
         else {
-          console.error("Empty response from AVS/Go server.");
+          this._dispatchErrorEvent("Empty response from AVS/Go server.");
         }
       },
-      (error) => {
-        this._logError(error);
-      },
+      null,
       model
     );
   }

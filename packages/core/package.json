@@ -1,11 +1,10 @@
 {
   "name": "@avs/go",
-  "version": "0.13.71891",
-  "description": "AVS Go",
+  "version": "0.14.71999",
+  "description": "AVS/Go",
   "type": "module",
   "keywords": [
-    "polymer",
-    "polymer 3.0",
+    "lit",
     "image",
     "svg",
     "three.js",
@@ -23,14 +22,13 @@
   },
   "scripts": {
     "build": "rollup -c",
-	  "start": "http-server -o demo/jsonView.html",
+    "start": "http-server -o demo/jsonView.html",
     "type-check": "echo 'No TypeScript in core package'"
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "@polymer/iron-resizable-behavior": "^3.0.1",
-    "@polymer/polymer": "^3.5.2",
+    "dompurify": "^3.4.2",
     "lit": "^3.3.2",
-    "three": "0.183.2"
+    "three": "0.184.0"
   }
 }

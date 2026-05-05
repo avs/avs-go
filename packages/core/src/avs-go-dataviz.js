@@ -18,20 +18,16 @@
  * Advanced Visual Systems Inc. (http://www.avs.com)
  */
 
-import {PolymerElement, html} from '@polymer/polymer/polymer-element.js';
-import {mixinBehaviors} from '@polymer/polymer/lib/legacy/class.js';
-import {IronResizableBehavior} from '@polymer/iron-resizable-behavior/iron-resizable-behavior.js';
-import {afterNextRender} from '@polymer/polymer/lib/utils/render-status.js';
-import {AvsRenderer} from './avs-renderer.js';
+import { AvsElementBase } from './avs-element-base.js';
+import { html } from 'lit';
+import { unsafeSVG } from 'lit/directives/unsafe-svg.js';
+import { AvsRenderer } from './avs-renderer.js';
 import {Viewer, TransformInteractor, PanInteractor, ZoomRectangleInteractor, PickDepthEnum, Animator} from '../lib/avs-three.module.min.js';
-import {AvsHttpMixin} from './avs-http-mixin.js';
-import {AvsStreamMixin} from './avs-stream-mixin.js';
-import {AvsDataSourceMixin} from './avs-data-source-mixin.js';
 import {LOGO, PLAY, CAMERA, TIMELAPSE, HOME, DELETE, COPY, LINK} from './logo.js';
-import {Euler, Vector3, Quaternion} from 'three';
+import { Euler, Vector3, Quaternion } from 'three';
 
 /**
- * `avs-go-dataviz` is a Polymer 3.0 element which requests a data visualization
+ * `avs-go-dataviz` is a Lit element which requests a data visualization
  * from either the `sceneName` class on the AVS/Go server application running at `url`,
  * or from a JSON file at `url` when `urlLoadJsonFile` is set.
  *
@@ -43,14 +39,10 @@ import {Euler, Vector3, Quaternion} from 'three';
  * * * This element is resized outside of the `resizeThresold` percentage
  *
  * @customElement
- * @polymer
- * @appliesMixin AvsDataSourceMixin
- * @appliesMixin AvsStreamMixin
- * @appliesMixin AvsHttpMixin
+ * @lit
  */
-export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin(mixinBehaviors([IronResizableBehavior], PolymerElement)))) {
-
-  static get template() {
+export class AvsGoDataViz extends AvsElementBase {
+  render() {
     return html`
       <style>
         :host {
@@ -58,11 +50,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
           width:100%;
           height:100%;
           overflow:hidden;
-        }
-        #container {
           position:relative;
-          width:100%;
-          height:100%;
           letter-spacing:normal;
           word-spacing:normal;
           line-height:normal;
@@ -205,28 +193,27 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         @-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
         @keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
       </style>
-      <div id="container">
         <div id="dataVizDiv"></div>
         <div id="motionCapture">
           <div style="display: flex; justify-content: center" id="motionCaptureTitle">Motion Capture</div>
           <div>
-            <a class="btn disabled" id="motionCapturePlay" data-tooltip="Play motion capture"></a>
-            <a class="btn" id="motionCaptureSnapshot" data-tooltip="Take snapshot">
-              <div id="motionCaptureSnapshotIcon"></div>
+            <a class="btn disabled" id="motionCapturePlay" data-tooltip="Play motion capture" @click="${this.runAnimation}" @pointermove="${this._handlePointerEnterMotionCaptureControl}" @pointerout="${this._handlePointerLeaveMotionCaptureControl}">${unsafeSVG(PLAY)}</a>
+            <a class="btn" id="motionCaptureSnapshot" data-tooltip="Take snapshot" @click="${this._handleMotionCaptureSnapshot}" @pointermove="${this._handlePointerEnterMotionCaptureControl}" @pointerout="${this._handlePointerLeaveMotionCaptureControl}">
+              <div id="motionCaptureSnapshotIcon">${unsafeSVG(CAMERA)}</div>
               <div id="motionCaptureSnapshotLabel">0</div>
             </a>
-            <div class="btn disabled" id="motionCaptureDelay" data-tooltip="Frame delay (seconds)">
-              <div id="motionCaptureDelayIcon"></div>
+            <div class="btn disabled" id="motionCaptureDelay" data-tooltip="Frame delay (seconds)" @pointermove="${this._handlePointerEnterMotionCaptureControl}" @pointerout="${this._handlePointerLeaveMotionCaptureControl}">
+              <div id="motionCaptureDelayIcon">${unsafeSVG(TIMELAPSE)}</div>
               <div id="motionCaptureDelayLabel">0</div>
               <div id="motionCaptureDelayWheel">
-                <a id="motionCaptureDelayIncrease">+</a>
-                <a id="motionCaptureDelayDecrease">-</a>
+                <a id="motionCaptureDelayIncrease" @click="${this._handleMotionCaptureDelayIncrease}">+</a>
+                <a id="motionCaptureDelayDecrease" @click="${this._handleMotionCaptureDelayDecrease}">-</a>
               </div>
             </div>
-            <a class="btn" id="motionCaptureReset" data-tooltip="Reset transform"></a>
-            <a class="btn disabled" id="motionCaptureClear" data-tooltip="Clear motion capture frames"></a>
-            <a class="btn disabled" id="motionCaptureCopyData" data-tooltip="Copy motion capture data to clipboard"></a>
-            <a class="btn disabled" id="motionCaptureCopyUrl" data-tooltip="Copy motion capture URL to clipboard"></a>
+            <a class="btn" id="motionCaptureReset" data-tooltip="Reset transform" @click="${this.resetTransform}" @pointermove="${this._handlePointerEnterMotionCaptureControl}" @pointerout="${this._handlePointerLeaveMotionCaptureControl}">${unsafeSVG(HOME)}</a>
+            <a class="btn disabled" id="motionCaptureClear" data-tooltip="Clear motion capture frames" @click="${this._handleMotionCaptureClear}" @pointermove="${this._handlePointerEnterMotionCaptureControl}" @pointerout="${this._handlePointerLeaveMotionCaptureControl}">${unsafeSVG(DELETE)}</a>
+            <a class="btn disabled" id="motionCaptureCopyData" data-tooltip="Copy motion capture data to clipboard" @click="${this._handleMotionCaptureCopyData}" @pointermove="${this._handlePointerEnterMotionCaptureControl}" @pointerout="${this._handlePointerLeaveMotionCaptureControl}">${unsafeSVG(COPY)}</a>
+            <a class="btn disabled" id="motionCaptureCopyUrl" data-tooltip="Copy motion capture URL to clipboard" @click="${this._handleMotionCaptureCopyUrl}" @pointermove="${this._handlePointerEnterMotionCaptureControl}" @pointerout="${this._handlePointerLeaveMotionCaptureControl}">${unsafeSVG(LINK)}</a>
           </div>
         </div>
         <div id="motionCaptureTooltip"></div>
@@ -236,25 +223,23 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
           <div id="spinner"></div>
         </div>
         <div id="tooltip"></div>
-      </div>
     `;
   }
 
-  static get properties() {
-    return {
-
+  static properties = {
       /**
        * Don't request a new scene upon initialization or resize.
        */
       manualUpdate: {
-        type: Boolean
+      type: Boolean,
+        attribute: 'manual-update'
       },
       /** 
        * Highlight canvas elements when using the `THREEJS` renderer.
        */
       displayCanvas: {
         type: Boolean,
-        observer: "_displayCanvasChanged"
+        attribute: 'display-canvas'
       },
       /**
        * The URL to an instance of AVS/Go server application or file.
@@ -266,54 +251,90 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
        * Enables loading JSON from a file.
        */
       urlLoadJsonFile: {
-        type: Boolean
+        type: Boolean,
+        attribute: 'url-load-json-file'
       },
-      /**
-       * The name of the scene registered in the library map on the server.
-       */
-      sceneName: {
-        type: String
-      },
-      /**
-       * User properties for the scene passed directly to the server.
-       */
-      sceneUserProperties: {
-        type: Object,
-        value: {}
-      },
-      /**
-       * The name of the renderer registered in the library map on the server.
-       */
-      rendererName: {
-        type: String
-      },
-      /**
-       * User properties for the renderer passed directly to the server.
-       */
-      rendererUserProperties: {
-        type: Object,
-        value: {}
-      },
-      /**
-       * The type of renderer to be used to display a scene: `IMAGE`, `SVG` or `THREEJS`
-       */
-      renderer: {
-        type: String,
-        value: "IMAGE",
-        observer: "_rendererChanged"
-      },
+    /**
+     * Name of the data source registered in the library map on the server.
+     */
+    dataSourceName: {
+      type: String,
+      attribute: 'data-source-name'
+    },
+    /**
+     * User properties as JSON passed directly to the data source on the server.
+     */
+    dataSourceUserProperties: {
+      type: String,
+      attribute: 'data-source-user-properties'
+    },
+    /**
+     * The name of the scene registered in the library map on the server.
+     */
+    sceneName: {
+      type: String,
+      attribute: 'scene-name'
+    },
+    /**
+     * User properties as JSON passed directly to the scene on the server.
+     */
+    sceneUserProperties: {
+      type: String,
+      attribute: 'scene-user-properties'
+    },
+    /**
+     * The name of the renderer registered in the library map on the server.
+     */
+    rendererName: {
+      type: String,
+      attribute: 'renderer-name'
+    },
+    /**
+     * User properties as JSON passed directly to the renderer on the server.
+     */
+    rendererUserProperties: {
+      type: String,
+      attribute: 'renderer-user-properties'
+    },
+    /**
+     * The type of renderer to be used to display a scene: `IMAGE`, `SVG` or `THREEJS`
+     */
+    renderer: {
+      type: String
+    },
+    /**
+     * Enables streaming of objects from the server.
+     */
+    streamEnable: {
+      type: Boolean,
+      attribute: 'stream-enable'
+    },
+    /**
+     * The number of objects streamed for the first chunk.
+     */
+    streamChunkSizeFirst: {
+      type: Number,
+      attribute: 'stream-chunk-size-first'
+    },
+    /**
+     * The number of objects streamed per chunk.
+     */
+    streamChunkSize: {
+      type: Number,
+      attribute: 'stream-chunk-size'
+    },
       /**
        * The name of the theme registered in the library map on the server, or undefined to use CSS, or one of the branded themes: `DEFAULT`, `AVS_LIGHT`, `AVS_DARK` or `AVS_BLACK`
        */
       themeName: {
-        type: String
+        type: String,
+        attribute: 'theme-name'
       },
       /**
        * Hide the data visualization.
        */
       hidden: {
-        type: Boolean,
-        observer: "_hiddenChanged"
+        type: Boolean
       },
       /**
        * Resize threshold (percent) to determine when the update is performed on the client or the server.
@@ -321,142 +342,161 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
        */
       resizeThreshold: {
         type: Number,
-        value: 10
+        attribute: 'resize-threshold'
       },
       /**
        * Aspect ratio (w/h) of the viewer if it is unable to determine the height of its parent element.
        */
       aspectRatio: {
         type: Number,
-        value: 1.777777
+        attribute: 'aspect-ration'
       },
       /**
        * Number of seconds between pointer moves before an `avs-pointer-timeout` event is dispatched.
        */
       pointerTimeout: {
         type: Number,
-        value: 600
+        attribute: 'pointer-timeout'
       },
       /**
        * Enables the `avs-tap` event.
        */
       tapEnable: {
-        type: Boolean
+        type: Boolean,
+        attribute: 'tap-enable'
       },
       /**
        * The level of geometry within the scene to be modified by the tap event: `CELL`, `CELL_SET` or `SCENE_NODE`
        */
       tapLevel: {
-        type: String
+        type: String,
+        attribute: 'tap-level'
       },
       /**
        * The depth at which an object is selected: `ALL` or `CLOSEST`
        */
       tapDepth: {
-        type: String
+        type: String,
+        attribute: 'tap-depth'
       },
       /**
        * Enables highlight of selected geometry in the scene.
        */
       tapHighlightEnable: {
-        type: Boolean
+        type: Boolean,
+        attribute: 'tap-highlight-enable'
       },
       /**
        * The color to used to highlight the selected objects in the scene.
        */
       tapHighlightColor: {
-        type: String
+        type: String,
+        attribute: 'tap-highlight-color'
       },
       /**
        * Enables drawing highlighted objects in front of all objects in the scene. This results in faster rendering in a 2D viewport when using the `THREEJS` renderer.
        */
       tapHighlightLayerEnable: {
-        type: Boolean
+        type: Boolean,
+        attribute: 'tap-highlight-layer-enable'
       },
       /**
        * Enables the processing of tap events on the client. `THREEJS` only.
        */
       tapProcessEventOnClient: {
-        type: Boolean
+        type: Boolean,
+        attribute: 'tap-process-event-on-client'
       },
       /**
        * Enables the `avs-track` event.
        */
       trackEnable: {
         type: Boolean,
-        observer: "_trackEnableChanged"
+        attribute: 'track-enable'
       },
       /**
        * The level of geometry within the scene to be modified by the track event: `CELL`, `CELL_SET` or `SCENE_NODE`
        */
       trackLevel: {
-        type: String
+        type: String,
+        attribute: 'track-level'
       },
       /**
        * The depth at which an object is selected: `ALL` or `CLOSEST`
        */
       trackDepth: {
-        type: String
+        type: String,
+        attribute: 'track-depth'
       },
       /**
        * Enables highlight of selected geometry in the scene.
        */
       trackHighlightEnable: {
-        type: Boolean
+        type: Boolean,
+        attribute: 'track-highlight-enable'
       },
       /**
        * The color to used to highlight the selected objects in the scene.
        */
       trackHighlightColor: {
-        type: String
+        type: String,
+        attribute: 'track-highlight-color'
       },
       /**
        * Enables drawing highlighted objects in front of all objects in the scene. This results in faster rendering in a 2D viewport when using the `THREEJS` renderer.
        */
       trackHighlightLayerEnable: {
-        type: Boolean
+        type: Boolean,
+        attribute: 'track-highlight-layer-enable'
       },
       /**
        * Enables the processing of track events on the client. `THREEJS` only.
        */
       trackProcessEventOnClient: {
-        type: Boolean
+        type: Boolean,
+        attribute: 'track-process-event-on-client'
       },
       /**
        * Enables the `avs-hover` event.
        */
       hoverEnable: {
-        type: Boolean
+        type: Boolean,
+        attribute: 'hover-enable'
       },
       /**
        * The level of geometry within the scene to be modified by the hover event: `CELL`, `CELL_SET` or `SCENE_NODE`
        */
       hoverLevel: {
-        type: String
+        type: String,
+        attribute: 'hover-level'
       },
       /**
        * The depth at which an object is selected: `ALL` or `CLOSEST`
        */
       hoverDepth: {
-        type: String
+        type: String,
+        attribute: 'hover-depth'
       },
       /**
        * Enables highlight of selected geometry in the scene.
        */
       hoverHighlightEnable: {
-        type: Boolean
+        type: Boolean,
+        attribute: 'hover-highlight-enable'
       },
       /**
        * The color to used to highlight the selected objects in the scene.
        */
       hoverHighlightColor: {
-        type: String
+        type: String,
+        attribute: 'hover-highlight-color'
       },
       /**
        * Enables drawing highlighted objects in front of all objects in the scene. This results in faster rendering in a 2D viewport when using the `THREEJS` renderer.
        */
       hoverHighlightLayerEnable: {
-        type: Boolean
+        type: Boolean,
+        attribute: 'hover-highlight-layer-enable'
       },
       /**
        * Enable the transform interactor. Only available when `renderer` is `THREEJS`
@@ -466,63 +506,63 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
        */
       transformEnable: {
         type: Boolean,
-        observer: "_transformEnableChanged"
+        attribute: 'transform-enable'
       },
       /**
        * Transform on the client only, do not update the transform matrix on the server.
        */
       transformClientOnly: {
         type: Boolean,
-        observer: "_transformClientOnlyChanged"
+        attribute: 'transform-client-only'
       },
       /**
        * Disables rotation of the object.
        */
       transformRotateDisable: {
         type: Boolean,
-        observer: "_transformRotateDisableChanged"
+        attribute: 'transform-rotate-disable-changed'
       },
       /**
        * Disables zooming of the object.
        */
       transformZoomDisable: {
         type: Boolean,
-        observer: "_transformZoomDisableChanged"
+        attribute: 'transform-zoom-disable'
       },
       /**
        * Disables panning of the object.
        */
       transformPanDisable: {
         type: Boolean,
-        observer: "_transformPanDisableChanged"
+        attribute: 'transform-pan-disable'
       },
       /**
        * The twist angle of the object in degrees.
        */
       transformTwistAngle: {
         type: Number,
-        observer: "_transformValueChanged"
+        attribute: 'transform-twist-angle'
       },
       /**
        * The tilt angle of the object in degrees.
        */
       transformTiltAngle: {
         type: Number,
-        observer: "_transformValueChanged"
+        attribute: 'transform-tilt-angle'
       },
       /**
        * The scale of the object in percent.
        */
       transformScale: {
         type: Number,
-        observer: "_transformValueChanged"
+        attribute: 'transform-scale'
       },
       /**
        * Motion capture data or URL.
        */
       motionCapture: {
         type: String,
-        observer: "_motionCaptureValueChanged"
+        attribute: 'motion-capture'
       },
       /**
        * Enable the zoom rectangle interactor. Only available when `renderer` is `THREEJS`
@@ -532,7 +572,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
        */
       zoomRectangleEnable: {
         type: Boolean,
-        observer: "_zoomRectangleEnableChanged"
+        attribute: 'zoom-rectangle-enable'
       },
       /**
        * Enable the pan interactor. Only available when `renderer` is `THREEJS`
@@ -541,7 +581,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
        */
       panEnable: {
         type: Boolean,
-        observer: "_panEnableChanged"
+        attribute: 'pan-enable'
       },
       /**
        * Use mousewheel or pinch zoom to adjust the pan interactor's zoom level.
@@ -549,21 +589,21 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
        */
       panZoomEnable: {
         type: Boolean,
-        observer: "_panZoomEnableChanged"
+        attribute: 'pan-zoom-enable'
       },
       /**
        * The width zoom level in percent of the original scene greater than 100%
        */
       panWidthZoomLevel: {
         type: Number,
-        observer: "_panWidthZoomLevelChanged"
+        attribute: 'pan-width-zoom-level'
       },
       /**
        * The height zoom level in percent of the original scene greater than 100%
        */
       panHeightZoomLevel: {
         type: Number,
-        observer: "_panHeightZoomLevelChanged"
+        attribute: 'pan-height-zoom-level'
       },
       /**
        * The maximum zoom level in percent of the original scene greater than 100%
@@ -571,31 +611,29 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
        */
       panMaximumZoomLevel: {
         type: Number,
-        observer: "_panMaximumZoomLevelChanged",
-        value: 1000
+        attribute: 'pan-maximum-zoom-level'
       },
       /**
        * Show animated glyphs. Only available when `renderer` is `THREEJS`
        */
       animatedGlyphsVisible: {
         type: Boolean,
-        observer: "_animatedGlyphsVisibleChanged"
+        attribute: 'animated-glyphs-visible'
       },
       /**
        * Enable animated glyphs. Only available when `renderer` is `THREEJS`
        */
       animatedGlyphsEnable: {
         type: Boolean,
-        observer: "_animatedGlyphsEnableChanged"
+        attribute: 'animated-glyphs-enable'
       },
       /**
        * Enable motion capture controls. Only available when `renderer` is `THREEJS`
        */
       motionCaptureControlsEnable: {
         type: Boolean,
-        observer: "_motionCaptureControlsEnableChanged"
+        attribute: 'motion-capture-controls-enable'
       }
-    }
   }
 
   /**
@@ -611,23 +649,45 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
    */
   _assembleModel(fullReset) {
     if (!this.sceneName) {
-      this._logError( JSON.stringify( {"GoType":1, "error":"\'scene-name\' property must be set to the name of the scene registered in the library map on the server."} ) );
+      this._dispatchErrorEvent("'scene-name' property must be set to the name of the scene registered in the library map on the AVS/Go server.");
       return undefined;
     }
 
-    var model = {};
-
     // Scene Properties
-    var sceneProperties = {name:this.sceneName};
+    const model = {
+      sceneProperties: {
+        name: this.sceneName
+      }
+    };
     if (this.sceneUserProperties) {
-      sceneProperties.userProperties = this.sceneUserProperties;
+      let sceneUserProperties;
+      try {
+        sceneUserProperties = JSON.parse(this.sceneUserProperties);
+      }
+      catch (error) {
+        this._dispatchErrorEvent("Can't parse 'scene-user-properties'. " + error.message);
+        return undefined;
+      }
+      model.sceneProperties.userProperties = sceneUserProperties;
     }
-    model.sceneProperties = sceneProperties;
 
     // Renderer Properties
-    var rendererProperties = {width:this.width, height:this.height, name:this.rendererName, type:this.renderer};
+    const rendererProperties = {
+      width: this.width,
+      height: this.height,
+      name: this.rendererName,
+      type: this.renderer
+    };
     if (this.rendererUserProperties) {
-      rendererProperties.userProperties = this.rendererUserProperties;
+      let rendererUserProperties;
+      try {
+        rendererUserProperties = JSON.parse(this.rendererUserProperties);
+      }
+      catch (error) {
+        this._dispatchErrorEvent("Can't parse 'renderer-user-properties'. " + error.message);
+        return undefined;
+      }
+      rendererProperties.userProperties = rendererUserProperties;
     }
     model.rendererProperties = rendererProperties;
 
@@ -635,7 +695,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
     if (this.transformInteractor) {
       // Update the local transform matrix from the transform interactor, we may have transformed since the last request
       this.transformMatrix = this.transformInteractor.object.matrix.elements.slice();
-      this.transformClientOnly = this.transformInteractor.clientOnly;
+//      this.transformClientOnly = this.transformInteractor.clientOnly;
     }
     if (this.transformMatrix && !this.transformClientOnly) {
       rendererProperties.transformMatrix = this.transformMatrix;
@@ -651,7 +711,10 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
 
     // PanInteractor
     if (this.panEnable) {
-      rendererProperties.panProperties = {widthZoomLevel: this.panWidthZoomLevel, heightZoomLevel: this.panHeightZoomLevel};
+      rendererProperties.panProperties = {
+        widthZoomLevel: Math.min(this.panWidthZoomLevel, this.panMaximumZoomLevel),
+        heightZoomLevel: Math.min(this.panHeightZoomLevel, this.panMaximumZoomLevel)
+      };
     }
 
     // Base theme to use from themeName property
@@ -685,7 +748,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         "sceneBackgroundGradientColorRepeat": "--avs-scene-background-gradient-color-repeat",
         "sceneHighlightColor": "--avs-scene-highlight-color",
         "sceneSurfaceColor": "--avs-scene-surface-color",
-		"scenePointColor": "--avs-scene-point-color",
+        "scenePointColor": "--avs-scene-point-color",
         "sceneLineColor": "--avs-scene-line-color",
         "sceneLineWidth": "--avs-scene-line-width",
         "sceneTextColor": "--avs-scene-text-color",
@@ -711,7 +774,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         "chartBackgroundGradientColorRepeat": "--avs-chart-background-gradient-color-repeat",
         "chartHighlightColor": "--avs-chart-highlight-color",
         "chartSurfaceColor": "--avs-chart-surface-color",
-		"chartPointColor": "--avs-chart-point-color",
+        "chartPointColor": "--avs-chart-point-color",
         "chartLineColor": "--avs-chart-line-color",
         "chartLineWidth": "--avs-chart-line-width",
         "chartLinePattern": "--avs-chart-line-pattern",
@@ -800,10 +863,32 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         "legendTitleFontSize": "--avs-legend-title-font-size"
       } );
 
-    this._addDataSourceProperties(model);
-
-    if (this.renderer === 'THREEJS') {
-      this._addStreamProperties(rendererProperties);
+    // Data source properties
+    if (this.dataSourceName) {
+      model.dataSourceProperties = {
+        name: this.dataSourceName
+      }
+      if (this.dataSourceUserProperties) {
+        let dataSourceUserProperties;
+        try {
+          dataSourceUserProperties = JSON.parse(this.dataSourceUserProperties);
+        }
+        catch (error) {
+          this._dispatchErrorEvent("Can't parse 'data-source-user-properties'. " + error.message);
+          return undefined;
+        }
+        model.dataSourceProperties.userProperties = dataSourceUserProperties;
+      }
+    }
+    
+    // Stream properties
+    if (this.threeViewer) {
+      if (this.streamEnable) {
+        rendererProperties.streamProperties = {
+          chunkSizeFirst: this.streamChunkSizeFirst,
+          chunkSize: this.streamChunkSize
+        };
+      }
     }
 
     return model;
@@ -850,11 +935,11 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
     this.width = this.clientWidth;
     if (this.width <= 0) {
       this.width = 200;  // fallback if clientWidth fails
-      this.$.container.style.width = this.width + "px";
+      this.style.width = this.width + "px";
     }
-	else {
-      this.$.container.style.width = "100%";
-	}
+    else {
+      this.style.width = "100%";
+    }
 
     // Get the height provided by our container
     this.height = this.clientHeight;
@@ -866,11 +951,11 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
       else {
          this.height = 200; // fallback if clientHeight fails
       }
-      this.$.container.style.height = this.height + "px";
+      this.style.height = this.height + "px";
     }
-	else {
-      this.$.container.style.height = "100%";
-	}
+    else {
+      this.style.height = "100%";
+    }
 
     if (this.rectCanvas) {
       this.rectCanvas.width = this.width;
@@ -889,35 +974,35 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
           return response.text();
         })
         .then((html) => {
-          this.$.spinner.innerHTML = html;  
+          this.renderRoot.querySelector('#spinner').innerHTML = html;  
         })
         .catch((error) => {
-          this.$.spinner.innerHTML = '';
+          this.renderRoot.querySelector('#spinner').innerHTML = '';
         });
     }
     else {
-      this.$.spinner.innerHTML = LOGO;
+      this.renderRoot.querySelector('#spinner').innerHTML = LOGO;
     }
 
-    this.$.spinner.style.display = 'block';
+    this.renderRoot.querySelector('#spinner').style.display = 'block';
   }
 
   hideSpinner() {
-    this.$.spinner.style.display = 'none';
+    this.renderRoot.querySelector('#spinner').style.display = 'none';
   }
 
   startSpinner() {
-    this.$.spinner.className = 'spin';
+    this.renderRoot.querySelector('#spinner').className = 'spin';
   }
 
   stopSpinner() {
-    this.$.spinner.className = '';
+    this.renderRoot.querySelector('#spinner').className = '';
   }
 
   /**
-   * Send the request to the server.
+   * At least one of the properties was changed.
    */
-  updateViewer(fullReset) {
+  updated(changedProperties) {
     this._updateSize();
 
     this.lowResizeWidth = (100 - this.resizeThreshold) / 100 * this.width;
@@ -925,19 +1010,115 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
     this.lowResizeHeight = (100 - this.resizeThreshold) / 100 * this.height;
     this.highResizeHeight = (100 + this.resizeThreshold) / 100 * this.height;
 
-    this.showSpinner();
-    if (this.url !== undefined && this.url !== null) {
-      this.startSpinner();
+    if (changedProperties.has('renderer')) {
+      this._rendererChanged(this.renderer, changedProperties['renderer']);
+    }
+    if (changedProperties.has('transformEnable')) {
+      this._transformEnableChanged(this.transformEnable, changedProperties['transformEnable']);
+    }
+    if (changedProperties.has('transformClientOnly')) {
+      this._transformClientOnlyChanged(this.transformClientOnly, changedProperties['transformClientOnly']);
+    }
+    if (changedProperties.has('transformRotateDisable')) {
+      this._transformRotateDisableChanged(this.transformRotateDisable, changedProperties['transformRotateDisable']);
+    }
+    if (changedProperties.has('transformZoomDisable')) {
+      this._transformZoomDisableChanged(this.transformZoomDisable, changedProperties['transformZoomDisable']);
+    }
+    if (changedProperties.has('transformPanDisable')) {
+      this._transformPanDisableChanged(this.transformPanDisable, changedProperties['transformPanDisable']);
+    }
+    if (changedProperties.has('animatedGlyphsVisible')) {
+      this._animatedGlyphsVisibleChanged(this.animatedGlyphsVisible, changedProperties['animatedGlyphsVisible']);
+    }
+    if (changedProperties.has('animatedGlyphsEnable')) {
+      this._animatedGlyphsEnableChanged(this.animatedGlyphsEnable, changedProperties['animatedGlyphsEnable']);
+    }
+    if (changedProperties.has('transformTwistAngle') || changedProperties.has('transformTiltAngle') || changedProperties.has('transformScale')) {
+      this._transformValueChanged();
+    }
+    if (changedProperties.has('animatedGlyphsEnable')) {
+      this._animatedGlyphsEnableChanged(this.animatedGlyphsEnable, changedProperties['animatedGlyphsEnable']);
+    }
+    if (changedProperties.has('zoomRectangleEnable')) {
+      this._zoomRectangleEnableChanged(this.zoomRectangleEnable, changedProperties['zoomRectangleEnable']);
+    }
+    if (changedProperties.has('panEnable')) {
+      this._panEnableChanged(this.panEnable, changedProperties['panEnable']);
+    }
+    if (changedProperties.has('panZoomEnable')) {
+      this._panZoomEnableChanged(this.panZoomEnable, changedProperties['panZoomEnable']);
+    }
+    if (changedProperties.has('panWidthZoomLevel')) {
+      this._panWidthZoomLevelChanged(this.panWidthZoomLevel, changedProperties['panWidthZoomLevel']);
+    }
+    if (changedProperties.has('panHeightZoomLevel')) {
+      this._panHeightZoomLevelChanged(this.panHeightZoomLevel, changedProperties['panHeightZoomLevel']);
+    }
+    if (changedProperties.has('panMaximumZoomLevel')) {
+      this._panMaximumZoomLevelChanged(this.panMaximumZoomLevel, changedProperties['panMaximumZoomLevel']);
+    }
+    if (changedProperties.has('trackEnable')) {
+      this._trackEnableChanged(this.trackEnable, changedProperties['trackEnable']);
+    }
+    if (changedProperties.has('displayCanvas')) {
+      this._displayCanvasChanged(this.displayCanvas, changedProperties['displayCanvas']);
+    }
+    if (changedProperties.has('motionCaptureControlsEnable')) {
+      this._motionCaptureControlsEnableChanged(this.motionCaptureControlsEnable, changedProperties['motionCaptureControlsEnable']);
+    }
+    if (changedProperties.has('motionCapture')) {
+      this._motionCaptureValueChanged(this.motionCapture, changedProperties['motionCapture']);
+    }
+    if (changedProperties.has('hidden')) {
+      this._hiddenChanged(this.hidden, changedProperties['hidden']);
+    }
 
-      // Use avs-http-mixin to send the model to the server
+    if (!this.url) {
+      //this._dispatchErrorEvent(''url' property must point to an instance of AVS/Go server.');
+      return;
+    }
+
+    let doUpdate = false;
+    if (this.manualUpdate) {
+      if (this.forceUpdate) {
+        doUpdate = true;
+      }
+    }
+    else {
+      if (this.forceUpdate ||
+        changedProperties.has('url') ||
+        changedProperties.has('renderer') ||
+        changedProperties.has('urlLoadJsonFile') ||
+        changedProperties.has('sceneName') ||
+        changedProperties.has('sceneUserProperties') ||
+        changedProperties.has('dataSourceName') ||
+        changedProperties.has('dataSourceUserProperties') ||
+        changedProperties.has('rendererName') ||
+        changedProperties.has('rendererUserProperties') ||
+        changedProperties.has('streamEnable') ||
+        (this.panEnable && changedProperties.has('panWidthZoomLevel')) ||
+        (this.panEnable && changedProperties.has('panHeightZoomLevel'))) {
+        doUpdate = true;
+      }
+    }
+
+    if (doUpdate) {
+      this.forceUpdate = false;
+
+      // Send the model to the server
       if (this.urlLoadJsonFile) {
         this.chunkFile = 0;
-        this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this));
+        this.showSpinner();
+        this.startSpinner();
+        this._httpRequest(this.url, this._handleHttpResponse.bind(this), this._handleHttpError.bind(this));
       }
       else {
-        this.model = this._assembleModel(fullReset);
+        this.model = this._assembleModel(/*fullReset*/);
         if (this.model) {
-          this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), this.model);
+          this.showSpinner();
+          this.startSpinner();
+          this._httpRequest(this.url, this._handleHttpResponse.bind(this), this._handleHttpError.bind(this), this.model);
         }
       }
     }
@@ -954,9 +1135,17 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
   /**
    * 
    */
+  updateViewer() {
+    this.forceUpdate = true;
+    this.requestUpdate();
+  }
+
+  /**
+   * 
+   */
   _updateViewerClient() {
     this._updateSize();
-    if (this.renderer === 'THREEJS') {
+    if (this.threeViewer) {
       this.threeViewer.render(true);
     }
   }
@@ -965,7 +1154,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
    *
    */
   clear() {
-    if (this.renderer === 'THREEJS') {
+    if (this.threeViewer) {
       this.threeViewer.clearGeometry();
       this.threeViewer.render();
     }
@@ -988,7 +1177,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
     if (json) {
       if (json.selectionInfo) {
         this._dispatchPickEvents(json.selectionInfo);
-	  }
+      }
 
       if (json.sceneInfo) {
         var sceneEvent = {detail: json.sceneInfo};
@@ -1011,31 +1200,31 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
             blendedG += (bgCol[1] * (1 - col[3]));
             blendedB += (bgCol[2] * (1 - col[3]));
           }
-          this.$.motionCapture.style.color = "var(--avs-motion-capture-color, rgb(" + blendedR + ", " + blendedG + ", " + blendedB + "))";
-          this.$.zoomOverlay.style.color = "var(--avs-zoom-overlay-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
-          this.$.tooltip.style.color = "var(--avs-tooltip-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
-          this.$.motionCaptureTooltip.style.color = "var(--avs-tooltip-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
+          this.renderRoot.querySelector('#motionCapture').style.color = "var(--avs-motion-capture-color, rgb(" + blendedR + ", " + blendedG + ", " + blendedB + "))";
+          this.renderRoot.querySelector('#zoomOverlay').style.color = "var(--avs-zoom-overlay-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
+          this.renderRoot.querySelector('#tooltip').style.color = "var(--avs-tooltip-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
+          this.renderRoot.querySelector('#motionCaptureTooltip').style.color = "var(--avs-tooltip-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
         }
         if (json.sceneInfo.color) {
           var col = json.sceneInfo.color.match(/[0-9.]+/gi);
-          this.$.motionCapture.style.background = "var(--avs-motion-capture-background, rgba(" + col[0] + "," + col[1] + "," + col[2] + ",0.75))";
-          this.$.zoomOverlay.style.background = "var(--avs-zoom-overlay-background, rgba(" + col[0] + "," + col[1] + "," + col[2] + ",0.75))";
-          this.$.tooltip.style.background = "var(--avs-tooltip-background, rgb(" + col[0] + "," + col[1] + "," + col[2] + "))";
-          this.$.motionCaptureTooltip.style.background = "var(--avs-tooltip-background, rgb(" + col[0] + "," + col[1] + "," + col[2] + "))";
+          this.renderRoot.querySelector('#motionCapture').style.background = "var(--avs-motion-capture-background, rgba(" + col[0] + "," + col[1] + "," + col[2] + ",0.75))";
+          this.renderRoot.querySelector('#zoomOverlay').style.background = "var(--avs-zoom-overlay-background, rgba(" + col[0] + "," + col[1] + "," + col[2] + ",0.75))";
+          this.renderRoot.querySelector('#tooltip').style.background = "var(--avs-tooltip-background, rgb(" + col[0] + "," + col[1] + "," + col[2] + "))";
+          this.renderRoot.querySelector('#motionCaptureTooltip').style.background = "var(--avs-tooltip-background, rgb(" + col[0] + "," + col[1] + "," + col[2] + "))";
         }
         if (json.sceneInfo.fontFamily) {
-          this.$.motionCapture.style.fontFamily = "var(--avs-motion-capture-font-family, " + json.sceneInfo.fontFamily + ")";
-          this.$.zoomOverlay.style.fontFamily = "var(--avs-zoom-overlay-font-family, " + json.sceneInfo.fontFamily + ")";
-          this.$.tooltip.style.fontFamily = "var(--avs-tooltip-font-family, " + json.sceneInfo.fontFamily + ")";
-          this.$.motionCaptureTooltip.style.fontFamily = "var(--avs-tooltip-font-family, " + json.sceneInfo.fontFamily + ")";
+          this.renderRoot.querySelector('#motionCapture').style.fontFamily = "var(--avs-motion-capture-font-family, " + json.sceneInfo.fontFamily + ")";
+          this.renderRoot.querySelector('#zoomOverlay').style.fontFamily = "var(--avs-zoom-overlay-font-family, " + json.sceneInfo.fontFamily + ")";
+          this.renderRoot.querySelector('#tooltip').style.fontFamily = "var(--avs-tooltip-font-family, " + json.sceneInfo.fontFamily + ")";
+          this.renderRoot.querySelector('#motionCaptureTooltip').style.fontFamily = "var(--avs-tooltip-font-family, " + json.sceneInfo.fontFamily + ")";
         }
       }
 
   	  if (json.image) {
         this.sceneImage.src = json.image;
 
-	    if (json.imagemap) {
-	      this.sceneImageMap.innerHTML = decodeURIComponent(json.imagemap.replace(/\+/g, '%20'));
+        if (json.imagemap) {
+          this.sceneImageMap.innerHTML = decodeURIComponent(json.imagemap.replace(/\+/g, '%20'));
 
           this.imageMapData = Array.from(this.sceneImageMap.querySelectorAll('area')).map(area => {
             return {
@@ -1046,7 +1235,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
               componentInfo: area.getAttribute('component-info')
             };
           });
-	    }
+        }
         else {
           this.sceneImageMap.innerHTML = "";
           this.imageMapData = undefined;
@@ -1056,17 +1245,17 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
           this._dispatchSceneData(json);
         }
 
-		this._handleLoadComplete();
-	  }
-	  else if (json.svg) {
-	    this.svgDiv.innerHTML = decodeURIComponent(json.svg.replace(/\+/g, '%20'));
+        this._handleLoadComplete();
+      }
+      else if (json.svg) {
+        this.svgDiv.innerHTML = decodeURIComponent(json.svg.replace(/\+/g, '%20'));
         
         if (!this.urlLoadJsonFile) {
           this._dispatchSceneData(json);
         }
 
-		this._handleLoadComplete();
-	  }
+        this._handleLoadComplete();
+      }
       else if (json.threejs) {
         if (!this.urlLoadJsonFile) {
           this._dispatchSceneData(json);
@@ -1079,14 +1268,14 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
             if (this.urlLoadJsonFile) {
               // Load the next chunk file
               this.chunkFile++;
-			  const urlBase = this.url.substring(0, this.url.lastIndexOf('.')) || this.url;
-			  const ext = this.url.split('.').pop();
-              this._httpRequest(urlBase + '-' + this.chunkFile + '.' + ext, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this));
+              const urlBase = this.url.substring(0, this.url.lastIndexOf('.')) || this.url;
+              const ext = this.url.split('.').pop();
+              this._httpRequest(urlBase + '-' + this.chunkFile + '.' + ext, this._handleHttpResponse.bind(this), this._handleHttpError.bind(this));
             }
             else {
               // Get the next chunk from the server
               this.model.rendererProperties.streamProperties.chunkId = json.threejs.chunkId;
-              this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), this.model);
+              this._httpRequest(this.url, this._handleHttpResponse.bind(this), this._handleHttpError.bind(this), this.model);
             }
           }
         }
@@ -1095,7 +1284,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         }
       }
       else {
-        console.log("ERROR: No image, SVG, or ThreeJS found in response.");
+        this._dispatchErrorEvent("No image, SVG, or ThreeJS found in response.");
         this._handleLoadComplete();
       }
     }
@@ -1157,15 +1346,15 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
    * @param e
    */
   _handleTap(e) {
-	var adjustedCoords = this._getAdjustedCoords(e.detail.x, e.detail.y);
+    var adjustedCoords = this._getAdjustedCoords(e.detail.x, e.detail.y);
 
     var pickProperties = {type:"TAP", x:adjustedCoords.x, y:adjustedCoords.y};
 
-	if (this.tapLevel !== undefined) pickProperties.level = this.tapLevel;
-	if (this.tapDepth !== undefined) pickProperties.depth = this.tapDepth;
-	if (this.tapHighlightEnable) pickProperties.highlight = true;
-	if (this.tapHighlightColor !== undefined) pickProperties.highlightColor = this.tapHighlightColor;
-	if (this.tapHighlightLayerEnable) pickProperties.highlightLayer = true;
+    if (this.tapLevel !== undefined) pickProperties.level = this.tapLevel;
+    if (this.tapDepth !== undefined) pickProperties.depth = this.tapDepth;
+    if (this.tapHighlightEnable) pickProperties.highlight = true;
+    if (this.tapHighlightColor !== undefined) pickProperties.highlightColor = this.tapHighlightColor;
+    if (this.tapHighlightLayerEnable) pickProperties.highlightLayer = true;
 
     this._processPick( pickProperties, this.tapProcessEventOnClient, e.originalTarget );
   }
@@ -1174,7 +1363,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
    * @param e
    */
   _handleTrack(e) {
-	var adjustedCoords = this._getAdjustedRectangleCoords(e);
+    var adjustedCoords = this._getAdjustedRectangleCoords(e);
 
     switch(e.detail.state) {
       case 'start':
@@ -1286,17 +1475,17 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
   }
 
   _getAdjustedCoords(x, y) {
-	var rect = this.$.dataVizDiv.getBoundingClientRect();
-	var x = Math.round(x - rect.left);
-	var y = Math.round(y - rect.top);
-	var clampX = Math.max(0, Math.min(x, this.width));
-	var clampY = Math.max(0, Math.min(y, this.height));
+    var rect = this.renderRoot.querySelector('#dataVizDiv').getBoundingClientRect();
+    var x = Math.round(x - rect.left);
+    var y = Math.round(y - rect.top);
+    var clampX = Math.max(0, Math.min(x, this.width));
+    var clampY = Math.max(0, Math.min(y, this.height));
 	
-	return {x:clampX, y:clampY};
+    return {x:clampX, y:clampY};
   }
   
   _getAdjustedRectangleCoords(e) {
-	var rect = this.$.dataVizDiv.getBoundingClientRect();
+    var rect = this.renderRoot.querySelector('#dataVizDiv').getBoundingClientRect();
     var x = Math.round(e.detail.x - rect.left);
     var y = Math.round(e.detail.y - rect.top);
     var clampX = Math.max(0, Math.min(x, this.width));
@@ -1309,12 +1498,12 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
     var top = Math.min(startY, clampY);
     var bottom = Math.max(startY, clampY);
 
-	return {left: left, right: right, top: top, bottom: bottom};
+    return {left: left, right: right, top: top, bottom: bottom};
   }
 
   _processPick( pickProperties, processEventOnClient, originalTarget ) {
     if (processEventOnClient) {
-      if (this.renderer === 'THREEJS') {
+      if (this.threeViewer) {
         // ThreeJS client side pick processing
 
         this.threeViewer.setPickDepth( this._getPickDepth(pickProperties.depth) );
@@ -1437,11 +1626,11 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
       if (this.url) {
         this.startSpinner();
 
-        // Use avs-http-mixin to send the model to the server
+        // Send the model to the server
         this.model = this._assembleModel();
         if (this.model) {
           this.model.rendererProperties.pickProperties = pickProperties;
-          this._httpRequest(this.url, this._handleHttpResponse.bind(this), undefined, this._handleHttpError.bind(this), this.model);
+          this._httpRequest(this.url, this._handleHttpResponse.bind(this), this._handleHttpError.bind(this), this.model);
         }
       }
     } 
@@ -1562,93 +1751,70 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
     }.bind(this), this.pointerTimeout * 1000);
   }
 
+  constructor() {
+    super();
+
+    // Set default property values
+    this.renderer = 'THREEJS';
+    this.resizeThreshold = 10;
+    this.aspectRatio = 1.777777;
+    this.pointerTimeout = 600;
+    this.panWidthZoomLevel = 100;
+    this.panHeightZoomLevel = 100;
+    this.panMaximumZoomLevel = 1000;
+
+    this.motionCaptureTime = 0;
+    this.motionCaptureFrames ??= [];
+
+    this._resetTimer();
+    this._updatePixelRatio();
+  }
+
   /**
-   * 
+   * Element connected to the DOM
    */
   connectedCallback() {
     super.connectedCallback();
 
-    // Make sure all CSS and layout has been processed 
-    afterNextRender(this, function() {
-      if (this.initialized !== true) { 
+    ro.observe(this);
 
-		    this._updateSize();
-        if (!this.manualUpdate) {
-          this.updateViewer(true);
-        }
-
-        this.addEventListener('iron-resize', this._onResize);
-        this._updatePixelRatio();
-
-        this.addEventListener('pointerdown', this._handlePointerDown);
-        this.addEventListener('pointerup', this._handlePointerUp);
-        this.addEventListener('pointermove', this._handlePointerMove);
-        this.addEventListener('pointerout', this._handlePointerMove);
+    this.addEventListener('pointerdown', this._handlePointerDown);
+    this.addEventListener('pointerup', this._handlePointerUp);
+    this.addEventListener('pointermove', this._handlePointerMove);
+    this.addEventListener('pointerout', this._handlePointerMove);
  
-        var scope = this;
-        this.addEventListener('contextmenu', function(e) {
-          if (scope.trackEnable) {
-            e.preventDefault();
-          }
-        });
-
-        this.$.motionCapturePlay.innerHTML = PLAY;
-        this.$.motionCaptureSnapshotIcon.innerHTML = CAMERA;
-        this.$.motionCaptureDelayIcon.innerHTML = TIMELAPSE;
-        this.$.motionCaptureReset.innerHTML = HOME;
-        this.$.motionCaptureClear.innerHTML = DELETE;
-        this.$.motionCaptureCopyData.innerHTML = COPY;
-        this.$.motionCaptureCopyUrl.innerHTML = LINK;
-
-        this.$.motionCapturePlay.addEventListener('click', this.runAnimation.bind(this));
-        this.$.motionCaptureSnapshot.addEventListener('click', this._handleMotionCaptureSnapshot.bind(this));
-        this.$.motionCaptureDelayIncrease.addEventListener('click', this._handleMotionCaptureDelayIncrease.bind(this));
-        this.$.motionCaptureDelayDecrease.addEventListener('click', this._handleMotionCaptureDelayDecrease.bind(this));
-        this.$.motionCaptureReset.addEventListener('click', this.resetTransform.bind(this));
-        this.$.motionCaptureClear.addEventListener('click', this._handleMotionCaptureClear.bind(this));
-        this.$.motionCaptureCopyData.addEventListener('click', this._handleMotionCaptureCopyData.bind(this));
-        this.$.motionCaptureCopyUrl.addEventListener('click', this._handleMotionCaptureCopyUrl.bind(this));
-
-        this.$.motionCapturePlay.addEventListener('pointermove', this._handlePointerEnterMotionCaptureControl.bind(this));
-        this.$.motionCaptureSnapshot.addEventListener('pointermove', this._handlePointerEnterMotionCaptureControl.bind(this));
-        this.$.motionCaptureDelay.addEventListener('pointermove', this._handlePointerEnterMotionCaptureControl.bind(this));
-        this.$.motionCaptureReset.addEventListener('pointermove', this._handlePointerEnterMotionCaptureControl.bind(this));
-        this.$.motionCaptureClear.addEventListener('pointermove', this._handlePointerEnterMotionCaptureControl.bind(this));
-        this.$.motionCaptureCopyData.addEventListener('pointermove', this._handlePointerEnterMotionCaptureControl.bind(this));
-        this.$.motionCaptureCopyUrl.addEventListener('pointermove', this._handlePointerEnterMotionCaptureControl.bind(this));
-
-        this.$.motionCapturePlay.addEventListener('pointerout', this._handlePointerLeaveMotionCaptureControl.bind(this));
-        this.$.motionCaptureSnapshot.addEventListener('pointerout', this._handlePointerLeaveMotionCaptureControl.bind(this));
-        this.$.motionCaptureDelay.addEventListener('pointerout', this._handlePointerLeaveMotionCaptureControl.bind(this));
-        this.$.motionCaptureReset.addEventListener('pointerout', this._handlePointerLeaveMotionCaptureControl.bind(this));
-        this.$.motionCaptureClear.addEventListener('pointerout', this._handlePointerLeaveMotionCaptureControl.bind(this));
-        this.$.motionCaptureCopyData.addEventListener('pointerout', this._handlePointerLeaveMotionCaptureControl.bind(this));
-        this.$.motionCaptureCopyUrl.addEventListener('pointerout', this._handlePointerLeaveMotionCaptureControl.bind(this));
-
-        this.motionCaptureTime = 0;
-        this.motionCaptureFrames ??= [];
-
-		    this._resetTimer();
-
-        this.initialized = true;
+    var scope = this;
+    this.addEventListener('contextmenu', function(e) {
+      if (scope.trackEnable) {
+        e.preventDefault();
       }
-    }); 
+    });
+  }
+
+  /**
+   * Element disconnected from the DOM
+   */
+  disconnectedCallback() {
+    super.disconnectedCallback();
+
+    ro.unobserve(this);
   }
 
   _handlePointerEnterMotionCaptureControl(e) {
     if (!this.showMotionCaptureTooltip) {
       var adjustedCoords = this._getAdjustedCoords(e.clientX, e.clientY);
-      var pos = this._calcTooltipPosition(adjustedCoords.x, adjustedCoords.y);
-      this.$.motionCaptureTooltip.style.left = pos.x + "px";
-      this.$.motionCaptureTooltip.style.top = pos.y + "px";
-      this.$.motionCaptureTooltip.style.opacity = 1;
-      this.$.motionCaptureTooltip.innerHTML = e.currentTarget.dataset.tooltip ?? e.currentTarget.id;
+      var motionCaptureTooltip = this.renderRoot.querySelector('#motionCaptureTooltip');
+      var pos = this._calcTooltipPosition(motionCaptureTooltip, adjustedCoords.x, adjustedCoords.y);
+      motionCaptureTooltip.style.left = pos.x + "px";
+      motionCaptureTooltip.style.top = pos.y + "px";
+      motionCaptureTooltip.style.opacity = 1;
+      motionCaptureTooltip.innerHTML = e.currentTarget.dataset.tooltip ?? e.currentTarget.id;
       this.showMotionCaptureTooltip = true;
     }
   }
 
   _handlePointerLeaveMotionCaptureControl() {
-    this.$.motionCaptureTooltip.style.opacity = 0;
+    this.renderRoot.querySelector('#motionCaptureTooltip').style.opacity = 0;
     this.showMotionCaptureTooltip = false;
   }
 
@@ -1675,15 +1841,15 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
     this.motionCaptureFrames.push(frame);
 
     if (this.motionCaptureFrames.length == 1) {
-      this.$.motionCapturePlay.classList.remove("disabled");
-      this.$.motionCaptureDelay.classList.remove("disabled");
-      this.$.motionCaptureDelayLabel.innerText = "2";
-      this.$.motionCaptureClear.classList.remove("disabled");
-      this.$.motionCaptureCopyData.classList.remove("disabled");
-      this.$.motionCaptureCopyUrl.classList.remove("disabled");
+      this.renderRoot.querySelector('#motionCapturePlay').classList.remove("disabled");
+      this.renderRoot.querySelector('#motionCaptureDelay').classList.remove("disabled");
+      this.renderRoot.querySelector('#motionCaptureDelayLabel').innerText = "2";
+      this.renderRoot.querySelector('#motionCaptureClear').classList.remove("disabled");
+      this.renderRoot.querySelector('#motionCaptureCopyData').classList.remove("disabled");
+      this.renderRoot.querySelector('#motionCaptureCopyUrl').classList.remove("disabled");
       this.motionCaptureDelay = 2;
     }
-    this.$.motionCaptureSnapshotLabel.innerText = this.motionCaptureFrames.length;
+    this.renderRoot.querySelector('#motionCaptureSnapshotLabel').innerText = this.motionCaptureFrames.length;
   }
 
   _handleMotionCaptureDelayIncrease() {
@@ -1691,7 +1857,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
     if (this.motionCaptureDelay > 9) {
       this.motionCaptureDelay = 9;
     }
-    this.$.motionCaptureDelayLabel.innerText = this.motionCaptureDelay;
+    this.renderRoot.querySelector('#motionCaptureDelayLabel').innerText = this.motionCaptureDelay;
   }
 
   _handleMotionCaptureDelayDecrease() {
@@ -1699,7 +1865,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
     if (this.motionCaptureDelay < 1) {
       this.motionCaptureDelay = 1;
     }
-    this.$.motionCaptureDelayLabel.innerText = this.motionCaptureDelay;
+    this.renderRoot.querySelector('#motionCaptureDelayLabel').innerText = this.motionCaptureDelay;
   }
 
   _handleMotionCaptureCopyData() {
@@ -1708,10 +1874,10 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
     navigator.clipboard.writeText(data);
 
     // Show alert
-    this.$.motionCaptureAlert.innerText = "Motion capture data copied to clipboard";
-    this.$.motionCaptureAlert.style.opacity = 1;
+    this.renderRoot.querySelector('#motionCaptureAlert').innerText = "Motion capture data copied to clipboard";
+    this.renderRoot.querySelector('#motionCaptureAlert').style.opacity = 1;
     setTimeout(function () {
-      this.$.motionCaptureAlert.style.opacity = 0;
+      this.renderRoot.querySelector('#motionCaptureAlert').style.opacity = 0;
     }.bind(this), 2000);
   }
 
@@ -1726,10 +1892,10 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
     navigator.clipboard.writeText(url);
 
     // Show alert
-    this.$.motionCaptureAlert.innerText = "Motion capture URL copied to clipboard";
-    this.$.motionCaptureAlert.style.opacity = 1;
+    this.renderRoot.querySelector('#motionCaptureAlert').innerText = "Motion capture URL copied to clipboard";
+    this.renderRoot.querySelector('#motionCaptureAlert').style.opacity = 1;
     setTimeout(function () {
-      this.$.motionCaptureAlert.style.opacity = 0;
+      this.renderRoot.querySelector('#motionCaptureAlert').style.opacity = 0;
     }.bind(this), 2000);
   }
 
@@ -1796,13 +1962,13 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
 
   _handleMotionCaptureClear() {
     this.motionCaptureFrames.length = 0;
-    this.$.motionCapturePlay.classList.add("disabled");
-    this.$.motionCaptureSnapshotLabel.innerText = "0";
-    this.$.motionCaptureDelay.classList.add("disabled");
-    this.$.motionCaptureDelayLabel.innerText = "0";
-    this.$.motionCaptureClear.classList.add("disabled");
-    this.$.motionCaptureCopyData.classList.add("disabled");
-    this.$.motionCaptureCopyUrl.classList.add("disabled");
+    this.renderRoot.querySelector('#motionCapturePlay').classList.add("disabled");
+    this.renderRoot.querySelector('#motionCaptureSnapshotLabel').innerText = "0";
+    this.renderRoot.querySelector('#motionCaptureDelay').classList.add("disabled");
+    this.renderRoot.querySelector('#motionCaptureDelayLabel').innerText = "0";
+    this.renderRoot.querySelector('#motionCaptureClear').classList.add("disabled");
+    this.renderRoot.querySelector('#motionCaptureCopyData').classList.add("disabled");
+    this.renderRoot.querySelector('#motionCaptureCopyUrl').classList.add("disabled");
     this.motionCaptureDelay = 0;
     this.motionCaptureTime = 0;
   }
@@ -1820,10 +1986,10 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
    */
   _motionCaptureControlsEnableChanged(newValue, oldValue) {
     if (newValue) {
-      this.$.motionCapture.style.display = "block";
+      this.renderRoot.querySelector('#motionCapture').style.display = "block";
     }
     else {
-      this.$.motionCapture.style.display = "none";
+      this.renderRoot.querySelector('#motionCapture').style.display = "none";
     }
   }
 
@@ -1832,10 +1998,10 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
    */
   _hiddenChanged(newValue, oldValue) {
     if (newValue) {
-      this.$.dataVizDiv.style.display = 'none';
+      this.renderRoot.querySelector('#dataVizDiv').style.display = 'none';
     }
     else {
-      this.$.dataVizDiv.style.display = '';
+      this.renderRoot.querySelector('#dataVizDiv').style.display = '';
       if (this.threeViewer) {
         this.threeViewer.render();
       }
@@ -1849,7 +2015,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
     if (this.threeViewer) {
       if (newValue) {
         if (this.transformInteractor === undefined) {
-          this.transformInteractor = new TransformInteractor( this.$.dataVizDiv );
+          this.transformInteractor = new TransformInteractor(this.renderRoot.querySelector('#dataVizDiv'));
         }
         this.threeViewer.addInteractor( this.transformInteractor );
 
@@ -1972,7 +2138,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
   }
 
   runAnimation() {
-    if (this.renderer === 'THREEJS') {
+    if (this.threeViewer) {
       var style = window.getComputedStyle(this, null);
       var styleMap = {};
       this._applyCustomCssProperties(styleMap, style,
@@ -1997,7 +2163,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
    * Change in 'animated-glyphs-visible' property.
    */
   _animatedGlyphsVisibleChanged(newValue, oldValue) {
-	if (this.renderer === 'THREEJS') {
+	if (this.threeViewer) {
       this.threeViewer.setVisibleAnimatedGlyphs(newValue);
     }
   }
@@ -2006,7 +2172,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
    * Change in 'animated-glyphs-enable' property.
    */
   _animatedGlyphsEnableChanged(newValue, oldValue) {
-	if (this.renderer === 'THREEJS') {
+	if (this.threeViewer) {
       this.threeViewer.setEnableAnimatedGlyphs(newValue);
     }
   }
@@ -2014,7 +2180,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
   /**
    * Change in 'transform-twist-angle', 'transform-tilt-angle' or 'transform-scale' properties.
    */
-  _transformValueChanged(newValue, oldValue) {
+  _transformValueChanged() {
     var twist = this.transformTwistAngle !== undefined ? this.transformTwistAngle * Math.PI / 180 : 0;
     var tilt = this.transformTiltAngle !== undefined ? this.transformTiltAngle * Math.PI / 180 : 0;
     var scale = this.transformScale !== undefined ? this.transformScale / 100.0 : 1.0;
@@ -2056,24 +2222,24 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
       }
 
       if (this.motionCaptureFrames.length > 0) {
-        this.$.motionCapturePlay.classList.remove("disabled");
-        this.$.motionCaptureSnapshotLabel.innerText = this.motionCaptureFrames.length;
-        this.$.motionCaptureDelay.classList.remove("disabled");
-        this.$.motionCaptureDelayLabel.innerText = "2";
-        this.$.motionCaptureClear.classList.remove("disabled");
-        this.$.motionCaptureCopyData.classList.remove("disabled");
-        this.$.motionCaptureCopyUrl.classList.remove("disabled");
+        this.renderRoot.querySelector('#motionCapturePlay').classList.remove("disabled");
+        this.renderRoot.querySelector('#motionCaptureSnapshotLabel').innerText = this.motionCaptureFrames.length;
+        this.renderRoot.querySelector('#motionCaptureDelay').classList.remove("disabled");
+        this.renderRoot.querySelector('#motionCaptureDelayLabel').innerText = "2";
+        this.renderRoot.querySelector('#motionCaptureClear').classList.remove("disabled");
+        this.renderRoot.querySelector('#motionCaptureCopyData').classList.remove("disabled");
+        this.renderRoot.querySelector('#motionCaptureCopyUrl').classList.remove("disabled");
         this.motionCaptureDelay = 2;
         this.motionCaptureTime = this.motionCaptureFrames[this.motionCaptureFrames.length - 1].time / 1000;
       }
       else {
-        this.$.motionCapturePlay.classList.add("disabled");
-        this.$.motionCaptureSnapshotLabel.innerText = "0";
-        this.$.motionCaptureDelay.classList.add("disabled");
-        this.$.motionCaptureDelayLabel.innerText = "0";
-        this.$.motionCaptureClear.classList.add("disabled");
-        this.$.motionCaptureCopyData.classList.add("disabled");
-        this.$.motionCaptureCopyUrl.classList.add("disabled");
+        this.renderRoot.querySelector('#motionCapturePlay').classList.add("disabled");
+        this.renderRoot.querySelector('#motionCaptureSnapshotLabel').innerText = "0";
+        this.renderRoot.querySelector('#motionCaptureDelay').classList.add("disabled");
+        this.renderRoot.querySelector('#motionCaptureDelayLabel').innerText = "0";
+        this.renderRoot.querySelector('#motionCaptureClear').classList.add("disabled");
+        this.renderRoot.querySelector('#motionCaptureCopyData').classList.add("disabled");
+        this.renderRoot.querySelector('#motionCaptureCopyUrl').classList.add("disabled");
         this.motionCaptureDelay = 0;
         this.motionCaptureTime = 0;
       }
@@ -2159,7 +2325,7 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
   }
 
   _zoomOverlayTimeout() {
-    this.$.zoomOverlay.style.opacity = 0;
+    this.renderRoot.querySelector('#zoomOverlay').style.opacity = 0;
     this.pointerDown = false;
   }
 
@@ -2169,16 +2335,16 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
     var width = Math.round(e.detail.widthZoomLevel);
     var height = Math.round(e.detail.heightZoomLevel);
     if (width === height) {
-      this.$.zoomOverlay.innerHTML = width + "%";
+      this.renderRoot.querySelector('#zoomOverlay').innerHTML = width + "%";
     }
     else {
-      this.$.zoomOverlay.innerHTML = width + "%," + height + "%";
+      this.renderRoot.querySelector('#zoomOverlay').innerHTML = width + "%," + height + "%";
     }
 
     var coords = this._getAdjustedCoords(e.detail.clientX, e.detail.clientY);
-    this.$.zoomOverlay.style.left = coords.x + "px";
-    this.$.zoomOverlay.style.top = coords.y + "px";
-    this.$.zoomOverlay.style.opacity = 1;
+    this.renderRoot.querySelector('#zoomOverlay').style.left = coords.x + "px";
+    this.renderRoot.querySelector('#zoomOverlay').style.top = coords.y + "px";
+    this.renderRoot.querySelector('#zoomOverlay').style.opacity = 1;
 
     this.pointerDown = true;
     this._dispatchPickEvents( {type:"HOVER",x:0,y:0,selected:{}} );
@@ -2187,11 +2353,8 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
   }
 
   _handlePanZoomEnd(e) {
-    if (this.initialized) {
-      this.panWidthZoomLevel = e.detail.widthZoomLevel;
-      this.panHeightZoomLevel = e.detail.heightZoomLevel;
-      this.updateViewer();
-    }
+    this.panWidthZoomLevel = e.detail.widthZoomLevel;
+    this.panHeightZoomLevel = e.detail.heightZoomLevel;
   }
 
   /**
@@ -2234,23 +2397,23 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
    * Change in 'renderer' property.
    */
   _rendererChanged(newValue, oldValue) {
-    if (oldValue === 'IMAGE' || oldValue === 'IMAGEURL') {
+    if (oldValue === 'IMAGE') {
       this.sceneImage.src = 'data:,';
-      this.$.dataVizDiv.removeChild(this.sceneImage);
-      this.$.dataVizDiv.removeChild(this.sceneImageMap);
+      this.renderRoot.querySelector('#dataVizDiv').removeChild(this.sceneImage);
+      this.renderRoot.querySelector('#dataVizDiv').removeChild(this.sceneImageMap);
     }
     else if (oldValue === 'SVG') {
       var el = this.svgDiv;
       while (el.firstChild) el.removeChild(el.firstChild);
-      this.$.dataVizDiv.removeChild(this.svgDiv);
+      this.renderRoot.querySelector('#dataVizDiv').removeChild(this.svgDiv);
     }
-    else if (oldValue === 'THREEJS') {
+    else if (this.threeViewer) {
       this.threeViewer.clearGeometry();
       this.threeViewer.render();
-      this.$.dataVizDiv.removeChild(this.threeViewer.domElement);
+      this.renderRoot.querySelector('#dataVizDiv').removeChild(this.threeViewer.domElement);
     }
 
-    if (newValue === 'IMAGE' || newValue === 'IMAGEURL') {
+    if (newValue === 'IMAGE') {
       if (this.sceneImage === undefined) {
         this.sceneImage = document.createElement("img");
         this.sceneImage.setAttribute("id", "sceneImage");
@@ -2261,8 +2424,9 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         this.sceneImageMap.setAttribute("name", "sceneImageMap");
       }
 
-      this.$.dataVizDiv.appendChild(this.sceneImage);
-      this.$.dataVizDiv.appendChild(this.sceneImageMap);
+      this.renderRoot.querySelector('#dataVizDiv').appendChild(this.sceneImage);
+      this.renderRoot.querySelector('#dataVizDiv').appendChild(this.sceneImageMap);
+      this.threeViewer = null;
     }
     else if (newValue === 'SVG') {
       if (this.svgDiv === undefined) {
@@ -2270,10 +2434,11 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         this.svgDiv.setAttribute("id", "svgDiv");
       }
 
-      this.$.dataVizDiv.appendChild(this.svgDiv);
+      this.renderRoot.querySelector('#dataVizDiv').appendChild(this.svgDiv);
+      this.threeViewer = null;
     }
-    else if (newValue === 'THREEJS') {
-      if (this.threeViewer === undefined) {
+    else {
+      if (!this.threeViewer) {
         // Create ThreeJS viewer
         this.threeViewer = new Viewer();
 
@@ -2296,15 +2461,11 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         }
         this.threeViewer.setWebGLRenderer(renderer.webGLRenderer);
 
-		this.animator = new Animator();
-		this.threeViewer.setAnimator(this.animator);
+        this.animator = new Animator();
+        this.threeViewer.setAnimator(this.animator);
       }
 
-      this.$.dataVizDiv.appendChild(this.threeViewer.domElement);
-    }
-
-    if (this.initialized && !this.manualUpdate) {
-      this.updateViewer();
+      this.renderRoot.querySelector('#dataVizDiv').appendChild(this.threeViewer.domElement);
     }
   }
 
@@ -2318,10 +2479,10 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
         this.rectCanvas.setAttribute("id", "rectCanvas");
         this.rectCtx = this.rectCanvas.getContext('2d');
       }
-      this.$.container.appendChild(this.rectCanvas);
+      this.renderRoot.appendChild(this.rectCanvas);
     }
     else {
-      this.$.container.removeChild(this.rectCanvas);
+      this.renderRoot.removeChild(this.rectCanvas);
     }
   }
 
@@ -2335,59 +2496,66 @@ export class AvsGoDataViz extends AvsDataSourceMixin(AvsStreamMixin(AvsHttpMixin
   }
 
   setTooltipHTML(html) {
-    this.$.tooltip.innerHTML = html;
+    this.renderRoot.querySelector('#tooltip').innerHTML = html;
   }
 
   showTooltip(clientX, clientY) {
-    var pos = this._calcTooltipPosition(clientX, clientY);
-    this.$.tooltip.style.left = pos.x + "px";
-    this.$.tooltip.style.top = pos.y + "px";
-    this.$.tooltip.style.opacity = 1;
+    var tooltip = this.renderRoot.querySelector('#tooltip');
+    var pos = this._calcTooltipPosition(tooltip, clientX, clientY);
+    tooltip.style.left = pos.x + "px";
+    tooltip.style.top = pos.y + "px";
+    tooltip.style.opacity = 1;
   }
 
   hideTooltip() {
-    this.$.tooltip.style.opacity = 0;
+    this.renderRoot.querySelector('#tooltip').style.opacity = 0;
   }
 
-  _calcTooltipPosition(clientX, clientY) {
+  _calcTooltipPosition(tooltip, clientX, clientY) {
 
-    // Calculate the tooltip location based on 4 quadrants of the visible portion 
+    // Calculate the tooltip location based on 4 quadrants of the visible portion
     // of the visualization window
 
-    var offset = this._getOffset();
+    var dataVizDiv = this.renderRoot.querySelector('#dataVizDiv');
+
+    var offset = this._getOffset(dataVizDiv);
     var deltaTop = -Math.min(0, offset.top - window.pageYOffset);
     var deltaLeft = -Math.min(0, offset.left - window.pageXOffset);
-    var deltaBottom = -Math.min(0, window.innerHeight - (this.$.dataVizDiv.offsetHeight + offset.top - window.pageYOffset));
-    var deltaRight = -Math.min(0, window.innerWidth - (this.$.dataVizDiv.offsetWidth + offset.left - window.pageXOffset));
-    var vizHeight = this.$.dataVizDiv.offsetHeight - deltaTop - deltaBottom;
-    var vizWidth = this.$.dataVizDiv.offsetWidth - deltaLeft - deltaRight;
+    var deltaBottom = -Math.min(0, window.innerHeight - (dataVizDiv.offsetHeight + offset.top - window.pageYOffset));
+    var deltaRight = -Math.min(0, window.innerWidth - (dataVizDiv.offsetWidth + offset.left - window.pageXOffset));
+    var vizHeight = dataVizDiv.offsetHeight - deltaTop - deltaBottom;
+    var vizWidth = dataVizDiv.offsetWidth - deltaLeft - deltaRight;
     var vizHalfX = vizWidth / 2 + deltaLeft;
     var vizHalfY = vizHeight / 2 + deltaTop;
 
     var toolPosition = { x: 0, y: 0 };
     if (clientX < vizHalfX) {
       var offset = (clientY < vizHalfY) ? 15 : 5;
-      toolPosition.x = clientX + offset + this.$.dataVizDiv.offsetLeft;
+      toolPosition.x = clientX + offset + dataVizDiv.offsetLeft;
     }
     else {
-      toolPosition.x = clientX - 10 + this.$.dataVizDiv.offsetLeft - this.$.tooltip.offsetWidth;
+      toolPosition.x = clientX - 10 + dataVizDiv.offsetLeft - tooltip.offsetWidth;
     }
     if (clientY < vizHalfY) {
-      toolPosition.y = clientY + 5 + this.$.dataVizDiv.offsetTop;
+      toolPosition.y = clientY + 5 + dataVizDiv.offsetTop;
     }
     else {
-      toolPosition.y = clientY - 10 + this.$.dataVizDiv.offsetTop - this.$.tooltip.offsetHeight;
+      toolPosition.y = clientY - 10 + dataVizDiv.offsetTop - tooltip.offsetHeight;
     }
 
     return toolPosition;
   }
 
-  _getOffset() {
-    var rect = this.$.dataVizDiv.getBoundingClientRect(),
+  _getOffset(dataVizDiv) {
+    var rect = dataVizDiv.getBoundingClientRect(),
         scrollLeft = window.pageXOffset || document.documentElement.scrollLeft,
         scrollTop = window.pageYOffset || document.documentElement.scrollTop;
     return { top: rect.top + scrollTop, left: rect.left + scrollLeft }
   }
 }
 
-window.customElements.define('avs-go-dataviz', AvsGoDataViz);
+const ro = new ResizeObserver(entries => {
+  entries.forEach(entry => entry.target._onResize(entry.contentRect));
+});
+
+customElements.define('avs-go-dataviz', AvsGoDataViz);

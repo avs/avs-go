@@ -50,10 +50,10 @@ export class AvsGoInfo extends AvsElementBase {
     },
 
     /**
-     * User properties for the data source passed directly to the server.
+     * User properties as JSON passed directly to the data source on the server.
      */
     dataSourceUserProperties: {
-      type: Object,
+      type: String,
       attribute: 'data-source-user-properties'
     },
 
@@ -66,10 +66,10 @@ export class AvsGoInfo extends AvsElementBase {
     },
 
     /**
-     * User properties passed directly to the server.
+     * User properties as JSON passed directly to the info on the server.
      */
     infoUserProperties: {
-      type: Object,
+      type: String,
       attribute: 'info-user-properties'
     }
   }
@@ -79,25 +79,47 @@ export class AvsGoInfo extends AvsElementBase {
    */
   updateInfo() {
     if (!this.url) {
-      console.error("\'url\' property must be set to an instance of AVS/Go server.");
+      this._dispatchErrorEvent("'url' property must be set to an instance of AVS/Go server.");
       return;
     }
     if (!this.infoName) {
-      console.error("\'info-name\' property must be set to the name of the info registered in the library map on the AVS/Go server.");
+      this._dispatchErrorEvent("'info-name' property must be set to the name of the info registered in the library map on the AVS/Go server.");
       return;
     }
 
     // Assemble the model
     const model = {
       infoProperties: {
-        name: this.infoName,
-        userProperties: this.infoUserProperties
+        name: this.infoName
       }
     };
+    if (this.infoUserProperties) {
+      let infoUserProperties;
+      try {
+        infoUserProperties = JSON.parse(this.infoUserProperties);
+      }
+      catch (error) {
+        this._dispatchErrorEvent("Can't parse 'info-user-properties'. " + error.message);
+        return;
+      }
+      model.infoProperties.userProperties = infoUserProperties;
+    }
+
+    // Data source properties
     if (this.dataSourceName) {
       model.dataSourceProperties = {
-        name: this.dataSourceName,
-        userProperties: this.dataSourceUserProperties
+        name: this.dataSourceName
+      }
+      if (this.dataSourceUserProperties) {
+        let dataSourceUserProperties;
+        try {
+          dataSourceUserProperties = JSON.parse(this.dataSourceUserProperties);
+        }
+        catch (error) {
+          this._dispatchErrorEvent("Can't parse 'data-source-user-properties'. " + error.message);
+          return;
+        }
+        model.dataSourceProperties.userProperties = dataSourceUserProperties;
       }
     }
 
@@ -118,12 +140,10 @@ export class AvsGoInfo extends AvsElementBase {
           }));
         }
         else {
-          console.error("Empty response from AVS/Go server.");
+          this._dispatchErrorEvent("Empty response from AVS/Go server.");
         }
       },
-      (error) => {
-        this._logError(error);
-      },
+      null,
       model
     );
   }

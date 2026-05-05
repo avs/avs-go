@@ -30,7 +30,8 @@ export class AvsElementBase extends LitElement {
    */
   _httpRequest(url, onLoad, onError, model) {
     if (!url) {
-      onError("\'url\' property must point to an instance of AVS/Go server.")
+      this._dispatchErrorEvent("'url' property must point to an instance of AVS/Go server.");
+      onError();
     }
 
     // Assembly the request body
@@ -52,65 +53,67 @@ export class AvsElementBase extends LitElement {
     })
       .then(response => response.json())
       .then(response => {
-        onLoad(response);
+        if (response.error) {
+          this._processServerError(response.error);
+          if (onError) {
+            onError();
+          }
+        }
+        else if (onLoad) {
+          onLoad(response);
+        }
       })
       .catch(error => {
-        onError(error);
+        this._dispatchErrorEvent(error);
+        if (onError) {
+          onError();
+        }
       });
   }
 
-/**
- * @param error
- */
-_logError(error) {
-  if (!error) {
-    return;
-  }
-
-  const goException = JSON.parse(decodeURIComponent(error.replace(/\+/g, '%20')));
-  let output = "An error occurred on the AVS/Go server";
-
-  for (const key in goException) {
-    if (goException.hasOwnProperty(key)) {
-      if (output != "") {
-        output = output + "\n    ";
-      }
-      output = output + key + " : ";
-      var child = goException[key];
-      if (child === Object(child)) {
-        output = output + JSON.stringify(child);
-      }
-      else {
-        output = output + goException[key];
-      }
+  /**
+   * @param error
+   */
+  _processServerError(error) {
+    if (!error) {
+      return;
     }
-  }
-  /*
-        if (goException.GoType) {
-            if (goException.GoType == 0 || goException.GoType == 3) {
-                console.log(output);
-            }
-            else if (goException.GoType == 1) {
-                console.warn(output);
-            }
-            else if (goException.GoType == 2) {
-                console.error(output);
-            }
+
+    const goException = JSON.parse(decodeURIComponent(error.replace(/\+/g, '%20')));
+    let output = "An error occurred on the AVS/Go server";
+
+    for (const key in goException) {
+      if (goException.hasOwnProperty(key)) {
+        if (output != "") {
+          output += "\n  ";
+        }
+        output += key + ": ";
+        const child = goException[key];
+        if (child === Object(child)) {
+          output = output + JSON.stringify(child);
         }
         else {
-          console.log(output);
+          output = output + goException[key];
         }
-     }
-  */
+      }
+    }
+
+    this._dispatchErrorEvent(output);
+  }
 
   /**
-   * Error message from AVS/Go Web Component or Server.
-   * @event avs-error
+   * 
+   * @param {any} error
    */
-  this.dispatchEvent(new CustomEvent('avs-error', {
-    bubbles: true,
-    composed: true,
-    detail: output
-  }));
-}
+  _dispatchErrorEvent(error) {
+    /**
+     * Error message from AVS/Go Web Component or Server.
+     * @event avs-error
+     */
+    this.dispatchEvent(new CustomEvent('avs-error', {
+      bubbles: true,
+      composed: true,
+      detail: error
+    }));
+  }
 }

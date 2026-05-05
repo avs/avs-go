@@ -10,6 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@avs/go-react": "^0.13.0"
+    "@avs/go-react": "^0.14.0"
   }
 }
