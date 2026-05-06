@@ -652,6 +652,9 @@ export class AvsGoDataViz extends AvsElementBase {
       this._dispatchErrorEvent("'scene-name' property must be set to the name of the scene registered in the library map on the AVS/Go server.");
       return undefined;
     }
+    if (!this.width || !this.height) {
+      return undefined;
+    }
 
     // Scene Properties
     const model = {
@@ -911,57 +914,43 @@ export class AvsGoDataViz extends AvsElementBase {
   /**
    * 
    */
-  _onResize() {
-    if (!this.urlLoadJsonFile &&
-        !this.manualUpdate &&
-        this.resizeThreshold > 0 &&
-       (this.clientWidth < this.lowResizeWidth ||
-        this.clientWidth > this.highResizeWidth ||
-        this.clientHeight < this.lowResizeHeight ||
-        this.clientHeight > this.highResizeHeight)) {
-
-      this.updateViewer();
-    }
-    else {
-      this._updateViewerClient();
-    }
-  }
-
-  /**
-   * 
-   */
-  _updateSize() {
-    // Get the width provided by our container
-    this.width = this.clientWidth;
-    if (this.width <= 0) {
-      this.width = 200;  // fallback if clientWidth fails
-      this.style.width = this.width + "px";
-    }
-    else {
-      this.style.width = "100%";
-    }
-
-    // Get the height provided by our container
-    this.height = this.clientHeight;
-    if (this.height <= 0) {
-      if (this.aspectRatio > 0.1) {
-        // Use the aspect ratio if one is set
-        this.height = this.width / this.aspectRatio;
-      }
-      else {
-         this.height = 200; // fallback if clientHeight fails
-      }
-      this.style.height = this.height + "px";
-    }
-    else {
-      this.style.height = "100%";
-    }
+  _onResize(contentRect) {
+    // Get the width & height provided by our container
+    this.width = Math.round(contentRect.width);
+    this.height = Math.round(contentRect.height);
 
     if (this.rectCanvas) {
       this.rectCanvas.width = this.width;
       this.rectCanvas.height = this.height;
     }
-  } 
+
+    // Check if we need to acquire a new scene due to
+    // the size change and other properties
+    if (!this.urlLoadJsonFile &&
+        !this.manualUpdate &&
+        this.resizeThreshold > 0 &&
+       (!this.lowResizeWidth ||
+        this.width < this.lowResizeWidth ||
+        this.width > this.highResizeWidth ||
+        this.height < this.lowResizeHeight ||
+        this.height > this.highResizeHeight)) {
+
+      this._updateResizeLimits();
+      this.updateViewer();
+    }
+    else {
+      if (this.threeViewer) {
+        this.threeViewer.render(true);
+      }
+    }
+  }
+
+  _updateResizeLimits() {
+    this.lowResizeWidth = (100 - this.resizeThreshold) / 100 * this.width;
+    this.highResizeWidth = (100 + this.resizeThreshold) / 100 * this.width;
+    this.lowResizeHeight = (100 - this.resizeThreshold) / 100 * this.height;
+    this.highResizeHeight = (100 + this.resizeThreshold) / 100 * this.height;
+  }
 
   showSpinner() {
     var spinner = window.getComputedStyle(this, null).getPropertyValue("--avs-spinner").trim().replace(/['"]+/g, '');
@@ -1003,13 +992,6 @@ export class AvsGoDataViz extends AvsElementBase {
    * At least one of the properties was changed.
    */
   updated(changedProperties) {
-    this._updateSize();
-
-    this.lowResizeWidth = (100 - this.resizeThreshold) / 100 * this.width;
-    this.highResizeWidth = (100 + this.resizeThreshold) / 100 * this.width;
-    this.lowResizeHeight = (100 - this.resizeThreshold) / 100 * this.height;
-    this.highResizeHeight = (100 + this.resizeThreshold) / 100 * this.height;
-
     if (changedProperties.has('renderer')) {
       this._rendererChanged(this.renderer, changedProperties['renderer']);
     }
@@ -1138,16 +1120,6 @@ export class AvsGoDataViz extends AvsElementBase {
   updateViewer() {
     this.forceUpdate = true;
     this.requestUpdate();
-  }
-
-  /**
-   * 
-   */
-  _updateViewerClient() {
-    this._updateSize();
-    if (this.threeViewer) {
-      this.threeViewer.render(true);
-    }
   }
 
   /**
@@ -1762,6 +1734,9 @@ export class AvsGoDataViz extends AvsElementBase {
     this.panWidthZoomLevel = 100;
     this.panHeightZoomLevel = 100;
     this.panMaximumZoomLevel = 1000;
+
+    this.lowResizeWidth = this.highResizeWidth = 0;
+    this.highResizeWidth = this.highResizeHeight = 0;
 
     this.motionCaptureTime = 0;
     this.motionCaptureFrames ??= [];
