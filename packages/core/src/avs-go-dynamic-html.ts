@@ -18,10 +18,12 @@
  * Advanced Visual Systems Inc. (http://www.avs.com)
  */
 
-import { AvsElementBase } from './avs-element-base.js';
-import { html } from 'lit';
+import { LitElement, html, PropertyValues } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import { AvsElementMixin } from './avs-element-mixin.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import DOMPurify from 'dompurify';
+import { DynamicHtmlModel, DynamicHtmlResponse } from './types.js';
 
 /**
  * `avs-go-dynamic-html` is a Lit element which requests HTML by instancing
@@ -30,58 +32,39 @@ import DOMPurify from 'dompurify';
  *
  * @customElement
  * @lit
+ * @applysMixin AvsElementMixin
  */
-export class AvsGoDynamicHtml extends AvsElementBase {
-  static properties = {
-    /**
-     * The URL to an instance of AVS/Go server application.
-     */
-    url: {
-      type: String
-    },
+@customElement('avs-go-dynamic-html')
+export class AvsGoDynamicHtml extends AvsElementMixin(LitElement) {
 
-    /**
-     * Name of the data source registered in the library map on the server.
-     */
-    dataSourceName: {
-      type: String,
-      attribute: 'data-source-name'
-    },
+  /** The URL to an instance of AVS/Go server application. */
+  @property()
+  url: string;
 
-    /**
-     * User properties as JSON passed directly to the data source on the server.
-     */
-    dataSourceUserProperties: {
-      type: String,
-      attribute: 'data-source-user-properties'
-    },
+  /** Name of the data source registered in the library map on the server. */
+  @property({ attribute: 'data-source-name' })
+  dataSourceName?: string;
 
-    /**
-     * The name of the dynamic html registered in the library map on the server.
-     */
-    dynamicHtmlName: {
-      type: String,
-      attribute: 'dynamic-html-name'
-    },
+  /** User properties as JSON passed directly to the data source on the server. */
+  @property({ attribute: 'data-source-user-properties' })
+  dataSourceUserProperties?: string;
 
-    /**
-     * User properties as JSON passed directly to the dynamic html on the server.
-     */
-    dynamicHtmlUserProperties: {
-      type: String,
-      attribute: 'dynamic-html-user-properties'
-    },
+  /** The name of the dynamic html registered in the library map on the server. */
+  @property({ attribute: 'dynamic-html-name' })
+  dynamicHtmlName?: string;
 
-    _html: {
-      state: true
-    }
-  }
+  /** User properties as JSON passed directly to the dynamic html on the server. */
+  @property({ attribute: 'dynamic-html-user-properties' })
+  dynamicHtmlUserProperties?: string;
+
+  @state()
+  _html?: string;
 
   render() {
     return html`${unsafeHTML(this._html)}`;
   }
 
-  willUpdate(changedProperties) {
+  willUpdate(changedProperties: PropertyValues<this>) {
     if (!this.url) {
       if (changedProperties.has('url')) {
         this._dispatchErrorEvent("'url' property must be set to an instance of AVS/Go server.");
@@ -96,18 +79,18 @@ export class AvsGoDynamicHtml extends AvsElementBase {
     }
 
     // Assemble the model
-    const model = {
+    const model: DynamicHtmlModel = {
       dynamicHtmlProperties: {
         name: this.dynamicHtmlName
       }
     };
     if (this.dynamicHtmlUserProperties) {
-      let dynamicHtmlUserProperties;
+      let dynamicHtmlUserProperties: object;
       try {
         dynamicHtmlUserProperties = JSON.parse(this.dynamicHtmlUserProperties);
       }
       catch (error) {
-        this._dispatchErrorEvent("Can't parse 'dynamic-html-user-properties'. " + error.message);
+        this._dispatchErrorEvent("Can't parse 'dynamic-html-user-properties'. " + error);
         return;
       }
       model.dynamicHtmlProperties.userProperties = dynamicHtmlUserProperties;
@@ -119,12 +102,12 @@ export class AvsGoDynamicHtml extends AvsElementBase {
         name: this.dataSourceName
       }
       if (this.dataSourceUserProperties) {
-        let dataSourceUserProperties;
+        let dataSourceUserProperties: object;
         try {
           dataSourceUserProperties = JSON.parse(this.dataSourceUserProperties);
         }
         catch (error) {
-          this._dispatchErrorEvent("Can't parse 'data-source-user-properties'. " + error.message);
+          this._dispatchErrorEvent("Can't parse 'data-source-user-properties'. " + error);
           return;
         }
         model.dataSourceProperties.userProperties = dataSourceUserProperties;
@@ -133,7 +116,7 @@ export class AvsGoDynamicHtml extends AvsElementBase {
 
     // Send the request
     this._httpRequest(this.url,
-      (response) => {
+      (response: DynamicHtmlResponse) => {
         if (response.html) {
           const html = decodeURIComponent(response.html.replace(/\+/g, '%20'));
           this._html = DOMPurify.sanitize(html);
@@ -148,4 +131,8 @@ export class AvsGoDynamicHtml extends AvsElementBase {
   }
 }
 
-customElements.define('avs-go-dynamic-html', AvsGoDynamicHtml);
+declare global {
+  interface HTMLElementTagNameMap {
+    'avs-go-dynamic-html': AvsGoDynamicHtml;
+  }
+}

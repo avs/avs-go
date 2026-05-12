@@ -1,33 +1,20 @@
-[![npm](https://img.shields.io/npm/v/@avs/go.svg)](https://www.npmjs.com/package/@avs/go)
-[![Published on webcomponents.org](https://img.shields.io/badge/webcomponents.org-published-blue.svg)](https://www.webcomponents.org/element/@avs/go)
-
 # AVS/Go
 
-Lit based custom elements for AVS.
+Mono-repository for custom elements for AVS.
 
-## Install
-```
-npm install @avs/go
-```
+## Packages
 
-## Usage
-```html
-<html>
-  <head>
-    <script type="module" src="@avs/go/src/avs-go-dataviz.js"></script>
-	<!-- or -->
-	<script src="@avs/go/dist/avs-go.min.js"></script>
-  </head>
-  <body>
-    <avs-go-dataviz
-       url="<url-to-avs-go-server>"
-       scene-name="MyGoScene"
-       renderer="<IMAGE|SVG|THREEJS>"
-    >
-    </avs-go-dataviz>
-  </body>
-</html>
-```
+### Lit Elements [@avs/go](./packages/core/)
+[![npm](https://img.shields.io/npm/v/@avs/go.svg)](https://www.npmjs.com/package/@avs/go)
+
+- Source: `packages/core/`
+- [Docs](./packages/core/README.md)
+
+### React Elements [@avs/go-react](./packages/react/)
+[![npm](https://img.shields.io/npm/v/@avs/go-react.svg?color=blue)](https://www.npmjs.com/package/@avs/go-react)
+
+- Source: `packages/react/`
+- [Docs](./packages/react/README.md)
 
 ## License
 Apache-2.0

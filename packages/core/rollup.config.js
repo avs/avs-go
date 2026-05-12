@@ -1,16 +1,26 @@
 import terser from '@rollup/plugin-terser';
-import nodeResolve from '@rollup/plugin-node-resolve';
+import resolve from '@rollup/plugin-node-resolve';
+import summary from 'rollup-plugin-summary';
 
 export default {
-  input: [
-    'src/avs-go.js'
-  ],
+  input: 'dist/index.js',
+  onwarn(warning) {
+    if (warning.code !== 'THIS_IS_UNDEFINED') {
+      console.error(`(!) ${warning.message}`);
+    }
+  },
   plugins: [
-    nodeResolve(),
-    terser()
+    resolve(),
+    terser({
+      ecma: 2021,
+      module: true,
+      warnings: true
+    }),
+    summary()
   ],
   output: {
     file: 'dist/avs-go.min.js',
-    format: 'umd'
+    format: 'umd',
+    name: 'AvsGo'
   }
 }

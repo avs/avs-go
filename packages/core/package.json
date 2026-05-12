@@ -1,6 +1,6 @@
 {
   "name": "@avs/go",
-  "version": "0.14.72000",
+  "version": "0.14.72008",
   "description": "AVS/Go",
   "type": "module",
   "keywords": [
@@ -15,15 +15,16 @@
   ],
   "author": "Advanced Visual Systems Inc.",
   "main": "dist/avs-go.min.js",
+  "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/avs/avs-go.git",
     "directory": "packages/core"
   },
   "scripts": {
-    "build": "rollup -c",
+    "build": "tsc && rollup -c",
     "start": "http-server -o demo/jsonView.html",
-    "type-check": "echo 'No TypeScript in core package'"
+    "type-check": "tsc"
   },
   "license": "Apache-2.0",
   "dependencies": {

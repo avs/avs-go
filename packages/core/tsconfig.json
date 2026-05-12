@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": [ "es2022", "DOM", "DOM.Iterable", "DOM.AsyncIterable" ],
+    "declaration": true,
+    "declarationMap": true,
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": [ "src/**/*.ts" ],
+  "exclude": []
+}

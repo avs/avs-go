@@ -18,7 +18,10 @@
  * Advanced Visual Systems Inc. (http://www.avs.com)
  */
 
-import { AvsElementBase } from './avs-element-base.js';
+import { LitElement } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
+import { AvsElementMixin } from './avs-element-mixin.js';
+import { InfoModel, InfoResponse } from './types.js';
 
 /**
  * `avs-go-info` is a Lit element which requests data by instancing
@@ -31,49 +34,31 @@ import { AvsElementBase } from './avs-element-base.js';
  *
  * @customElement
  * @lit
+ * @applysMixin AvsElementMixin
  */
-export class AvsGoInfo extends AvsElementBase {
-  static properties = {
-    /**
-     * The URL to an instance of AVS/Go server application.
-     */
-    url: {
-      type: String
-    },
+@customElement('avs-go-info')
+export class AvsGoInfo extends AvsElementMixin(LitElement) {
+  
+  /** The URL to an instance of AVS/Go server application. */
+  @property()
+  url: string;
 
-    /**
-     * Name of the data source registered in the library map on the server.
-     */
-    dataSourceName: {
-      type: String,
-      attribute: 'data-source-name'
-    },
+  /** Name of the data source registered in the library map on the server. */
+  @property({ attribute: 'data-source-name' })
+  dataSourceName?: string;
 
-    /**
-     * User properties as JSON passed directly to the data source on the server.
-     */
-    dataSourceUserProperties: {
-      type: String,
-      attribute: 'data-source-user-properties'
-    },
+  /** User properties as JSON passed directly to the data source on the server. */
+  @property({ attribute: 'data-source-user-properties' })
+  dataSourceUserProperties?: string;
 
-    /**
-     * The name of the info registered in the library map on the server.
-     */
-    infoName: {
-      type: String,
-      attribute: 'info-name'
-    },
+  /** The name of the info registered in the library map on the server. */
+  @property({ attribute: 'info-name' })
+  infoName?: string;
 
-    /**
-     * User properties as JSON passed directly to the info on the server.
-     */
-    infoUserProperties: {
-      type: String,
-      attribute: 'info-user-properties'
-    }
-  }
-    
+  /** User properties as JSON passed directly to the info on the server. */
+  @property({ attribute: 'info-user-properties' })
+  infoUserProperties?: string;
+
   /**
    * Send the request to the server.
    */
@@ -88,18 +73,18 @@ export class AvsGoInfo extends AvsElementBase {
     }
 
     // Assemble the model
-    const model = {
+    const model: InfoModel = {
       infoProperties: {
         name: this.infoName
       }
     };
     if (this.infoUserProperties) {
-      let infoUserProperties;
+      let infoUserProperties: object;
       try {
         infoUserProperties = JSON.parse(this.infoUserProperties);
       }
       catch (error) {
-        this._dispatchErrorEvent("Can't parse 'info-user-properties'. " + error.message);
+        this._dispatchErrorEvent("Can't parse 'info-user-properties'. " + error);
         return;
       }
       model.infoProperties.userProperties = infoUserProperties;
@@ -111,12 +96,12 @@ export class AvsGoInfo extends AvsElementBase {
         name: this.dataSourceName
       }
       if (this.dataSourceUserProperties) {
-        let dataSourceUserProperties;
+        let dataSourceUserProperties: object;
         try {
           dataSourceUserProperties = JSON.parse(this.dataSourceUserProperties);
         }
         catch (error) {
-          this._dispatchErrorEvent("Can't parse 'data-source-user-properties'. " + error.message);
+          this._dispatchErrorEvent("Can't parse 'data-source-user-properties'. " + error);
           return;
         }
         model.dataSourceProperties.userProperties = dataSourceUserProperties;
@@ -125,7 +110,7 @@ export class AvsGoInfo extends AvsElementBase {
 
     // Send the request
     this._httpRequest(this.url,
-      (response) => {
+      (response: InfoResponse) => {
         if (response.info) {
           const info = JSON.parse(decodeURIComponent(response.info.replace(/\+/g, '%20')));
 
@@ -143,10 +128,14 @@ export class AvsGoInfo extends AvsElementBase {
           this._dispatchErrorEvent("Empty response from AVS/Go server.");
         }
       },
-      null,
+      undefined,
       model
     );
   }
 }
 
-customElements.define('avs-go-info', AvsGoInfo);
+declare global {
+  interface HTMLElementTagNameMap {
+    'avs-go-info': AvsGoInfo;
+  }
+}
