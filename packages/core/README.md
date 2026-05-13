@@ -15,8 +15,8 @@ npm install @avs/go
 <html>
   <head>
     <script type="module" src="@avs/go/dist/avs-go-dataviz.js"></script>
-	<!-- or -->
-	<script src="@avs/go/dist/avs-go.min.js"></script>
+    <!-- or -->
+    <script src="@avs/go/dist/avs-go.min.js"></script>
   </head>
   <body>
     <avs-go-dataviz

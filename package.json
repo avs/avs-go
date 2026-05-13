@@ -7,6 +7,7 @@
     "packages/*"
   ],
   "author": "Advanced Visual Systems Inc.",
+  "homepage": "https://www.avs.com/products/avs-go",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/avs/avs-go.git"
@@ -25,11 +26,11 @@
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.184.1",
     "@vitejs/plugin-react": "^5.2.0",
+    "@web/dev-server": "^0.4.6",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.4.26",
     "globals": "^16.5.0",
-    "http-server": "^14.1.1",
     "rimraf": "^6.1.3",
     "rollup": "^4.60.3",
     "rollup-plugin-summary": "^3.0.1",

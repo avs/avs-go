@@ -1,20 +1,37 @@
 {
   "name": "@avs/go-react",
-  "version": "0.14.72008",
+  "version": "0.14.72017",
   "description": "React wrapper for AVS/Go web components",
   "keywords": [
-    "visualization",
-    "dataviz",
     "react",
-    "avs"
+    "image",
+    "svg",
+    "three.js",
+    "3d",
+    "webgl",
+    "visualization",
+    "dataviz"
   ],
   "author": "Advanced Visual Systems Inc.",
+  "homepage": "https://www.avs.com/products/avs-go",
   "license": "Apache-2.0",
   "dependencies": {
-    "@avs/go": "0.14.72008",
+    "@avs/go": "0.14.72017",
+    "@lit/react": "^1.0.8",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/avs/avs-go.git",

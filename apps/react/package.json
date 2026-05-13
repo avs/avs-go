@@ -1,14 +1,15 @@
 {
-  "name": "my-app",
-  "private": true,
+  "name": "avs-go-react-demo",
   "version": "0.0.0",
-  "type": "module",
+  "private": true,
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
+  "author": "Advanced Visual Systems Inc.",
+  "license": "Apache-2.0",
   "dependencies": {
     "@avs/go-react": "^0.14.0"
   }

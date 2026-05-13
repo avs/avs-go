@@ -1,6 +1,6 @@
 {
   "name": "@avs/go",
-  "version": "0.14.72008",
+  "version": "0.14.72017",
   "description": "AVS/Go",
   "type": "module",
   "keywords": [
@@ -10,10 +10,13 @@
     "three.js",
     "3d",
     "webgl",
+    "visualization",
+    "dataviz",
     "custom-element",
     "web-components"
   ],
   "author": "Advanced Visual Systems Inc.",
+  "homepage": "https://www.avs.com/products/avs-go",
   "main": "dist/avs-go.min.js",
   "types": "dist/index.d.ts",
   "repository": {
@@ -21,9 +24,16 @@
     "url": "git+https://github.com/avs/avs-go.git",
     "directory": "packages/core"
   },
+  "files": [
+    "dist",
+    "lib",
+    "licenses",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
   "scripts": {
     "build": "tsc && rollup -c",
-    "start": "http-server -o demo/jsonView.html",
     "type-check": "tsc"
   },
   "license": "Apache-2.0",

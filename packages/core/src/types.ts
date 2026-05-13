@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2026 Advanced Visual Systems Inc.
+ * Copyright 2026-2026 Advanced Visual Systems Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,22 +18,11 @@
  * Advanced Visual Systems Inc. (http://www.avs.com)
  */
 
-export enum Renderer {
-  IMAGE = "IMAGE",
-  SVG = "SVG",
-  THREEJS = "THREEJS"
-}
+export type Renderer = "IMAGE" | "SVG" | "THREEJS";
 
-export enum PickDepth {
-  CLOSEST = "CLOSEST",
-  ALL = "ALL"
-}
+export type PickDepth = "CLOSEST" | "ALL";
 
-export enum PickLevel {
-  SCENE_NODE = "SCENE_NODE",
-  CELL_SET = "CELL_SET",
-  CELL = "CELL"
-}
+export type PickLevel = "SCENE_NODE" | "CELL_SET" | "CELL";
 
 export interface PanProperties {
   widthZoomLevel?: number;

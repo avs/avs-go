@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2018 Advanced Visual Systems Inc.
+ * Copyright 2018-2026 Advanced Visual Systems Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
  */
 
 import { AvsElementMixin } from './avs-element-mixin.js';
-import { LitElement, html, PropertyValues } from 'lit';
+import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { unsafeSVG } from 'lit/directives/unsafe-svg.js';
 import { AvsRenderer } from './avs-renderer.js';
@@ -53,9 +53,7 @@ const ro = new ResizeObserver((entries: ResizeObserverEntry[], observer: ResizeO
  */
 @customElement('avs-go-dataviz')
 export class AvsGoDataViz extends AvsElementMixin(LitElement) {
-  render() {
-    return html`
-      <style>
+  static styles = css`
         :host {
           display:block;
           width:100%;
@@ -203,7 +201,10 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
         @-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
         @-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
         @keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
-      </style>
+  `;
+
+  render() {
+    return html`
         <div id="dataVizDiv"></div>
         <div id="motionCapture">
           <div style="display: flex; justify-content: center" id="motionCaptureTitle">Motion Capture</div>
@@ -867,7 +868,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
    * At least one of the properties was changed.
    */
   updated(changedProperties: PropertyValues<this>) {
-    if (!Object.values(Renderer)?.includes(this.renderer)) {
+    if (!['IMAGE', 'SVG', 'THREEJS'].includes(this.renderer)) {
       this._dispatchErrorEvent("'renderer' property must be 'IMAGE', 'SVG' or 'THREEJS'.");
       return;
     }
@@ -1604,7 +1605,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
     super();
 
     // Set default property values
-    this.renderer = Renderer.THREEJS;
+    this.renderer = "THREEJS";
     this.resizeThreshold = 10;
     this.pointerTimeout = 600;
     this.panWidthZoomLevel = 100;
