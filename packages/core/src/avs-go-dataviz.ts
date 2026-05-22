@@ -498,7 +498,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   pointerDown: boolean;
   pointerDownX: number;
   pointerDownY: number;
-  imageMapData: Array<any>;
+  imageMapData?: Array<any>;
   rectCanvas: HTMLCanvasElement;
   rectCtx: CanvasRenderingContext2D;
   sceneImage: HTMLImageElement;
@@ -510,14 +510,6 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   showMotionCaptureTooltip: boolean;
   zoomOverlayTimeoutId: number;
   timer: number;
-
-  /**
-   * Default line style and color
-   */
-  _rectangleStyle() {
-    this.rectCtx.setLineDash([3]);
-    this.rectCtx.strokeStyle="#ff0000";
-  }
 
   /**
    * Assemble the model from our properties to send to the server.
@@ -775,7 +767,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   /**
    *
    */
-  _applyCustomCssProperties(cssProperties, style, values) {
+  _applyCustomCssProperties(cssProperties: object, style: CSSStyleDeclaration, values: object) {
     for (var key in values) {
       if (values.hasOwnProperty(key)) {
         var css = style.getPropertyValue(values[key]).trim();
@@ -1043,15 +1035,15 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
         // Set animation controls, tooltip and zoom overlay style to reversed theme
         if (response.sceneInfo.backgroundColor) {
           var col = response.sceneInfo.backgroundColor.match(/[0-9.]+/gi);
-          var bgCol = this.getInheritedBackgroundCol(this).trim().match(/[0-9.]+/gi);
+          var bgCol = this._getInheritedBackgroundCol(this).trim().match(/[0-9.]+/gi);
           var blendedR = (Number(col[0]) * Number(col[3]));
           var blendedG = (Number(col[1]) * Number(col[3]));
           var blendedB = (Number(col[2]) * Number(col[3]));
 		      if (Number(col[3]) == 0) {
             // In case sceneInfo.backgroundColor is transparent, blend with inherited background color
-            blendedR += (bgCol[0] * (1 - Number(col[3])));
-            blendedG += (bgCol[1] * (1 - Number(col[3])));
-            blendedB += (bgCol[2] * (1 - Number(col[3])));
+            blendedR += (Number(bgCol[0]) * (1 - Number(col[3])));
+            blendedG += (Number(bgCol[1]) * (1 - Number(col[3])));
+            blendedB += (Number(bgCol[2]) * (1 - Number(col[3])));
           }
           motionCapture.style.color = "var(--avs-motion-capture-color, rgb(" + blendedR + ", " + blendedG + ", " + blendedB + "))";
           zoomOverlay.style.color = "var(--avs-zoom-overlay-color, rgb(" + blendedR + "," + blendedG + "," + blendedB + "))";
@@ -1143,8 +1135,8 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
     }
   }
 
-  getInheritedBackgroundCol(el: HTMLElement) {
-    var defaultStyle = this.getDefaultBackground();
+  _getInheritedBackgroundCol(el: HTMLElement): string {
+    var defaultStyle = this._getDefaultBackground();
 
     var bgCol = window.getComputedStyle(el).backgroundColor;
     if (bgCol != defaultStyle) {
@@ -1155,10 +1147,10 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
       return defaultStyle;
     }
 
-    return this.getInheritedBackgroundCol(el.parentElement);
+    return this._getInheritedBackgroundCol(el.parentElement);
   }
 
-  getDefaultBackground() {
+  _getDefaultBackground(): string {
     // have to add to the document in order to use getComputedStyle
     var div = document.createElement("div");
     document.head.appendChild(div);
@@ -1224,7 +1216,8 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
 
       case 'track':
         this.rectCtx.clearRect(0,0,this.width,this.height);
-        this._rectangleStyle();
+        this.rectCtx.setLineDash([3]);
+        this.rectCtx.strokeStyle="#ff0000";
         this.rectCtx.strokeRect(adjustedCoords.left, adjustedCoords.top, adjustedCoords.right - adjustedCoords.left, adjustedCoords.bottom - adjustedCoords.top);
         break;
 
@@ -1262,7 +1255,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
       this.tapping = true;
     }
 
-    if (this.trackEnable && e.buttons & 2) {
+    if (this.trackEnable && e.buttons & 1) {
       this.tracking = 1;
     }
   }
@@ -1333,7 +1326,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   }
 
   _getAdjustedCoords(x: number, y: number) {
-    var rect = this.renderRoot.querySelector('#dataVizDiv').getBoundingClientRect();
+    var rect = this.renderRoot.querySelector('#dataVizDiv')!.getBoundingClientRect();
     var adjustedX = Math.round(x - rect.left);
     var adjustedY = Math.round(y - rect.top);
     var clampX = Math.max(0, Math.min(adjustedX, this.width));
@@ -1343,7 +1336,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   }
   
   _getAdjustedRectangleCoords(x: number, y: number, dx: number, dy: number) {
-    var rect = this.renderRoot.querySelector('#dataVizDiv').getBoundingClientRect();
+    var rect = this.renderRoot.querySelector('#dataVizDiv')!.getBoundingClientRect();
     var adjustedX = Math.round(x - rect.left);
     var adjustedY = Math.round(y - rect.top);
     var clampX = Math.max(0, Math.min(adjustedX, this.width));
@@ -1695,15 +1688,15 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
     this.motionCaptureFrames.push(frame);
 
     if (this.motionCaptureFrames.length == 1) {
-      this.renderRoot.querySelector('#motionCapturePlay').classList.remove("disabled");
-      this.renderRoot.querySelector('#motionCaptureDelay').classList.remove("disabled");
-      this.renderRoot.querySelector('#motionCaptureDelayLabel').innerHTML = "2";
-      this.renderRoot.querySelector('#motionCaptureClear').classList.remove("disabled");
-      this.renderRoot.querySelector('#motionCaptureCopyData').classList.remove("disabled");
-      this.renderRoot.querySelector('#motionCaptureCopyUrl').classList.remove("disabled");
+      this.renderRoot.querySelector('#motionCapturePlay')!.classList.remove("disabled");
+      this.renderRoot.querySelector('#motionCaptureDelay')!.classList.remove("disabled");
+      this.renderRoot.querySelector('#motionCaptureDelayLabel')!.innerHTML = "2";
+      this.renderRoot.querySelector('#motionCaptureClear')!.classList.remove("disabled");
+      this.renderRoot.querySelector('#motionCaptureCopyData')!.classList.remove("disabled");
+      this.renderRoot.querySelector('#motionCaptureCopyUrl')!.classList.remove("disabled");
       this.motionCaptureDelay = 2;
     }
-    this.renderRoot.querySelector('#motionCaptureSnapshotLabel').innerHTML = String(this.motionCaptureFrames.length);
+    this.renderRoot.querySelector('#motionCaptureSnapshotLabel')!.innerHTML = String(this.motionCaptureFrames.length);
   }
 
   _handleMotionCaptureDelayIncrease() {
@@ -1711,7 +1704,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
     if (this.motionCaptureDelay > 9) {
       this.motionCaptureDelay = 9;
     }
-    this.renderRoot.querySelector('#motionCaptureDelayLabel').innerHTML = String(this.motionCaptureDelay);
+    this.renderRoot.querySelector('#motionCaptureDelayLabel')!.innerHTML = String(this.motionCaptureDelay);
   }
 
   _handleMotionCaptureDelayDecrease() {
@@ -1719,7 +1712,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
     if (this.motionCaptureDelay < 1) {
       this.motionCaptureDelay = 1;
     }
-    this.renderRoot.querySelector('#motionCaptureDelayLabel').innerHTML = String(this.motionCaptureDelay);
+    this.renderRoot.querySelector('#motionCaptureDelayLabel')!.innerHTML = String(this.motionCaptureDelay);
   }
 
   _handleMotionCaptureCopyData() {
@@ -1740,7 +1733,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
     // Convert to JSON, compress and base64url encode
     const json = JSON.stringify(this.motionCaptureFrames);
     const compressed = await this._compress(json);
-    const encoded = btoa(String.fromCharCode(...new Uint8Array(compressed))).replaceAll('/', '_').replaceAll('+', '-');
+    const encoded = btoa(compressed).replaceAll('/', '_').replaceAll('+', '-');
 
     // Create URL and copy to clipboard
     const url = window.location.origin + window.location.pathname + "?motionCapture=" + encoded;
@@ -1756,75 +1749,59 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   }
 
   /**
-   * Convert a string to its UTF-8 bytes and compress it.
+   * Gzip compress a string.
    *
-   * @param {string} str
-   * @returns {Promise<Uint8Array>}
-   */
-  async _compress(str: string) {
-    // Convert the string to a byte stream.
-    const stream = new Blob([str]).stream();
-
-    // Create a compressed stream.
-    const compressedStream = stream.pipeThrough(
-      new CompressionStream("gzip")
-    );
-
-    // Read all the bytes from this stream.
-    const chunks = [];
-    for await (const chunk of compressedStream) {
-      chunks.push(chunk);
-    }
-    return this._concatUint8Arrays(chunks);
-  }
-
-  /**
-   * Decompress bytes into a UTF-8 string.
-   *
-   * @param {Uint8Array} compressedBytes
+   * @param {string} inString
    * @returns {Promise<string>}
    */
-  async _decompress(compressedBytes) {
-    // Convert the bytes to a stream.
-    const stream = new Blob([compressedBytes]).stream();
+  async _compress(inString: string) {
+    // Convert the string to a byte array.
+    const byteArray = new TextEncoder().encode(inString);
 
-    // Create a decompressed stream.
-    const decompressedStream = stream.pipeThrough(
-      new DecompressionStream("gzip")
-    );
+    // Create a compressed stream.
+    const cs = new CompressionStream("gzip");
+    const writer = cs.writable.getWriter();
+    writer.write(byteArray);
+    writer.close();
 
-    // Read all the bytes from this stream.
-    const chunks = [];
-    for await (const chunk of decompressedStream) {
-      chunks.push(chunk);
-    }
-    const stringBytes = await this._concatUint8Arrays(chunks);
-
-    // Convert the bytes to a string.
-    return new TextDecoder().decode(stringBytes);
+    // Read all the bytes from this stream and return string.
+    const outBuffer = await new Response(cs.readable).arrayBuffer();
+    return String.fromCharCode(...new Uint8Array(outBuffer));
   }
 
   /**
-   * Combine multiple Uint8Arrays into one.
+   * Gzip decompress a string.
    *
-   * @param {ReadonlyArray<Uint8Array>} uint8arrays
-   * @returns {Promise<Uint8Array>}
+   * @param {string} inString
+   * @returns {Promise<string>}
    */
-  async _concatUint8Arrays(uint8arrays) {
-    const blob = new Blob(uint8arrays);
-    const buffer = await blob.arrayBuffer();
-    return new Uint8Array(buffer);
+  async _decompress(inString: string) {
+    // Convert the string to a byte array.
+    const byteArray = new Uint8Array(inString.length);
+    for (let i=0; i<inString.length; i++) {
+      byteArray[i] = inString.charCodeAt(i);
+    }
+
+    // Create a decompressed stream.
+    const cs = new DecompressionStream("gzip");
+    const writer = cs.writable.getWriter();
+    writer.write(byteArray);
+    writer.close();
+
+    // Read all the bytes from this stream and return string.
+    const outBuffer = await new Response(cs.readable).arrayBuffer();
+    return String.fromCharCode(...new Uint8Array(outBuffer));
   }
 
   _handleMotionCaptureClear() {
     this.motionCaptureFrames.length = 0;
-    this.renderRoot.querySelector('#motionCapturePlay').classList.add("disabled");
-    this.renderRoot.querySelector('#motionCaptureSnapshotLabel').innerHTML = "0";
-    this.renderRoot.querySelector('#motionCaptureDelay').classList.add("disabled");
-    this.renderRoot.querySelector('#motionCaptureDelayLabel').innerHTML = "0";
-    this.renderRoot.querySelector('#motionCaptureClear').classList.add("disabled");
-    this.renderRoot.querySelector('#motionCaptureCopyData').classList.add("disabled");
-    this.renderRoot.querySelector('#motionCaptureCopyUrl').classList.add("disabled");
+    this.renderRoot.querySelector('#motionCapturePlay')!.classList.add("disabled");
+    this.renderRoot.querySelector('#motionCaptureSnapshotLabel')!.innerHTML = "0";
+    this.renderRoot.querySelector('#motionCaptureDelay')!.classList.add("disabled");
+    this.renderRoot.querySelector('#motionCaptureDelayLabel')!.innerHTML = "0";
+    this.renderRoot.querySelector('#motionCaptureClear')!.classList.add("disabled");
+    this.renderRoot.querySelector('#motionCaptureCopyData')!.classList.add("disabled");
+    this.renderRoot.querySelector('#motionCaptureCopyUrl')!.classList.add("disabled");
     this.motionCaptureDelay = 0;
     this.motionCaptureTime = 0;
   }
@@ -1840,7 +1817,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   /**
    * Change in 'motion-capture-controls-enable' property.
    */
-  _motionCaptureControlsEnableChanged(newValue, oldValue) {
+  _motionCaptureControlsEnableChanged(newValue: boolean, oldValue?: boolean) {
     const el = this.renderRoot.querySelector('#motionCapture') as HTMLDivElement;
     el.style.display = newValue ? "block" : "none";
   }
@@ -1848,7 +1825,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   /**
    * Change in 'transform-enable' property.
    */
-  _transformEnableChanged(newValue, oldValue) {
+  _transformEnableChanged(newValue: boolean, oldValue?: boolean) {
     if (this.threeViewer) {
       if (newValue) {
         if (this.transformInteractor === undefined) {
@@ -1878,7 +1855,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   /**
    * Change in the 'transform-client-only' property.
    */
-  _transformClientOnlyChanged(newValue, oldValue) {
+  _transformClientOnlyChanged(newValue: boolean, oldValue?: boolean) {
     if (this.transformInteractor) {
       this.transformInteractor.clientOnly = newValue;
     }
@@ -1890,7 +1867,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   /**
    * Change in 'transform-rotate-disable' property.
    */
-  _transformRotateDisableChanged(newValue, oldValue) {
+  _transformRotateDisableChanged(newValue: boolean, oldValue?: boolean) {
     if (this.transformInteractor) {
       this.transformInteractor.enableRotate = !newValue;
     }
@@ -1899,7 +1876,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   /**
    * Change in 'transform-zoom-disable' property.
    */
-  _transformZoomDisableChanged(newValue, oldValue) {
+  _transformZoomDisableChanged(newValue: boolean, oldValue?: boolean) {
     if (this.transformInteractor) {
       this.transformInteractor.enableZoom = !newValue;
     }
@@ -1908,7 +1885,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   /**
    * Change in 'transform-pan-disable' property.
    */
-  _transformPanDisableChanged(newValue, oldValue) {
+  _transformPanDisableChanged(newValue: boolean, oldValue?: boolean) {
     if (this.transformInteractor) {
       this.transformInteractor.enablePan = !newValue;
     }
@@ -2001,7 +1978,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   /**
    * Change in 'animated-glyphs-visible' property.
    */
-  _animatedGlyphsVisibleChanged(newValue, oldValue) {
+  _animatedGlyphsVisibleChanged(newValue: boolean, oldValue?: boolean) {
 	if (this.threeViewer) {
       this.threeViewer.setVisibleAnimatedGlyphs(newValue);
     }
@@ -2010,7 +1987,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   /**
    * Change in 'animated-glyphs-enable' property.
    */
-  _animatedGlyphsEnableChanged(newValue, oldValue) {
+  _animatedGlyphsEnableChanged(newValue: boolean, oldValue?: boolean) {
 	if (this.threeViewer) {
       this.threeViewer.setEnableAnimatedGlyphs(newValue);
     }
@@ -2043,7 +2020,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   /**
    * Change in 'motion-capture' property.
    */
-  async _motionCaptureValueChanged(newValue, oldValue) {
+  async _motionCaptureValueChanged(newValue: string, oldValue?: string) {
     if (newValue) {
       // Try parsing JSON first
       try {
@@ -2051,7 +2028,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
       }
       catch {
         // Decode from base64url, decompress and parse JSON
-        const decoded = atob(newValue).replaceAll('_', '/').replaceAll('-', '+');
+        const decoded = atob(newValue.replaceAll('_', '/').replaceAll('-', '+'));
         const decompressed = await this._decompress(decoded);
         this.motionCaptureFrames = JSON.parse(decompressed);
       }
@@ -2061,24 +2038,24 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
       }
 
       if (this.motionCaptureFrames.length > 0) {
-        this.renderRoot.querySelector('#motionCapturePlay').classList.remove("disabled");
-        this.renderRoot.querySelector('#motionCaptureSnapshotLabel').innerHTML = String(this.motionCaptureFrames.length);
-        this.renderRoot.querySelector('#motionCaptureDelay').classList.remove("disabled");
-        this.renderRoot.querySelector('#motionCaptureDelayLabel').innerHTML = "2";
-        this.renderRoot.querySelector('#motionCaptureClear').classList.remove("disabled");
-        this.renderRoot.querySelector('#motionCaptureCopyData').classList.remove("disabled");
-        this.renderRoot.querySelector('#motionCaptureCopyUrl').classList.remove("disabled");
+        this.renderRoot.querySelector('#motionCapturePlay')!.classList.remove("disabled");
+        this.renderRoot.querySelector('#motionCaptureSnapshotLabel')!.innerHTML = String(this.motionCaptureFrames.length);
+        this.renderRoot.querySelector('#motionCaptureDelay')!.classList.remove("disabled");
+        this.renderRoot.querySelector('#motionCaptureDelayLabel')!.innerHTML = "2";
+        this.renderRoot.querySelector('#motionCaptureClear')!.classList.remove("disabled");
+        this.renderRoot.querySelector('#motionCaptureCopyData')!.classList.remove("disabled");
+        this.renderRoot.querySelector('#motionCaptureCopyUrl')!.classList.remove("disabled");
         this.motionCaptureDelay = 2;
         this.motionCaptureTime = this.motionCaptureFrames[this.motionCaptureFrames.length - 1].time / 1000;
       }
       else {
-        this.renderRoot.querySelector('#motionCapturePlay').classList.add("disabled");
-        this.renderRoot.querySelector('#motionCaptureSnapshotLabel').innerHTML = "0";
-        this.renderRoot.querySelector('#motionCaptureDelay').classList.add("disabled");
-        this.renderRoot.querySelector('#motionCaptureDelayLabel').innerHTML = "0";
-        this.renderRoot.querySelector('#motionCaptureClear').classList.add("disabled");
-        this.renderRoot.querySelector('#motionCaptureCopyData').classList.add("disabled");
-        this.renderRoot.querySelector('#motionCaptureCopyUrl').classList.add("disabled");
+        this.renderRoot.querySelector('#motionCapturePlay')!.classList.add("disabled");
+        this.renderRoot.querySelector('#motionCaptureSnapshotLabel')!.innerHTML = "0";
+        this.renderRoot.querySelector('#motionCaptureDelay')!.classList.add("disabled");
+        this.renderRoot.querySelector('#motionCaptureDelayLabel')!.innerHTML = "0";
+        this.renderRoot.querySelector('#motionCaptureClear')!.classList.add("disabled");
+        this.renderRoot.querySelector('#motionCaptureCopyData')!.classList.add("disabled");
+        this.renderRoot.querySelector('#motionCaptureCopyUrl')!.classList.add("disabled");
         this.motionCaptureDelay = 0;
         this.motionCaptureTime = 0;
       }
@@ -2088,7 +2065,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   /**
    * Change in 'zoom-rectangle-enable' property.
    */
-  _zoomRectangleEnableChanged(newValue, oldValue) {
+  _zoomRectangleEnableChanged(newValue: boolean, oldValue?: boolean) {
     if (this.threeViewer) {
       if (newValue) {
         if (this.zoomRectangleInteractor === undefined) {
@@ -2109,7 +2086,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   /**
    * Change in 'pan-enable' property.
    */
-  _panEnableChanged(newValue, oldValue) {
+  _panEnableChanged(newValue: boolean, oldValue?: boolean) {
     if (this.threeViewer) {
       if (newValue) {
         if (this.panInteractor === undefined) {
@@ -2140,7 +2117,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   /**
    * Change in 'pan-zoom-enable' property.
    */
-  _panZoomEnableChanged(newValue, oldValue) {
+  _panZoomEnableChanged(newValue: boolean, oldValue?: boolean) {
     if (this.threeViewer && this.panInteractor) {
       if (newValue) {	  
           this.panInteractor.addEventListener('change', this._handlePanChanged.bind(this));
@@ -2155,7 +2132,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
     }
   }
 
-  _handlePanChanged(e) {
+  _handlePanChanged(e: CustomEvent) {
     /**
      * A pan info event occurred.
      * @event avs-pan-info
@@ -2163,16 +2140,16 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
     this.dispatchEvent(new CustomEvent('avs-pan-info', e));
   }
 
-  _handlePanZoom(e) {
+  _handlePanZoom(e: CustomEvent) {
     window.clearTimeout(this.zoomOverlayTimeoutId);
 
     var width = Math.round(e.detail.widthZoomLevel);
     var height = Math.round(e.detail.heightZoomLevel);
     if (width === height) {
-      this.renderRoot.querySelector('#zoomOverlay').innerHTML = width + "%";
+      this.renderRoot.querySelector('#zoomOverlay')!.innerHTML = width + "%";
     }
     else {
-      this.renderRoot.querySelector('#zoomOverlay').innerHTML = width + "%," + height + "%";
+      this.renderRoot.querySelector('#zoomOverlay')!.innerHTML = width + "%," + height + "%";
     }
 
     var coords = this._getAdjustedCoords(e.detail.clientX, e.detail.clientY);
@@ -2191,7 +2168,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
     }, 1000);
   }
 
-  _handlePanZoomEnd(e) {
+  _handlePanZoomEnd(e: CustomEvent) {
     this.panWidthZoomLevel = e.detail.widthZoomLevel;
     this.panHeightZoomLevel = e.detail.heightZoomLevel;
   }
@@ -2199,7 +2176,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   /**
    * Change in 'pan-width-zoom-level' property.
    */
-  _panWidthZoomLevelChanged(newValue, oldValue) {
+  _panWidthZoomLevelChanged(newValue: number, oldValue?: number) {
     if (this.panInteractor) {
       this.panInteractor.setWidthZoomLevel(newValue);
     }
@@ -2208,7 +2185,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   /**
    * Change in 'pan-height-zoom-level' property.
    */
-  _panHeightZoomLevelChanged(newValue, oldValue) {
+  _panHeightZoomLevelChanged(newValue: number, oldValue?: number) {
     if (this.panInteractor) {
       this.panInteractor.setHeightZoomLevel(newValue);
     }
@@ -2217,7 +2194,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   /**
    * Change in 'pan-maximum-zoom-level' property.
    */
-  _panMaximumZoomLevelChanged(newValue, oldValue) {
+  _panMaximumZoomLevelChanged(newValue: number, oldValue?: number) {
     if (this.panInteractor) {
       this.panInteractor.setMaximumZoomLevel(newValue);
     }
@@ -2235,21 +2212,21 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   /**
    * Change in 'renderer' property.
    */
-  _rendererChanged(newValue, oldValue) {
+  _rendererChanged(newValue: Renderer, oldValue?: Renderer) {
     if (oldValue === 'IMAGE') {
       this.sceneImage.src = 'data:,';
-      this.renderRoot.querySelector('#dataVizDiv').removeChild(this.sceneImage);
-      this.renderRoot.querySelector('#dataVizDiv').removeChild(this.sceneImageMap);
+      this.renderRoot.querySelector('#dataVizDiv')!.removeChild(this.sceneImage);
+      this.renderRoot.querySelector('#dataVizDiv')!.removeChild(this.sceneImageMap);
     }
     else if (oldValue === 'SVG') {
       var el = this.svgDiv;
       while (el.firstChild) el.removeChild(el.firstChild);
-      this.renderRoot.querySelector('#dataVizDiv').removeChild(this.svgDiv);
+      this.renderRoot.querySelector('#dataVizDiv')!.removeChild(this.svgDiv);
     }
     else if (this.threeViewer) {
       this.threeViewer.clearGeometry();
       this.threeViewer.render();
-      this.renderRoot.querySelector('#dataVizDiv').removeChild(this.threeViewer.domElement);
+      this.renderRoot.querySelector('#dataVizDiv')!.removeChild(this.threeViewer.domElement);
     }
 
     if (newValue === 'IMAGE') {
@@ -2263,8 +2240,8 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
         this.sceneImageMap.setAttribute("name", "sceneImageMap");
       }
 
-      this.renderRoot.querySelector('#dataVizDiv').appendChild(this.sceneImage);
-      this.renderRoot.querySelector('#dataVizDiv').appendChild(this.sceneImageMap);
+      this.renderRoot.querySelector('#dataVizDiv')!.appendChild(this.sceneImage);
+      this.renderRoot.querySelector('#dataVizDiv')!.appendChild(this.sceneImageMap);
       this.threeViewer = null;
     }
     else if (newValue === 'SVG') {
@@ -2273,7 +2250,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
         this.svgDiv.setAttribute("id", "svgDiv");
       }
 
-      this.renderRoot.querySelector('#dataVizDiv').appendChild(this.svgDiv);
+      this.renderRoot.querySelector('#dataVizDiv')!.appendChild(this.svgDiv);
       this.threeViewer = null;
     }
     else {
@@ -2304,14 +2281,14 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
         this.threeViewer.setAnimator(this.animator);
       }
 
-      this.renderRoot.querySelector('#dataVizDiv').appendChild(this.threeViewer.domElement);
+      this.renderRoot.querySelector('#dataVizDiv')!.appendChild(this.threeViewer.domElement);
     }
   }
 
   /**
    * Change in 'track-enable' property.
    */
-  _trackEnableChanged(newValue, oldValue) {
+  _trackEnableChanged(newValue: boolean, oldValue?: boolean) {
     if (newValue) {
       if (this.rectCanvas === undefined) {
         this.rectCanvas = document.createElement("canvas");
@@ -2328,14 +2305,14 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   /**
    * Change in 'display-canvas' property.
    */
-  _displayCanvasChanged(newValue, oldValue) {
+  _displayCanvasChanged(newValue: boolean, oldValue?: boolean) {
     if (this.threeViewer) {
       this.threeViewer.displayCanvas = newValue;
     }
   }
 
   setTooltipHTML(html: string) {
-    this.renderRoot.querySelector('#tooltip').innerHTML = html;
+    this.renderRoot.querySelector('#tooltip')!.innerHTML = html;
   }
 
   showTooltip(clientX: number, clientY: number) {

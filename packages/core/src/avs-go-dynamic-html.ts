@@ -39,7 +39,7 @@ export class AvsGoDynamicHtml extends AvsElementMixin(LitElement) {
 
   /** The URL to an instance of AVS/Go server application. */
   @property()
-  url: string;
+  url: string = "";
 
   /** Name of the data source registered in the library map on the server. */
   @property({ attribute: 'data-source-name' })
@@ -65,7 +65,7 @@ export class AvsGoDynamicHtml extends AvsElementMixin(LitElement) {
   }
 
   willUpdate(changedProperties: PropertyValues<this>) {
-    if (!this.url) {
+    if (!this.url || this.url.length < 1) {
       if (changedProperties.has('url')) {
         this._dispatchErrorEvent("'url' property must be set to an instance of AVS/Go server.");
       }
@@ -125,7 +125,7 @@ export class AvsGoDynamicHtml extends AvsElementMixin(LitElement) {
           this._dispatchErrorEvent("Empty response from AVS/Go server.");
         }
       },
-      null,
+      undefined,
       model
     );
   }

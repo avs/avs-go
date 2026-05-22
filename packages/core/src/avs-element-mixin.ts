@@ -25,8 +25,8 @@ import { HttpResponse } from './types.js';
 type Constructor<T = {}> = new (...args: any[]) => T;
 
 export declare class AvsElementMixinInterface {
-  _httpRequest(url: string, onLoad?: (response: any) => void, onError?: () => void, model?: object);
-  _dispatchErrorEvent(error: string);
+  _httpRequest(url: string, onLoad?: (response: any) => void, onError?: () => void, model?: object): void;
+  _dispatchErrorEvent(error: string): void;
 }
 
 export const AvsElementMixin = <T extends Constructor<LitElement>>(superClass: T) => {
@@ -73,7 +73,7 @@ export const AvsElementMixin = <T extends Constructor<LitElement>>(superClass: T
           this._dispatchErrorEvent(error);
           onError?.();
         });        
-}
+    }
 
     /**
      * @param error

@@ -28,7 +28,7 @@ import { WebGLRenderer } from 'three';
  * @customElement
  */
 export class AvsRenderer extends HTMLElement {
-  webGLRenderer: WebGLRenderer;
+  webGLRenderer?: WebGLRenderer = undefined;
 
   connectedCallback() {
     this.webGLRenderer = new WebGLRenderer( {alpha: true} );
