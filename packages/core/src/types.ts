@@ -50,7 +50,6 @@ export interface PickProperties extends PickDetail {
   level?: PickLevel;
   depth?: PickDepth;
   highlight?: boolean;
-  highlightColor?: string;
   highlightLayer?: boolean;
 }
 
@@ -102,6 +101,7 @@ export interface SceneInfo {
   color?: string;
   backgroundColor?: string;
   fontFamily?: string;
+  highlightColor?: string;
 }
 
 export interface ThreeJS {

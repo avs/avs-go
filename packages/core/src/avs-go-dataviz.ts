@@ -323,10 +323,6 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   @property({ attribute: 'tap-highlight-enable', type: Boolean })
   tapHighlightEnable?: boolean;
 
-  /** The color to used to highlight the selected objects in the scene. */
-  @property({ attribute: 'tap-highlight-color' })
-  tapHighlightColor?: string;
-
   /** Enables drawing highlighted objects in front of all objects in the scene. This results in faster rendering in a 2D viewport when using the `THREEJS` renderer. */
   @property({ attribute: 'tap-highlight-layer-enable', type: Boolean })
   tapHighlightLayerEnable?: boolean;
@@ -351,10 +347,6 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   @property({ attribute: 'track-highlight-enable', type: Boolean })
   trackHighlightEnable?: boolean;
 
-  /** The color to used to highlight the selected objects in the scene. */
-  @property({ attribute: 'track-highlight-color' })
-  trackHighlightColor?: string;
-
   /** Enables drawing highlighted objects in front of all objects in the scene. This results in faster rendering in a 2D viewport when using the `THREEJS` renderer. */
   @property({ attribute: 'track-highlight-layer-enable', type: Boolean })
   trackHighlightLayerEnable?: boolean;
@@ -378,10 +370,6 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   /** Enables highlight of selected geometry in the scene. */
   @property({ attribute: 'hover-highlight-enable', type: Boolean })
   hoverHighlightEnable?: boolean;
-
-  /** The color to used to highlight the selected objects in the scene. */
-  @property({ attribute: 'hover-highlight-color' })
-  hoverHighlightColor?: string;
 
   /** Enables drawing highlighted objects in front of all objects in the scene. This results in faster rendering in a 2D viewport when using the `THREEJS` renderer. */
   @property({ attribute: 'hover-highlight-layer-enable', type: Boolean })
@@ -498,6 +486,8 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   pointerDown: boolean;
   pointerDownX: number;
   pointerDownY: number;
+  hoverSelected: string;
+  highlightColor: string;
   imageMapData?: Array<any>;
   rectCanvas: HTMLCanvasElement;
   rectCtx: CanvasRenderingContext2D;
@@ -642,7 +632,6 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
         "chartBackgroundGradientStyle": "--avs-chart-background-gradient-style",
         "chartBackgroundGradientInterpolation": "--avs-chart-background-gradient-interpolation",
         "chartBackgroundGradientColorRepeat": "--avs-chart-background-gradient-color-repeat",
-        "chartHighlightColor": "--avs-chart-highlight-color",
         "chartSurfaceColor": "--avs-chart-surface-color",
         "chartPointColor": "--avs-chart-point-color",
         "chartLineColor": "--avs-chart-line-color",
@@ -1063,6 +1052,9 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
           tooltip.style.fontFamily = "var(--avs-tooltip-font-family, " + response.sceneInfo.fontFamily + ")";
           motionCaptureTooltip.style.fontFamily = "var(--avs-tooltip-font-family, " + response.sceneInfo.fontFamily + ")";
         }
+
+        // Highlight color for client-side ThreeJS and SVG highlighting
+        this.highlightColor = response.sceneInfo.highlightColor;
       }
 
       if (response.image) {
@@ -1197,7 +1189,6 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
       level: this.tapLevel,
       depth: this.tapDepth,
       highlight: this.tapHighlightEnable,
-      highlightColor: this.tapHighlightColor,
       highlightLayer: this.tapHighlightLayerEnable
     };
 
@@ -1233,7 +1224,6 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
           level: this.trackLevel,
           depth: this.trackDepth,
           highlight: this.trackHighlightEnable,
-          highlightColor: this.trackHighlightColor,
           highlightLayer: this.trackHighlightLayerEnable
         };
 
@@ -1291,11 +1281,10 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
         this._dispatchPickEvents( pickProperties );
       }
       else {
-	    if (this.hoverLevel !== undefined) pickProperties.level = this.hoverLevel;
-	    if (this.hoverDepth !== undefined) pickProperties.depth = this.hoverDepth;
-	    if (this.hoverHighlightEnable) pickProperties.highlight = true;
-	    if (this.hoverHighlightColor !== undefined) pickProperties.highlightColor = this.hoverHighlightColor;
-	    if (this.hoverHighlightLayerEnable) pickProperties.highlightLayer = true;
+	    pickProperties.level = this.hoverLevel;
+	    pickProperties.depth = this.hoverDepth;
+	    pickProperties.highlight = true;
+	    pickProperties.highlightLayer = true;
 
         this._processPick( pickProperties, true, e.target );
       }
@@ -1381,7 +1370,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
         this._dispatchPickEvents(pickProperties);
       
         if (pickProperties.highlight) {
-          this.threeViewer.highlightColor.set( pickProperties.highlightColor );
+          this.threeViewer.highlightColor.set( this.highlightColor );
           this.threeViewer.highlightObjects( selectionList, pickProperties.highlightLayer );
         }
       }
@@ -1438,7 +1427,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
           if (pickProperties.type !== 'TRACK' && (originalTarget.nodeName === "polygon" || originalTarget.nodeName === "circle")) {
             this.highlightSvg.push(originalTarget);
             originalTarget.setAttribute("saveFill", originalTarget.getAttribute("fill"));
-            originalTarget.setAttribute("fill", pickProperties.highlightColor);
+            originalTarget.setAttribute("fill", this.highlightColor);
           }
         }
       }
@@ -1469,7 +1458,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
         }
 
         this._dispatchPickEvents(pickProperties);
-     }
+      }
     }
     else if (!this.urlLoadJsonFile) {
       // Server side pick processing
@@ -1567,6 +1556,14 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
       pickDetail.y = pickProperties.y;
 
       if (pickProperties.type === 'HOVER') {
+
+        // Don't dispatch hover event on unchanged selected info
+        const selectedJSON = JSON.stringify(pickDetail.selected);
+        if (this.hoverSelected === selectedJSON) {
+          return;
+        }
+        this.hoverSelected = selectedJSON;
+
         /**
          * A hover event occurred.
          * @event avs-hover
