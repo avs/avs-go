@@ -1283,8 +1283,8 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
       else {
 	    pickProperties.level = this.hoverLevel;
 	    pickProperties.depth = this.hoverDepth;
-	    pickProperties.highlight = true;
-	    pickProperties.highlightLayer = true;
+        pickProperties.highlight = this.hoverHighlightEnable;
+        pickProperties.highlightLayer = this.hoverHighlightLayerEnable;
 
         this._processPick( pickProperties, true, e.target );
       }
