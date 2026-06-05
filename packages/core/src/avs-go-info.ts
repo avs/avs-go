@@ -74,7 +74,7 @@ export class AvsGoInfo extends AvsElementMixin(LitElement) {
 
     // Assemble the model
     const model: InfoModel = {
-      infoProperties: {
+      info: {
         name: this.infoName
       }
     };
@@ -87,12 +87,12 @@ export class AvsGoInfo extends AvsElementMixin(LitElement) {
         this._dispatchErrorEvent("Can't parse 'info-user-properties'. " + error);
         return;
       }
-      model.infoProperties.userProperties = infoUserProperties;
+      model.info.userProperties = infoUserProperties;
     }
 
     // Data source properties
     if (this.dataSourceName) {
-      model.dataSourceProperties = {
+      model.dataSource = {
         name: this.dataSourceName
       }
       if (this.dataSourceUserProperties) {
@@ -104,7 +104,7 @@ export class AvsGoInfo extends AvsElementMixin(LitElement) {
           this._dispatchErrorEvent("Can't parse 'data-source-user-properties'. " + error);
           return;
         }
-        model.dataSourceProperties.userProperties = dataSourceUserProperties;
+        model.dataSource.userProperties = dataSourceUserProperties;
       }
     }
 

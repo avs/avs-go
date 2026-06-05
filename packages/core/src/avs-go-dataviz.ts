@@ -315,7 +315,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   @property({ attribute: 'tap-level' })
   tapLevel?: PickLevel;
 
-  /** The depth at which an object is selected: `ALL` or `CLOSEST` */
+  /** The depth at which an object is selected: `ALL`, `CLOSEST` or `FIRST` */
   @property({ attribute: 'tap-depth' })
   tapDepth?: PickDepth;
 
@@ -339,7 +339,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   @property({ attribute: 'track-level' })
   trackLevel?: PickLevel;
 
-  /** The depth at which an object is selected: `ALL` or `CLOSEST` */
+  /** The depth at which an object is selected: `ALL`, `CLOSEST` or `FIRST` */
   @property({ attribute: 'track-depth' })
   trackDepth?: PickDepth;
 
@@ -363,7 +363,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
   @property({ attribute: 'hover-level' })
   hoverLevel?: PickLevel;
 
-  /** The depth at which an object is selected: `ALL` or `CLOSEST` */
+  /** The depth at which an object is selected: `ALL`, `CLOSEST` or `FIRST` */
   @property({ attribute: 'hover-depth' })
   hoverDepth?: PickDepth;
 
@@ -515,7 +515,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
 
     // Scene Properties
     const model: DataVizModel = {
-      sceneProperties: {
+      scene: {
         name: this.sceneName
       }
     };
@@ -528,7 +528,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
         this._dispatchErrorEvent("Can't parse 'scene-user-properties'. " + error.message);
         return undefined;
       }
-      model.sceneProperties.userProperties = sceneUserProperties;
+      model.scene.userProperties = sceneUserProperties;
     }
 
     // Renderer Properties
@@ -549,7 +549,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
       }
       rendererProperties.userProperties = rendererUserProperties;
     }
-    model.rendererProperties = rendererProperties;
+    model.renderer = rendererProperties;
 
     // Transform Properties
     if (this.transformInteractor) {
@@ -571,7 +571,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
 
     // PanInteractor
     if (this.panEnable) {
-      rendererProperties.panProperties = {
+      rendererProperties.pan = {
         widthZoomLevel: Math.min(this.panWidthZoomLevel, this.panMaximumZoomLevel),
         heightZoomLevel: Math.min(this.panHeightZoomLevel, this.panMaximumZoomLevel)
       };
@@ -586,7 +586,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
     var cssBackgroundColor = style.getPropertyValue("background-color").trim();
     var cssColor = style.getPropertyValue("color").trim();
     var cssFontFamily = style.getPropertyValue("font-family").trim().replace(/['"]+/g, '');
-    rendererProperties.cssProperties = {
+    rendererProperties.css = {
       sceneBackgroundType: "Solid",
       sceneBackgroundColor: cssBackgroundColor,
       sceneLineColor: cssColor,
@@ -596,7 +596,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
     };
 
     // Theme Properties from custom CSS
-    this._applyCustomCssProperties(rendererProperties.cssProperties, style,
+    this._applyCustomCssProperties(rendererProperties.css, style,
       {
         // Scene
         "sceneBackgroundType": "--avs-scene-background-type",
@@ -724,7 +724,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
 
     // Data source properties
     if (this.dataSourceName) {
-      model.dataSourceProperties = {
+      model.dataSource = {
         name: this.dataSourceName
       }
       if (this.dataSourceUserProperties) {
@@ -736,14 +736,14 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
           this._dispatchErrorEvent("Can't parse 'data-source-user-properties'. " + error.message);
           return undefined;
         }
-        model.dataSourceProperties.userProperties = dataSourceUserProperties;
+        model.dataSource.userProperties = dataSourceUserProperties;
       }
     }
     
     // Stream properties
     if (this.threeViewer) {
       if (this.streamEnable) {
-        rendererProperties.streamProperties = {
+        rendererProperties.stream = {
           chunkSizeFirst: this.streamChunkSizeFirst,
           chunkSize: this.streamChunkSize
         };
@@ -1111,7 +1111,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
             }
             else {
               // Get the next chunk from the server
-              this.model.rendererProperties.streamProperties.chunkId = response.threejs.chunkId;
+              this.model.renderer.stream.chunkId = response.threejs.chunkId;
               this._httpRequest(this.url, this._handleHttpResponse.bind(this), this._handleHttpError.bind(this), this.model);
             }
           }
@@ -1149,6 +1149,11 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
     var bg = window.getComputedStyle(div).backgroundColor;
     document.head.removeChild(div);
     return bg;
+  }
+
+  _getTrackRectColor(): string {
+    const col = window.getComputedStyle(this, null).getPropertyValue('--avs-track-rectangle-color').trim();
+    return (col.length > 0) ? col : "#ff0000";
   }
 
   /**
@@ -1203,12 +1208,12 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
 
     switch(state) {
       case 'start':
+        this.rectCtx.setLineDash([3]);
+        this.rectCtx.strokeStyle = this._getTrackRectColor();
         break;
 
       case 'track':
         this.rectCtx.clearRect(0,0,this.width,this.height);
-        this.rectCtx.setLineDash([3]);
-        this.rectCtx.strokeStyle="#ff0000";
         this.rectCtx.strokeRect(adjustedCoords.left, adjustedCoords.top, adjustedCoords.right - adjustedCoords.left, adjustedCoords.bottom - adjustedCoords.top);
         break;
 
@@ -1346,13 +1351,23 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
       if (this.threeViewer) {
         // ThreeJS client side pick processing
 
-        this.threeViewer.setPickDepth( pickProperties.depth === "ALL" ? PickDepthEnum.All : PickDepthEnum.Closest );
+        if (pickProperties.depth === "ALL") {
+          this.threeViewer.setPickDepth(PickDepthEnum.All);
+        }
+        else if (pickProperties.depth === "FIRST") {
+          this.threeViewer.setPickDepth(PickDepthEnum.First);
+        }
+        else {
+          this.threeViewer.setPickDepth(PickDepthEnum.Closest);
+        }
+
         if (pickProperties.type === 'TRACK') {
           this.threeViewer.setPickRectangle( pickProperties.left, pickProperties.top, pickProperties.right, pickProperties.bottom );
         }
         else {
-     	  this.threeViewer.setPickRay( pickProperties.x, pickProperties.y );
+     	    this.threeViewer.setPickRay( pickProperties.x, pickProperties.y );
         }
+
         this.threeViewer.pick();
 
         var selectionList = {};
@@ -1470,7 +1485,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
         // Send the model to the server
         this.model = this._assembleModel();
         if (this.model) {
-          this.model.rendererProperties.pickProperties = pickProperties;
+          this.model.renderer.pick = pickProperties;
           this._httpRequest(this.url, this._handleHttpResponse.bind(this), this._handleHttpError.bind(this), this.model);
         }
       }
@@ -1624,13 +1639,6 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
     this.addEventListener('pointerup', this._handlePointerUp);
     this.addEventListener('pointermove', this._handlePointerMove);
     this.addEventListener('pointerout', this._handlePointerMove);
- 
-    var scope = this;
-    this.addEventListener('contextmenu', function(e) {
-      if (scope.trackEnable) {
-        e.preventDefault();
-      }
-    });
   }
 
   /**
@@ -1638,6 +1646,11 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
    */
   disconnectedCallback() {
     super.disconnectedCallback();
+
+    this.removeEventListener('pointerdown', this._handlePointerDown);
+    this.removeEventListener('pointerup', this._handlePointerUp);
+    this.removeEventListener('pointermove', this._handlePointerMove);
+    this.removeEventListener('pointerout', this._handlePointerMove);
 
     ro.unobserve(this);
   }

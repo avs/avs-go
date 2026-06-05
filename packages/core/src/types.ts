@@ -20,7 +20,7 @@
 
 export type Renderer = "IMAGE" | "SVG" | "THREEJS";
 
-export type PickDepth = "CLOSEST" | "ALL";
+export type PickDepth = "CLOSEST" | "ALL" | "FIRST";
 
 export type PickLevel = "SCENE_NODE" | "CELL_SET" | "CELL";
 
@@ -60,24 +60,24 @@ export interface RendererProperties {
   width: number;
   height: number;
   themeName?: string;
-  cssProperties?: object;
-  pickProperties?: PickProperties;
-  panProperties?: PanProperties;
-  streamProperties?: StreamProperties;
+  css?: object;
+  pick?: PickProperties;
+  pan?: PanProperties;
+  stream?: StreamProperties;
   transformMatrix?: Array<number>;
   fullReset?: boolean;
 }
 
 export interface DataVizModel {
-  sceneProperties: {
+  scene: {
     name: string;
     userProperties?: object;
   };
-  dataSourceProperties?: {
+  dataSource?: {
     name: string;
     userProperties?: object;
   };
-  rendererProperties?: RendererProperties;
+  renderer?: RendererProperties;
 }
 
 export interface SelectedInfo {
@@ -119,11 +119,11 @@ export interface DataVizResponse extends HttpResponse {
 }
 
 export interface InfoModel {
-  infoProperties: {
+  info: {
     name: string;
     userProperties?: object;
   };
-  dataSourceProperties?: {
+  dataSource?: {
     name: string;
     userProperties?: object;
   };
@@ -134,11 +134,11 @@ export interface InfoResponse extends HttpResponse {
 }
 
 export interface DynamicHtmlModel {
-  dynamicHtmlProperties: {
+  dynamicHtml: {
     name: string;
     userProperties?: object;
   };
-  dataSourceProperties?: {
+  dataSource?: {
     name: string;
     userProperties?: object;
   };

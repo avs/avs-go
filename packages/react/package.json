@@ -1,6 +1,6 @@
 {
   "name": "@avs/go-react",
-  "version": "0.15.72067",
+  "version": "0.16.72087",
   "description": "React wrapper for AVS/Go web components",
   "keywords": [
     "react",
@@ -16,10 +16,11 @@
   "homepage": "https://www.avs.com/products/avs-go",
   "license": "Apache-2.0",
   "dependencies": {
-    "@avs/go": "0.15.72067",
-    "@lit/react": "^1.0.8",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "@avs/go": "0.16.72087",
+    "@lit/react": "^1.0.8"
+  },
+  "peerDependencies": {
+    "react": "^19.2.7"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

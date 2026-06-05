@@ -18,4 +18,4 @@
  * Advanced Visual Systems Inc. (http://www.avs.com)
  */
 
-export const VERSION: string = '0.15.72067';
+export const VERSION: string = '0.16.72087';
