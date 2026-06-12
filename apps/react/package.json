@@ -11,6 +11,7 @@
   "author": "Advanced Visual Systems Inc.",
   "license": "Apache-2.0",
   "dependencies": {
-    "@avs/go-react": "^0.14.0"
+    "@avs/go-react": "^0.16.0",
+    "react-dom": "^19.2.7"
   }
 }

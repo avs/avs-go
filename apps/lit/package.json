@@ -8,6 +8,6 @@
   "author": "Advanced Visual Systems Inc.",
   "license": "Apache-2.0",
   "dependencies": {
-    "@avs/go": "^0.14.0"
+    "@avs/go": "^0.16.0"
   }
 }
