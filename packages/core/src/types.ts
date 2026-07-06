@@ -90,7 +90,7 @@ export interface MotionCaptureFrame {
   time: number;
   scale: number;
   position: Array<number>;
-  rotation: Array<number>;
+  rotation: Array<number | string>;
 }
 
 export interface HttpResponse {

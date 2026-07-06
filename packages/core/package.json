@@ -1,6 +1,6 @@
 {
   "name": "@avs/go",
-  "version": "0.16.72113",
+  "version": "0.16.72171",
   "description": "AVS/Go",
   "type": "module",
   "keywords": [
@@ -38,8 +38,8 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "dompurify": "^3.4.10",
+    "dompurify": "^3.4.11",
     "lit": "^3.3.3",
-    "three": "0.184.0"
+    "three": "0.185.1"
   }
 }

@@ -1693,7 +1693,7 @@ export class AvsGoDataViz extends AvsElementMixin(LitElement) {
       rotation: [this._round2dp(transform.rotation[0]),
                  this._round2dp(transform.rotation[1]),
                  this._round2dp(transform.rotation[2]),
-                 transform.rotation[3]]
+                 transform.rotationOrder]
     };
     this.motionCaptureFrames.push(frame);
 
