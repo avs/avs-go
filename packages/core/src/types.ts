@@ -132,18 +132,3 @@ export interface InfoModel {
 export interface InfoResponse extends HttpResponse {
   info?: string;
 }
-
-export interface DynamicHtmlModel {
-  dynamicHtml: {
-    name: string;
-    userProperties?: object;
-  };
-  dataSource?: {
-    name: string;
-    userProperties?: object;
-  };
-}
-
-export interface DynamicHtmlResponse extends HttpResponse {
-  html?: string;
-}

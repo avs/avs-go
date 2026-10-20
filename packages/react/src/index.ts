@@ -23,7 +23,6 @@ import { createComponent, type EventName } from '@lit/react';
 
 import { AvsGoDataViz as AvsGoDataVizLit } from '@avs/go/dist/avs-go-dataviz.js';
 import { AvsGoInfo as AvsGoInfoLit } from '@avs/go/dist/avs-go-info.js';
-import { AvsGoDynamicHtml as AvsGoDynamicHtmlLit } from '@avs/go/dist/avs-go-dynamic-html.js';
 
 export type { Renderer, PickDepth, PickLevel } from '@avs/go/dist/types';
 
@@ -55,18 +54,6 @@ export const AvsGoInfo = createComponent({
   react: React,
   events: {
     onInfo: 'avs-go-info-response' as EventName<CustomEvent>,
-    onError: 'avs-error' as EventName<CustomEvent>
-  }
-});
-
-/**
- * `<avs-go-dynamic-html>` as a React component.
- */
-export const AvsGoDynamicHtml = createComponent({
-  tagName: 'avs-go-dynamic-html',
-  elementClass: AvsGoDynamicHtmlLit,
-  react: React,
-  events: {
     onError: 'avs-error' as EventName<CustomEvent>
   }
 });

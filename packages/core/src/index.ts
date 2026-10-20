@@ -20,4 +20,3 @@
 
 export { AvsGoDataViz } from './avs-go-dataviz'
 export { AvsGoInfo } from './avs-go-info'
-export { AvsGoDynamicHtml } from './avs-go-dynamic-html'
