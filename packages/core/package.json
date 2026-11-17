@@ -1,6 +1,6 @@
 {
   "name": "@avs/go",
-  "version": "0.16.72383",
+  "version": "0.16.72420",
   "description": "AVS/Go",
   "type": "module",
   "keywords": [
@@ -17,8 +17,13 @@
   ],
   "author": "Advanced Visual Systems Inc.",
   "homepage": "https://www.avs.com/products/avs-go",
-  "main": "dist/avs-go.min.js",
-  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/avs-go.min.js"
+    }
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/avs/avs-go.git",
@@ -39,6 +44,6 @@
   "license": "Apache-2.0",
   "dependencies": {
     "lit": "^3.3.3",
-    "three": "0.186.1"
+    "three": "0.187.0"
   }
 }

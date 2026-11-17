@@ -18,5 +18,7 @@
  * Advanced Visual Systems Inc. (http://www.avs.com)
  */
 
+export { Renderer, PickDepth, PickLevel } from './types'
+
 export { AvsGoDataViz } from './avs-go-dataviz'
 export { AvsGoInfo } from './avs-go-info'

@@ -21,10 +21,10 @@
 import * as React from 'react';
 import { createComponent, type EventName } from '@lit/react';
 
-import { AvsGoDataViz as AvsGoDataVizLit } from '@avs/go/dist/avs-go-dataviz.js';
-import { AvsGoInfo as AvsGoInfoLit } from '@avs/go/dist/avs-go-info.js';
+import { AvsGoDataViz as AvsGoDataVizLit } from '@avs/go';
+import { AvsGoInfo as AvsGoInfoLit } from '@avs/go';
 
-export type { Renderer, PickDepth, PickLevel } from '@avs/go/dist/types';
+export type { Renderer, PickDepth, PickLevel } from '@avs/go';
 
 /**
  * `<avs-go-dataviz>` as a React component.
